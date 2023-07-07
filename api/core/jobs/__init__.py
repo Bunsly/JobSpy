@@ -53,3 +53,12 @@ class JobPost(BaseModel):
     compensation: Compensation
     date_posted: datetime
     delivery: Delivery = None
+
+
+class JobResponse(BaseModel):
+    jobs: list[JobPost]
+
+    job_count: int
+
+    page: int
+    total_pages: int
