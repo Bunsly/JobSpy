@@ -38,7 +38,7 @@ class IndeedScraper(Scraper):
         total_pages = math.ceil(total_num_jobs / 15)
 
         job_list: list[JobPost] = []
-        page_number = jobs["metaData"]["mosaicProviderJobCardsModel"]["pageNumber"]
+        # page_number = jobs["metaData"]["mosaicProviderJobCardsModel"]["pageNumber"]
         for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]:
             snippet_html = BeautifulSoup(job["snippet"], "html.parser")
 
@@ -92,7 +92,7 @@ class IndeedScraper(Scraper):
         job_response = JobResponse(
             jobs=job_list,
             job_count=total_num_jobs,
-            page=page_number,
+            page=scraper_input.page,
             total_pages=total_pages,
         )
         return job_response
