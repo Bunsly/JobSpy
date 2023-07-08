@@ -65,6 +65,8 @@ class ZipRecruiterScraper(Scraper):
                 delivery=Delivery(method=DeliveryEnum.URL, value=url),
             )
             job_list.append(job_post)
+            if len(job_list) > 20:
+                break
 
         script_tag = soup.find("script", {"id": "js_variables"})
 
