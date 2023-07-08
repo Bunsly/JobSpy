@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from enum import Enum
-from ..jobs import JobResponse, JobPost
+from ..jobs import JobResponse
 
 
 class Site(Enum):
@@ -10,16 +10,15 @@ class Site(Enum):
 
 
 class ScraperInput(BaseModel):
-    site: Site
-
     location: str
     search_term: str
 
-    page: int = None
+    page: int = 1
 
 
 class Scraper:  #: to be used as a child class
     def __init__(self, site: Site):
         self.site = site
 
-    def scrape(self, scraper_input: ScraperInput) -> JobResponse: ...
+    def scrape(self, scraper_input: ScraperInput) -> JobResponse:
+        ...
