@@ -4,18 +4,19 @@ from enum import Enum
 
 
 class JobType(Enum):
-    FULL_TIME = 'full_time'
-    PART_TIME = 'part_time'
-    CONTRACT = 'contract'
-    INTERNSHIP = 'internship'
+    FULL_TIME = "full_time"
+    PART_TIME = "part_time"
+    CONTRACT = "contract"
+    INTERNSHIP = "internship"
+    TEMPORARY = "temporary"
 
 
 class CompensationInterval(Enum):
-    ANNUAL = 'annual'
-    MONTHLY = 'monthly'
-    WEEKLY = 'weekly'
-    DAILY = 'daily'
-    HOURLY = 'hourly'
+    YEARLY = "yearly"
+    MONTHLY = "monthly"
+    WEEKLY = "weekly"
+    DAILY = "daily"
+    HOURLY = "hourly"
 
 
 class Location(BaseModel):
@@ -30,12 +31,12 @@ class Compensation(BaseModel):
     interval: CompensationInterval
     min_amount: int
     max_amount: int
-    currency: str
+    currency: str = None
 
 
 class DeliveryEnum(Enum):
-    EMAIL = 'email'
-    URL = 'url'
+    EMAIL = "email"
+    URL = "url"
 
 
 class Delivery(BaseModel):
@@ -45,20 +46,19 @@ class Delivery(BaseModel):
 
 class JobPost(BaseModel):
     title: str
-    description: str
+    description: str = None
     company_name: str
-    industry: str
+    industry: str = None
     location: Location
     job_type: JobType
-    compensation: Compensation
+    compensation: Compensation = None
     date_posted: datetime
     delivery: Delivery = None
 
 
 class JobResponse(BaseModel):
-    jobs: list[JobPost]
-
     job_count: int
-
-    page: int
+    page: int = 1
     total_pages: int
+
+    jobs: list[JobPost]
