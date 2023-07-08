@@ -1,12 +1,13 @@
 import json
 import re
-import math
+from math import ceil
 
 import tls_client
 from bs4 import BeautifulSoup
 
-from .. import Scraper, ScraperInput, Site
-from ...jobs import *
+from api.core.scrapers import Scraper, ScraperInput, Site
+from api.core.jobs import *
+from api.core.utils import handle_response
 
 
 class IndeedScraper(Scraper):
@@ -28,14 +29,15 @@ class IndeedScraper(Scraper):
         }
 
         response = session.get(self.url, params=params)
-        if response.status_code != 200:
-            return {"message": f"Error - Status Code: {response.status_code}"}
+        success, result = handle_response(response)
+        if not success:
+            return result
 
         soup = BeautifulSoup(response.content, "html.parser")
 
         jobs = IndeedScraper.parse_jobs(soup)
         total_num_jobs = IndeedScraper.total_jobs(soup)
-        total_pages = math.ceil(total_num_jobs / 15)
+        total_pages = ceil(total_num_jobs / 15)
 
         job_list: list[JobPost] = []
         # page_number = jobs["metaData"]["mosaicProviderJobCardsModel"]["pageNumber"]
@@ -75,7 +77,6 @@ class IndeedScraper(Scraper):
                 title=job["normTitle"],
                 description=first_li.text if first_li else None,
                 company_name=job["company"],
-                industry=None,
                 location=Location(
                     city=job["jobLocationCity"],
                     state=job["jobLocationState"],
