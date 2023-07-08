@@ -6,17 +6,11 @@ from enum import Enum
 class JobType(Enum):
     FULL_TIME = "full_time"
     PART_TIME = "part_time"
-    CONTRACT = "contract"
+    CONTRACT = "contractor"
     INTERNSHIP = "internship"
     TEMPORARY = "temporary"
-
-
-class CompensationInterval(Enum):
-    YEARLY = "yearly"
-    MONTHLY = "monthly"
-    WEEKLY = "weekly"
-    DAILY = "daily"
-    HOURLY = "hourly"
+    PER_DIEM = "per_diem"
+    NIGHTS = "nights"
 
 
 class Location(BaseModel):
@@ -27,11 +21,19 @@ class Location(BaseModel):
     address: str = None
 
 
+class CompensationInterval(Enum):
+    YEARLY = "yearly"
+    MONTHLY = "monthly"
+    WEEKLY = "weekly"
+    DAILY = "daily"
+    HOURLY = "hourly"
+
+
 class Compensation(BaseModel):
     interval: CompensationInterval
-    min_amount: int
-    max_amount: int
-    currency: str = None
+    min_amount: float
+    max_amount: float
+    currency: str = "US"
 
 
 class DeliveryEnum(Enum):
@@ -48,9 +50,8 @@ class JobPost(BaseModel):
     title: str
     description: str = None
     company_name: str
-    industry: str = None
     location: Location
-    job_type: JobType
+    job_type: JobType = None
     compensation: Compensation = None
     date_posted: datetime
     delivery: Delivery = None
