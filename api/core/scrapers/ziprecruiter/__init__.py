@@ -4,13 +4,14 @@ from urllib.parse import urlparse, parse_qs
 import tls_client
 from bs4 import BeautifulSoup
 
-from .. import Scraper, ScraperInput, Site
-from ...jobs import *
+from api.core.scrapers import Scraper, ScraperInput, Site
+from api.core.jobs import *
+from api.core.utils import handle_response
 
 
 class ZipRecruiterScraper(Scraper):
     def __init__(self):
-        site = Site(Site.INDEED)
+        site = Site(Site.ZIP_RECRUITER)
         super().__init__(site)
 
         self.url = "https://www.ziprecruiter.com/jobs-search"
@@ -23,14 +24,15 @@ class ZipRecruiterScraper(Scraper):
         params = {
             "search": scraper_input.search_term,
             "location": scraper_input.location,
-            "page": min(scraper_input.page if scraper_input.page else 1, 10),
+            "page": min(scraper_input.page, 10),
         }
 
         response = session.get(
             self.url, headers=ZipRecruiterScraper.headers(), params=params
         )
-        if response.status_code != 200:
-            return {"message": f"Error - Status Code: {response.status_code}"}
+        success, result = handle_response(response)
+        if not success:
+            return result
 
         html_string = response.content
         soup = BeautifulSoup(html_string, "html.parser")
@@ -57,7 +59,6 @@ class ZipRecruiterScraper(Scraper):
                 title=title,
                 description=description,
                 company_name=company,
-                industry=None,
                 location=ZipRecruiterScraper.get_location(job),
                 job_type=job_type,
                 compensation=ZipRecruiterScraper.get_compensation(job),
