@@ -6,10 +6,10 @@ from fastapi.security import OAuth2PasswordBearer
 
 from settings import *
 from api.core.users import TokenData
-from .db_utils import UserInDB, get_user
+from api.auth.db_utils import UserInDB, get_user
 
 load_dotenv()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 
 def create_access_token(data: dict):
