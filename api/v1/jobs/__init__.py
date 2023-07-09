@@ -9,9 +9,7 @@ router = APIRouter(prefix="/jobs")
 
 
 @router.get("/")
-async def scrape_jobs(
-    site_type: str, search_term: str, location: str, page: int = None
-):
+async def scrape_jobs(site_type: str, search_term: str, location: str, page: int = 1):
     job_response = {"message": "site type not found"}
 
     scraper_dict = {
