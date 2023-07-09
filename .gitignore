@@ -1,5 +1,5 @@
 /.idea
-.DS_Store
+**/.DS_Store
 /venv/
 /ven/
 **/__pycache__/

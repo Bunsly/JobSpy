@@ -78,6 +78,9 @@ class LinkedInScraper(Scraper):
 
     @staticmethod
     def get_location(metadata_card):
+        location = Location(
+            country="US",
+        )
         if metadata_card is not None:
             location_tag = metadata_card.find(
                 "span", class_="job-search-card__location"

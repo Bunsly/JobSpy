@@ -15,8 +15,8 @@ class JobType(Enum):
 
 class Location(BaseModel):
     country: str
-    city: str
-    state: str
+    city: str = None
+    state: str = None
     postal_code: str = None
     address: str = None
 
