@@ -2,11 +2,11 @@ import json
 from urllib.parse import urlparse, parse_qs
 
 import tls_client
+from fastapi import HTTPException, status
 from bs4 import BeautifulSoup
 
 from api.core.scrapers import Scraper, ScraperInput, Site
 from api.core.jobs import *
-from api.core.utils import handle_response
 
 
 class ZipRecruiterScraper(Scraper):
@@ -30,9 +30,11 @@ class ZipRecruiterScraper(Scraper):
         response = session.get(
             self.url, headers=ZipRecruiterScraper.headers(), params=params
         )
-        success, result = handle_response(response)
-        if not success:
-            return result
+        if response.status_code != status.HTTP_200_OK:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Response returned {response.status_code} {response.reason}",
+            )
 
         html_string = response.content
         soup = BeautifulSoup(html_string, "html.parser")

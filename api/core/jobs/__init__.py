@@ -48,12 +48,12 @@ class Delivery(BaseModel):
 
 class JobPost(BaseModel):
     title: str
-    description: str = None
     company_name: str
     location: Location
+    description: str = None
     job_type: JobType = None
     compensation: Compensation = None
-    date_posted: datetime
+    date_posted: datetime = None
     delivery: Delivery = None
 
 

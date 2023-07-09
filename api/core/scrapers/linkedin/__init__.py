@@ -2,10 +2,10 @@ from math import ceil
 
 import requests
 from bs4 import BeautifulSoup
+from fastapi import HTTPException, status
 
 from api.core.scrapers import Scraper, ScraperInput, Site
 from api.core.jobs import *
-from api.core.utils import handle_response
 
 
 class LinkedInScraper(Scraper):
@@ -20,9 +20,11 @@ class LinkedInScraper(Scraper):
 
         self.url = f"{self.url}/{scraper_input.search_term}-jobs"
         response = requests.get(self.url, params=params)
-        success, result = handle_response(response)
-        if not success:
-            return result
+        if response.status_code != status.HTTP_200_OK:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Response returned {response.status_code} {response.reason}",
+            )
 
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -35,24 +37,23 @@ class LinkedInScraper(Scraper):
             job_url = job_url_tag["href"] if job_url_tag else "N/A"
 
             job_info = job_card.find("div", class_="base-search-card__info")
-            if job_info is not None:
-                title_tag = job_info.find("h3", class_="base-search-card__title")
-                title = title_tag.text.strip() if title_tag else "N/A"
+            if job_info is None:
+                continue
+            title_tag = job_info.find("h3", class_="base-search-card__title")
+            title = title_tag.text.strip() if title_tag else "N/A"
 
-                company_tag = job_info.find("a", class_="hidden-nested-link")
-                company = company_tag.text.strip() if company_tag else "N/A"
+            company_tag = job_info.find("a", class_="hidden-nested-link")
+            company = company_tag.text.strip() if company_tag else "N/A"
 
-                metadata_card = job_info.find(
-                    "div", class_="base-search-card__metadata"
-                )
-                location: Location = LinkedInScraper.get_location(metadata_card)
+            metadata_card = job_info.find("div", class_="base-search-card__metadata")
+            location: Location = LinkedInScraper.get_location(metadata_card)
 
-                datetime_tag = metadata_card.find(
-                    "time", class_="job-search-card__listdate"
-                )
-                if datetime_tag:
-                    datetime_str = datetime_tag["datetime"]
-                    date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
+            datetime_tag = metadata_card.find(
+                "time", class_="job-search-card__listdate"
+            )
+            if datetime_tag:
+                datetime_str = datetime_tag["datetime"]
+                date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
 
             job_post = JobPost(
                 title=title,
