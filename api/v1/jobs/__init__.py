@@ -1,11 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from api.core.scrapers.indeed import IndeedScraper
 from api.core.scrapers.ziprecruiter import ZipRecruiterScraper
 from api.core.scrapers.linkedin import LinkedInScraper
 from api.core.scrapers import ScraperInput, Site
+from ...v1.token.auth import get_active_current_user
 
-router = APIRouter(prefix="/jobs")
+router = APIRouter(prefix="/jobs", dependencies=[Depends(get_active_current_user)])
 
 SCRAPER_MAPPING = {
     Site.LINKEDIN: LinkedInScraper,
