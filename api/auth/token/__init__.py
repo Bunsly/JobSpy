@@ -2,17 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from api.core.users import Token
-from .db_utils import authenticate_user
-from .auth import create_access_token
+from api.auth.db_utils import authenticate_user
+from api.auth.auth_utils import create_access_token
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-router = APIRouter(prefix="/token")
+router = APIRouter(prefix="/token", tags=["token"])
 
 
 @router.post("/", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
-    if user is None:
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
