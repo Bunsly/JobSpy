@@ -16,8 +16,10 @@ class LinkedInScraper(Scraper):
         self.url = "https://www.linkedin.com/jobs"
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
+        current_page = 0
+
         params = {
-            "pageNum": scraper_input.page - 1,
+            "pageNum": current_page,
             "location": scraper_input.location,
             "distance": scraper_input.distance,
         }
@@ -58,6 +60,8 @@ class LinkedInScraper(Scraper):
             if datetime_tag:
                 datetime_str = datetime_tag["datetime"]
                 date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
+            else:
+                date_posted = None
 
             job_post = JobPost(
                 title=title,
@@ -74,9 +78,11 @@ class LinkedInScraper(Scraper):
         job_count = int("".join(filter(str.isdigit, job_count_text)))
         total_pages = ceil(job_count / 25)
         job_response = JobResponse(
+            success=True,
+
             jobs=job_list,
             job_count=job_count,
-            page=scraper_input.page,
+            page=current_page + 1,
             total_pages=total_pages,
         )
         return job_response
