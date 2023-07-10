@@ -10,9 +10,12 @@ class Site(Enum):
 
 
 class ScraperInput(BaseModel):
-    location: str
+    site_type: Site
+
     search_term: str
+    location: str
     distance: int = 25
+
     results_wanted: int = 15  #: TODO: implement
 
 
