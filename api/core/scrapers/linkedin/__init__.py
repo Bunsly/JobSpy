@@ -26,10 +26,12 @@ class LinkedInScraper(Scraper):
 
         self.url = f"{self.url}/{scraper_input.search_term}-jobs"
         response = requests.get(self.url, params=params)
+
         if response.status_code != status.HTTP_200_OK:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Response returned {response.status_code} {response.reason}",
+            return JobResponse(
+                success=False,
+                error=f"Response returned {response.status_code}",
+                http_response_code=response.status_code
             )
 
         soup = BeautifulSoup(response.text, "html.parser")
