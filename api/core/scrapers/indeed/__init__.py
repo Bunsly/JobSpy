@@ -10,6 +10,10 @@ from api.core.jobs import *
 from api.core.scrapers import Scraper, ScraperInput, Site
 
 
+class ParsingException(Exception):
+    pass
+
+
 class IndeedScraper(Scraper):
     def __init__(self):
         site = Site(Site.INDEED)
@@ -25,7 +29,7 @@ class IndeedScraper(Scraper):
             "q": scraper_input.search_term,
             "l": scraper_input.location,
             "filter": 0,
-            "start": 0 if scraper_input.page is None else (scraper_input.page - 1) * 10,
+            "start": 0,
             "radius": scraper_input.distance,
         }
 
@@ -38,12 +42,25 @@ class IndeedScraper(Scraper):
 
         soup = BeautifulSoup(response.content, "html.parser")
 
-        jobs = IndeedScraper.parse_jobs(soup)
+        try:
+            jobs = IndeedScraper.parse_jobs(soup)
+        except ParsingException:
+            return JobResponse(
+                success=False,
+                error="Failed to parse jobs.",
+            )
+
         total_num_jobs = IndeedScraper.total_jobs(soup)
         total_pages = ceil(total_num_jobs / 15)
 
         job_list: list[JobPost] = []
-        # page_number = jobs["metaData"]["mosaicProviderJobCardsModel"]["pageNumber"]
+        if not jobs.get('metaData', {}).get("mosaicProviderJobCardsModel", {}).get("results"):
+            return JobResponse(
+                success=False,
+                error="No jobs found",
+            )
+
+        page_number = jobs["metaData"]["mosaicProviderJobCardsModel"]["pageNumber"]
         for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]:
             snippet_html = BeautifulSoup(job["snippet"], "html.parser")
 
@@ -94,9 +111,10 @@ class IndeedScraper(Scraper):
             job_list.append(job_post)
 
         job_response = JobResponse(
+            success=True,
             jobs=job_list,
             job_count=total_num_jobs,
-            page=scraper_input.page,
+            page=page_number,
             total_pages=total_pages,
         )
         return job_response
@@ -116,7 +134,14 @@ class IndeedScraper(Scraper):
         return None
 
     @staticmethod
-    def parse_jobs(soup):
+    def parse_jobs(soup: BeautifulSoup) -> dict:
+        """
+        Parses the jobs from the soup object
+
+        :param soup:
+        :return: jobs
+        """
+
         script_tag = IndeedScraper.find_mosaic_script(soup)
 
         if script_tag:
@@ -130,11 +155,9 @@ class IndeedScraper(Scraper):
                 jobs = json.loads(m.group(1).strip())
                 return jobs
             else:
-                return {"message": f"Could not find mosaic provider job cards data"}
+                raise ParsingException("Could not find mosaic provider job cards data")
         else:
-            return {
-                "message": f"Could not find a script tag containing mosaic provider data"
-            }
+            raise ParsingException("Could not find a script tag containing mosaic provider data")
 
     @staticmethod
     def total_jobs(soup):
