@@ -21,10 +21,12 @@ class ZipRecruiterScraper(Scraper):
             client_identifier="chrome112", random_tls_extension_order=True
         )
 
+        current_page = 1
+
         params = {
             "search": scraper_input.search_term,
             "location": scraper_input.location,
-            "page": min(scraper_input.page, 10),
+            "page": min(current_page, 10),
             "radius": scraper_input.distance,
         }
 
@@ -80,6 +82,7 @@ class ZipRecruiterScraper(Scraper):
         job_count = job_count.replace(",", "")
         total_pages = data["maxPages"]
         job_response = JobResponse(
+            success=True,
             jobs=job_list,
             job_count=job_count,
             page=params["page"],
@@ -87,6 +90,7 @@ class ZipRecruiterScraper(Scraper):
         )
         return job_response
 
+    @staticmethod
     def get_interval(interval_str):
         interval_alias = {"annually": CompensationInterval.YEARLY}
         interval_str = interval_str.lower()
@@ -97,7 +101,7 @@ class ZipRecruiterScraper(Scraper):
         return CompensationInterval(interval_str)
 
     @staticmethod
-    def get_date_posted(job: str):
+    def get_date_posted(job: BeautifulSoup):
         button = job.find(
             "button", {"class": "action_input save_job zrs_btn_secondary_200"}
         )
@@ -107,7 +111,7 @@ class ZipRecruiterScraper(Scraper):
         return params.get("posted_time", [None])[0]
 
     @staticmethod
-    def get_compensation(job):
+    def get_compensation(job: BeautifulSoup):
         pay_element = job.find("li", {"class": "perk_item perk_pay"})
         if pay_element is None:
             return None
@@ -116,7 +120,7 @@ class ZipRecruiterScraper(Scraper):
         return ZipRecruiterScraper.create_compensation_object(pay)
 
     @staticmethod
-    def get_location(job):
+    def get_location(job: BeautifulSoup):
         location_string = job.find("a", {"class": "company_location"}).text.strip()
         parts = location_string.split(", ")
         city, state = parts
