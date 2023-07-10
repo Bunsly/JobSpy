@@ -37,7 +37,7 @@ class IndeedScraper(Scraper):
         if response.status_code != status.HTTP_200_OK:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Response returned {response.status_code} {response.reason}",
+                detail=f"Response returned {response.status_code}",
             )
 
         soup = BeautifulSoup(response.content, "html.parser")
