@@ -16,7 +16,11 @@ class LinkedInScraper(Scraper):
         self.url = "https://www.linkedin.com/jobs"
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
-        params = {"pageNum": scraper_input.page - 1, "location": scraper_input.location}
+        params = {
+            "pageNum": scraper_input.page - 1,
+            "location": scraper_input.location,
+            "distance": scraper_input.distance,
+        }
 
         self.url = f"{self.url}/{scraper_input.search_term}-jobs"
         response = requests.get(self.url, params=params)
