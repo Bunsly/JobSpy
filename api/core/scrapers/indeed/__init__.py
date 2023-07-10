@@ -26,6 +26,7 @@ class IndeedScraper(Scraper):
             "l": scraper_input.location,
             "filter": 0,
             "start": 0 if scraper_input.page is None else (scraper_input.page - 1) * 10,
+            "radius": scraper_input.distance,
         }
 
         response = session.get(self.url, params=params)
