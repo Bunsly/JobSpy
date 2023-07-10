@@ -25,6 +25,7 @@ class ZipRecruiterScraper(Scraper):
             "search": scraper_input.search_term,
             "location": scraper_input.location,
             "page": min(scraper_input.page, 10),
+            "radius": scraper_input.distance,
         }
 
         response = session.get(
