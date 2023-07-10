@@ -37,7 +37,6 @@ class ZipRecruiterScraper(Scraper):
             return JobResponse(
                 success=False,
                 error=f"Response returned {response.status_code}",
-                http_response_code=response.status_code
             )
 
         html_string = response.content
