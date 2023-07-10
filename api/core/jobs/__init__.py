@@ -58,8 +58,12 @@ class JobPost(BaseModel):
 
 
 class JobResponse(BaseModel):
-    job_count: int
-    page: int = 1
-    total_pages: int
+    success: bool
+    error: str = None
 
-    jobs: list[JobPost]
+    total_pages: int = None
+    job_count: int = None
+
+    page: int = None
+    jobs: list[JobPost] = []
+
