@@ -14,7 +14,7 @@ SCRAPER_MAPPING = {
 }
 
 
-@router.get("/", response_model=JobResponse)
+@router.post("/", response_model=JobResponse)
 async def scrape_jobs(
     scraper_input: ScraperInput
 ):
