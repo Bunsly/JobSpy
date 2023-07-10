@@ -26,7 +26,7 @@ class LinkedInScraper(Scraper):
 
         self.url = f"{self.url}/{scraper_input.search_term}-jobs"
         response = requests.get(self.url, params=params)
-        response.status_code = 300
+
         if response.status_code != status.HTTP_200_OK:
             return JobResponse(
                 success=False,
