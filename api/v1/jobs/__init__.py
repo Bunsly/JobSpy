@@ -15,11 +15,15 @@ SCRAPER_MAPPING = {
 
 
 @router.get("/")
-async def scrape_jobs(site_type: Site, search_term: str, location: str, page: int = 1):
+async def scrape_jobs(
+    site_type: Site, search_term: str, location: str, page: int = 1, distance: int = 25
+):
     scraper_class = SCRAPER_MAPPING[site_type]
     scraper = scraper_class()
 
-    scraper_input = ScraperInput(search_term=search_term, location=location, page=page)
+    scraper_input = ScraperInput(
+        search_term=search_term, location=location, page=page, distance=distance
+    )
     job_response = scraper.scrape(scraper_input)
 
     return job_response

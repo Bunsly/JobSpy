@@ -12,6 +12,7 @@ class Site(Enum):
 class ScraperInput(BaseModel):
     location: str
     search_term: str
+    distance: int = 25
 
     page: int = 1
 
