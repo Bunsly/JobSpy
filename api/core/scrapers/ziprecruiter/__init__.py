@@ -26,12 +26,8 @@ class ZipRecruiterScraper(Scraper):
         self.seen_urls = set()
 
     def scrape_page(
-            self,
-            scraper_input: ScraperInput,
-            page: int,
-            session: tls_client.Session
+        self, scraper_input: ScraperInput, page: int, session: tls_client.Session
     ) -> tuple[list[JobPost], int | None]:
-
         """
         Scrapes a page of ZipRecruiter for jobs with scraper_input criteria
         :param scraper_input:
@@ -140,9 +136,8 @@ class ZipRecruiterScraper(Scraper):
 
             with ThreadPoolExecutor(max_workers=10) as executor:
                 futures: list[Future] = [
-                    executor.submit(
-                        self.scrape_page, scraper_input, page, session
-                    ) for page in range(2, pages_to_process + 1)
+                    executor.submit(self.scrape_page, scraper_input, page, session)
+                    for page in range(2, pages_to_process + 1)
                 ]
 
                 for future in futures:
@@ -159,7 +154,7 @@ class ZipRecruiterScraper(Scraper):
         #: note: this does not handle if the results are more or less than the results_wanted
 
         if len(job_list) > scraper_input.results_wanted:
-            job_list = job_list[:scraper_input.results_wanted]
+            job_list = job_list[: scraper_input.results_wanted]
 
         job_response = JobResponse(
             success=True,

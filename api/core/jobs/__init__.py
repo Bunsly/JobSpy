@@ -57,15 +57,13 @@ class JobResponse(BaseModel):
     success: bool
     error: str = None
 
-    jobs: list[JobPost] = []
-
     total_results: int = None
     returned_results: int = None
+
+    jobs: list[JobPost] = []
 
     @validator("returned_results")
     def set_returned_results(cls, v, values):
         if v is None and values.get("jobs"):
             return len(values["jobs"])
         return v
-
-
