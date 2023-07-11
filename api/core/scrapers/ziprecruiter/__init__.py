@@ -7,13 +7,8 @@ from fastapi import status
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, Future
 
-from api.core.scrapers import Scraper, ScraperInput, Site
+from api.core.scrapers import Scraper, ScraperInput, Site, StatusException
 from api.core.jobs import *
-
-
-class StatusException(Exception):
-    def __init__(self, status_code: int):
-        self.status_code = status_code
 
 
 class ZipRecruiterScraper(Scraper):
