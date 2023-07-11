@@ -5,9 +5,15 @@ from urllib.parse import urlparse, parse_qs
 import tls_client
 from fastapi import status
 from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor, Future
 
 from api.core.scrapers import Scraper, ScraperInput, Site
 from api.core.jobs import *
+
+
+class StatusException(Exception):
+    def __init__(self, status_code: int):
+        self.status_code = status_code
 
 
 class ZipRecruiterScraper(Scraper):
@@ -19,6 +25,97 @@ class ZipRecruiterScraper(Scraper):
         super().__init__(site)
 
         self.url = "https://www.ziprecruiter.com/jobs-search"
+        self.jobs_per_page = 20
+        self.seen_urls = set()
+
+    def scrape_page(self, scraper_input: ScraperInput, page: int, session: tls_client.Session) -> list[JobPost]:
+        """
+        Scrapes a page of ZipRecruiter for jobs with scraper_input criteria
+        :param scraper_input:
+        :param page:
+        :param session:
+        :return:
+        """
+
+        job_list = []
+
+        job_type_value = None
+        if scraper_input.job_type:
+            if scraper_input.job_type.value == "fulltime":
+                job_type_value = "full_time"
+            elif scraper_input.job_type.value == "parttime":
+                job_type_value = "part_time"
+            else:
+                job_type_value = scraper_input.job_type.value
+
+        params = {
+            "search": scraper_input.search_term,
+            "location": scraper_input.location,
+            "radius": scraper_input.distance,
+            "refine_by_location_type": "only_remote"
+            if scraper_input.is_remote
+            else None,
+            "refine_by_employment": f"employment_type:employment_type:{job_type_value}"
+            if job_type_value
+            else None,
+            "page": page,
+        }
+
+        response = session.get(
+            self.url, headers=ZipRecruiterScraper.headers(), params=params
+        )
+
+        if response.status_code != status.HTTP_200_OK:
+            raise StatusException(response.status_code)
+
+        html_string = response.content
+        soup = BeautifulSoup(html_string, "html.parser")
+        if page == 1:
+            script_tag = soup.find("script", {"id": "js_variables"})
+            data = json.loads(script_tag.string)
+
+            #: job_count = int(data["totalJobCount"].replace(",", ""))
+
+        job_posts = soup.find_all("div", {"class": "job_content"})
+
+        for job in job_posts:
+            job_url = job.find("a", {"class": "job_link"})["href"]
+            if job_url in self.seen_urls:
+                continue
+
+            title = job.find("h2", {"class": "title"}).text
+            company = job.find("a", {"class": "company_name"}).text.strip()
+            description = job.find("p", {"class": "job_snippet"}).text.strip()
+            job_type_element = job.find("li", {"class": "perk_item perk_type"})
+
+            if job_type_element:
+                job_type_text = (
+                    job_type_element.text.strip()
+                    .lower()
+                    .replace("-", "")
+                    .replace(" ", "")
+                )
+                if job_type_text == "contractor":
+                    job_type_text = "contract"
+                job_type = JobType(job_type_text)
+            else:
+                job_type = None
+
+            date_posted = ZipRecruiterScraper.get_date_posted(job)
+
+            job_post = JobPost(
+                title=title,
+                description=description,
+                company_name=company,
+                location=ZipRecruiterScraper.get_location(job),
+                job_type=job_type,
+                compensation=ZipRecruiterScraper.get_compensation(job),
+                date_posted=date_posted,
+                job_url=job_url,
+            )
+            job_list.append(job_post)
+
+        return job_list
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -29,110 +126,37 @@ class ZipRecruiterScraper(Scraper):
         session = tls_client.Session(
             client_identifier="chrome112", random_tls_extension_order=True
         )
+        pages_to_process = scraper_input.results_wanted // self.jobs_per_page
 
-        job_list: list[JobPost] = []
-        page = 1
-        processed_jobs, job_count = 0, 0
-        seen_urls = set()
-        while len(job_list) < scraper_input.results_wanted:
-            job_type_value = None
-            if scraper_input.job_type:
-                if scraper_input.job_type.value == "fulltime":
-                    job_type_value = "full_time"
-                elif scraper_input.job_type.value == "parttime":
-                    job_type_value = "part_time"
-                else:
-                    job_type_value = scraper_input.job_type.value
+        try:
+            #: get first page to initialize session
+            job_list = self.scrape_page(scraper_input, 1, session)
 
-            params = {
-                "search": scraper_input.search_term,
-                "location": scraper_input.location,
-                "radius": scraper_input.distance,
-                "refine_by_location_type": "only_remote"
-                if scraper_input.is_remote
-                else None,
-                "refine_by_employment": f"employment_type:employment_type:{job_type_value}"
-                if job_type_value
-                else None,
-                "page": page,
-            }
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures: list[Future] = [
+                    executor.submit(
+                        self.scrape_page, scraper_input, page, session
+                    ) for page in range(2, pages_to_process + 1)
+                ]
 
-            response = session.get(
-                self.url, headers=ZipRecruiterScraper.headers(), params=params
+                for future in futures:
+                    result = future.result()
+
+                    job_list += result
+
+        except StatusException as e:
+            return JobResponse(
+                success=False,
+                error=f"ZipRecruiter returned status code {e.status_code}",
             )
-            print(response.url)
-            if response.status_code != status.HTTP_200_OK:
-                return JobResponse(
-                    success=False,
-                    error=f"Response returned {response.status_code}",
-                )
 
-            html_string = response.content
-            soup = BeautifulSoup(html_string, "html.parser")
-            if page == 1:
-                script_tag = soup.find("script", {"id": "js_variables"})
-                data = json.loads(script_tag.string)
+        #: note: this does not handle if the results are more or less than the results_wanted
 
-                job_count = data["totalJobCount"]
-                job_count = int(job_count.replace(",", ""))
-
-            job_posts = soup.find_all("div", {"class": "job_content"})
-
-            for job in job_posts:
-                processed_jobs += 1
-                job_url = job.find("a", {"class": "job_link"})["href"]
-                if job_url in seen_urls:
-                    continue
-                title = job.find("h2", {"class": "title"}).text
-                company = job.find("a", {"class": "company_name"}).text.strip()
-                description = job.find("p", {"class": "job_snippet"}).text.strip()
-                job_type_element = job.find("li", {"class": "perk_item perk_type"})
-
-                if job_type_element:
-                    job_type_text = (
-                        job_type_element.text.strip()
-                        .lower()
-                        .replace("-", "")
-                        .replace(" ", "")
-                    )
-                    if job_type_text == "contractor":
-                        job_type_text = "contract"
-                    job_type = JobType(job_type_text)
-                else:
-                    job_type = None
-
-                date_posted = ZipRecruiterScraper.get_date_posted(job)
-
-                job_post = JobPost(
-                    title=title,
-                    description=description,
-                    company_name=company,
-                    location=ZipRecruiterScraper.get_location(job),
-                    job_type=job_type,
-                    compensation=ZipRecruiterScraper.get_compensation(job),
-                    date_posted=date_posted,
-                    job_url=job_url,
-                )
-                job_list.append(job_post)
-                if (
-                    len(job_list) >= scraper_input.results_wanted
-                    or processed_jobs >= job_count
-                ):
-                    break
-
-            if (
-                len(job_list) >= scraper_input.results_wanted
-                or processed_jobs >= job_count
-            ):
-                break
-
-            page += 1
-
-        job_list = job_list[: scraper_input.results_wanted]
+        #: job_list = job_list[:scraper_input.results_wanted]
         job_response = JobResponse(
             success=True,
             jobs=job_list,
-            job_count=job_count,
+            job_count=len(job_list),
         )
         return job_response
 
