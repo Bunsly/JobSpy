@@ -2,7 +2,7 @@ from typing import Union
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 
 class JobType(Enum):
@@ -57,5 +57,15 @@ class JobResponse(BaseModel):
     success: bool
     error: str = None
 
-    job_count: int = None
     jobs: list[JobPost] = []
+
+    total_results: int = None
+    returned_results: int = None
+
+    @validator("returned_results")
+    def set_returned_results(cls, v, values):
+        if v is None and values.get("jobs"):
+            return len(values["jobs"])
+        return v
+
+

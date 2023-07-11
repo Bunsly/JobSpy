@@ -1,5 +1,5 @@
 import json
-from typing import Optional
+from typing import Optional, Tuple, List
 from urllib.parse import urlparse, parse_qs
 
 import tls_client
@@ -7,8 +7,10 @@ from fastapi import status
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, Future
 
+from api.core.jobs import JobPost
 from api.core.scrapers import Scraper, ScraperInput, Site, StatusException
 from api.core.jobs import *
+import math
 
 
 class ZipRecruiterScraper(Scraper):
@@ -23,13 +25,19 @@ class ZipRecruiterScraper(Scraper):
         self.jobs_per_page = 20
         self.seen_urls = set()
 
-    def scrape_page(self, scraper_input: ScraperInput, page: int, session: tls_client.Session) -> list[JobPost]:
+    def scrape_page(
+            self,
+            scraper_input: ScraperInput,
+            page: int,
+            session: tls_client.Session
+    ) -> tuple[list[JobPost], int | None]:
+
         """
         Scrapes a page of ZipRecruiter for jobs with scraper_input criteria
         :param scraper_input:
         :param page:
         :param session:
-        :return:
+        :return: jobs found on page, total number of jobs found for search
         """
 
         job_list = []
@@ -69,7 +77,9 @@ class ZipRecruiterScraper(Scraper):
             script_tag = soup.find("script", {"id": "js_variables"})
             data = json.loads(script_tag.string)
 
-            #: job_count = int(data["totalJobCount"].replace(",", ""))
+            job_count = int(data["totalJobCount"].replace(",", ""))
+        else:
+            job_count = None
 
         job_posts = soup.find_all("div", {"class": "job_content"})
 
@@ -110,7 +120,7 @@ class ZipRecruiterScraper(Scraper):
             )
             job_list.append(job_post)
 
-        return job_list
+        return job_list, job_count
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -121,11 +131,12 @@ class ZipRecruiterScraper(Scraper):
         session = tls_client.Session(
             client_identifier="chrome112", random_tls_extension_order=True
         )
-        pages_to_process = scraper_input.results_wanted // self.jobs_per_page
+
+        pages_to_process = math.ceil(scraper_input.results_wanted / self.jobs_per_page)
 
         try:
             #: get first page to initialize session
-            job_list = self.scrape_page(scraper_input, 1, session)
+            job_list, total_results = self.scrape_page(scraper_input, 1, session)
 
             with ThreadPoolExecutor(max_workers=10) as executor:
                 futures: list[Future] = [
@@ -135,9 +146,9 @@ class ZipRecruiterScraper(Scraper):
                 ]
 
                 for future in futures:
-                    result = future.result()
+                    jobs, _ = future.result()
 
-                    job_list += result
+                    job_list += jobs
 
         except StatusException as e:
             return JobResponse(
@@ -147,11 +158,13 @@ class ZipRecruiterScraper(Scraper):
 
         #: note: this does not handle if the results are more or less than the results_wanted
 
-        #: job_list = job_list[:scraper_input.results_wanted]
+        if len(job_list) > scraper_input.results_wanted:
+            job_list = job_list[:scraper_input.results_wanted]
+
         job_response = JobResponse(
             success=True,
             jobs=job_list,
-            job_count=len(job_list),
+            total_results=total_results,
         )
         return job_response
 
