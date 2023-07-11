@@ -37,25 +37,16 @@ class Compensation(BaseModel):
     currency: str = "US"
 
 
-class DeliveryEnum(Enum):
-    EMAIL = "email"
-    URL = "url"
-
-
-class Delivery(BaseModel):
-    method: DeliveryEnum
-    value: str
-
-
 class JobPost(BaseModel):
     title: str
     company_name: str
+    job_url: str
     location: Location
+
     description: str = None
     job_type: JobType = None
     compensation: Compensation = None
     date_posted: datetime = None
-    delivery: Delivery = None
 
 
 class JobResponse(BaseModel):

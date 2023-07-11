@@ -38,8 +38,11 @@ class ZipRecruiterScraper(Scraper):
             params = {
                 "search": scraper_input.search_term,
                 "location": scraper_input.location,
-                "page": page,
                 "radius": scraper_input.distance,
+                "refine_by_location_type": "only_remote"
+                if scraper_input.is_remote
+                else None,
+                "page": page,
             }
 
             response = session.get(
@@ -88,7 +91,7 @@ class ZipRecruiterScraper(Scraper):
                     job_type=job_type,
                     compensation=ZipRecruiterScraper.get_compensation(job),
                     date_posted=date_posted,
-                    delivery=Delivery(method=DeliveryEnum.URL, value=job_url),
+                    job_url=job_url,
                 )
                 job_list.append(job_post)
                 if len(job_list) >= scraper_input.results_wanted:

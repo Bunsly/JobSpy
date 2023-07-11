@@ -11,10 +11,11 @@ class Site(Enum):
 
 class ScraperInput(BaseModel):
     site_type: Site
-
     search_term: str
-    location: str
-    distance: int = 25
+
+    location: str = None
+    distance: int = None
+    is_remote: bool = False
 
     results_wanted: int = 15
 
