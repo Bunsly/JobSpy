@@ -1,6 +1,6 @@
 import re
 import json
-from typing import Optional
+from typing import Optional, Tuple, List
 
 import tls_client
 from bs4 import BeautifulSoup
@@ -8,7 +8,11 @@ from bs4.element import Tag
 from fastapi import status
 
 from api.core.jobs import *
-from api.core.scrapers import Scraper, ScraperInput, Site
+from api.core.jobs import JobPost
+from api.core.scrapers import Scraper, ScraperInput, Site, StatusException
+
+from concurrent.futures import ThreadPoolExecutor, Future
+import math
 
 
 class ParsingException(Exception):
@@ -25,6 +29,108 @@ class IndeedScraper(Scraper):
         self.url = "https://www.indeed.com/jobs"
         self.job_url = "https://www.indeed.com/viewjob?jk="
 
+        self.jobs_per_page = 15
+        self.seen_urls = set()
+
+    def scrape_page(
+        self, scraper_input: ScraperInput, page: int, session: tls_client.Session
+    ) -> tuple[list[JobPost], int]:
+        """
+        Scrapes a page of Indeed for jobs with scraper_input criteria
+        :param scraper_input:
+        :param page:
+        :param session:
+        :return: jobs found on page, total number of jobs found for search
+        """
+
+        job_list = []
+
+        params = {
+            "q": scraper_input.search_term,
+            "location": scraper_input.location,
+            "radius": scraper_input.distance,
+            "filter": 0,
+            "start": 0 + page * 10,
+        }
+        sc_values = []
+        if scraper_input.is_remote:
+            sc_values.append("attr(DSQF7)")
+        if scraper_input.job_type:
+            sc_values.append("jt({})".format(scraper_input.job_type.value))
+
+        if sc_values:
+            params["sc"] = "0kf:" + "".join(sc_values) + ";"
+        response = session.get(self.url, params=params)
+
+        if (
+            response.status_code != status.HTTP_200_OK
+            and response.status_code != status.HTTP_307_TEMPORARY_REDIRECT
+        ):
+            raise StatusException(response.status_code)
+
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        jobs = IndeedScraper.parse_jobs(
+            soup
+        )  #: can raise exception, handled by main scrape function
+        total_num_jobs = IndeedScraper.total_jobs(soup)
+
+        if (
+            not jobs.get("metaData", {})
+            .get("mosaicProviderJobCardsModel", {})
+            .get("results")
+        ):
+            raise Exception("No jobs found.")
+
+        for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]:
+            job_url = f'{self.job_url}{job["jobkey"]}'
+            if job_url in self.seen_urls:
+                continue
+
+            snippet_html = BeautifulSoup(job["snippet"], "html.parser")
+
+            extracted_salary = job.get("extractedSalary")
+            compensation = None
+            if extracted_salary:
+                salary_snippet = job.get("salarySnippet")
+                currency = salary_snippet.get("currency") if salary_snippet else None
+                interval = (extracted_salary.get("type"),)
+                if isinstance(interval, tuple):
+                    interval = interval[0]
+
+                interval = interval.upper()
+                if interval in CompensationInterval.__members__:
+                    compensation = Compensation(
+                        interval=CompensationInterval[interval],
+                        min_amount=extracted_salary.get("max"),
+                        max_amount=extracted_salary.get("min"),
+                        currency=currency,
+                    )
+
+            job_type = IndeedScraper.get_job_type(job)
+            timestamp_seconds = job["pubDate"] / 1000
+            date_posted = datetime.fromtimestamp(timestamp_seconds)
+
+            first_li = snippet_html.find("li")
+            job_post = JobPost(
+                title=job["normTitle"],
+                description=first_li.text if first_li else None,
+                company_name=job["company"],
+                location=Location(
+                    city=job.get("jobLocationCity"),
+                    state=job.get("jobLocationState"),
+                    postal_code=job.get("jobLocationPostal"),
+                    country="US",
+                ),
+                job_type=job_type,
+                compensation=compensation,
+                date_posted=date_posted,
+                job_url=job_url,
+            )
+            job_list.append(job_post)
+
+        return job_list, total_num_jobs
+
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
         Scrapes Indeed for jobs with scraper_input criteria
@@ -35,125 +141,48 @@ class IndeedScraper(Scraper):
             client_identifier="chrome112", random_tls_extension_order=True
         )
 
-        job_list: list[JobPost] = []
-        page = 0
-        processed_jobs, total_num_jobs = 0, 0
-        seen_urls = set()
-        while len(job_list) < scraper_input.results_wanted:
-            params = {
-                "q": scraper_input.search_term,
-                "location": scraper_input.location,
-                "radius": scraper_input.distance,
-                "filter": 0,
-                "start": 0 + page * 10,
-            }
-            sc_values = []
-            if scraper_input.is_remote:
-                sc_values.append("attr(DSQF7)")
-            if scraper_input.job_type:
-                sc_values.append("jt({})".format(scraper_input.job_type.value))
+        pages_to_process = (
+            math.ceil(scraper_input.results_wanted / self.jobs_per_page) - 1
+        )
 
-            if sc_values:
-                params["sc"] = "0kf:" + "".join(sc_values) + ";"
-            response = session.get(self.url, params=params)
+        try:
+            #: get first page to initialize session
+            job_list, total_results = self.scrape_page(scraper_input, 0, session)
 
-            if (
-                response.status_code != status.HTTP_200_OK
-                and response.status_code != status.HTTP_307_TEMPORARY_REDIRECT
-            ):
-                return JobResponse(
-                    success=False,
-                    error=f"Response returned {response.status_code}",
-                )
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures: list[Future] = [
+                    executor.submit(self.scrape_page, scraper_input, page, session)
+                    for page in range(1, pages_to_process + 1)
+                ]
 
-            soup = BeautifulSoup(response.content, "html.parser")
+                for future in futures:
+                    jobs, _ = future.result()
 
-            try:
-                jobs = IndeedScraper.parse_jobs(soup)
-            except ParsingException:
-                return JobResponse(
-                    success=False,
-                    error="Failed to parse jobs.",
-                )
+                    job_list += jobs
 
-            total_num_jobs = IndeedScraper.total_jobs(soup)
+        except StatusException as e:
+            return JobResponse(
+                success=False,
+                error=f"Indeed returned status code {e.status_code}",
+            )
+        except ParsingException as e:
+            return JobResponse(
+                success=False,
+                error=f"Indeed failed to parse response: {e}",
+            )
+        except Exception as e:
+            return JobResponse(
+                success=False,
+                error=f"Indeed failed to scrape: {e}",
+            )
 
-            if (
-                not jobs.get("metaData", {})
-                .get("mosaicProviderJobCardsModel", {})
-                .get("results")
-            ):
-                return JobResponse(
-                    success=False,
-                    error="No jobs found",
-                )
+        if len(job_list) > scraper_input.results_wanted:
+            job_list = job_list[: scraper_input.results_wanted]
 
-            for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]:
-                processed_jobs += 1
-                job_url = f'{self.job_url}{job["jobkey"]}'
-                if job_url in seen_urls:
-                    continue
-                snippet_html = BeautifulSoup(job["snippet"], "html.parser")
-
-                extracted_salary = job.get("extractedSalary")
-                compensation = None
-                if extracted_salary:
-                    salary_snippet = job.get("salarySnippet")
-                    currency = (
-                        salary_snippet.get("currency") if salary_snippet else None
-                    )
-                    interval = (extracted_salary.get("type"),)
-                    if isinstance(interval, tuple):
-                        interval = interval[0]
-
-                    interval = interval.upper()
-                    if interval in CompensationInterval.__members__:
-                        compensation = Compensation(
-                            interval=CompensationInterval[interval],
-                            min_amount=extracted_salary.get("max"),
-                            max_amount=extracted_salary.get("min"),
-                            currency=currency,
-                        )
-
-                job_type = IndeedScraper.get_job_type(job)
-                timestamp_seconds = job["pubDate"] / 1000
-                date_posted = datetime.fromtimestamp(timestamp_seconds)
-
-                first_li = snippet_html.find("li")
-                job_post = JobPost(
-                    title=job["normTitle"],
-                    description=first_li.text if first_li else None,
-                    company_name=job["company"],
-                    location=Location(
-                        city=job.get("jobLocationCity"),
-                        state=job.get("jobLocationState"),
-                        postal_code=job.get("jobLocationPostal"),
-                        country="US",
-                    ),
-                    job_type=job_type,
-                    compensation=compensation,
-                    date_posted=date_posted,
-                    job_url=job_url,
-                )
-                job_list.append(job_post)
-                if (
-                    len(job_list) >= scraper_input.results_wanted
-                    or processed_jobs >= total_num_jobs
-                ):
-                    break
-
-            if (
-                len(job_list) >= scraper_input.results_wanted
-                or processed_jobs >= total_num_jobs
-            ):
-                break
-            page += 1
-
-        job_list = job_list[: scraper_input.results_wanted]
         job_response = JobResponse(
             success=True,
             jobs=job_list,
-            job_count=total_num_jobs,
+            total_results=total_results,
         )
         return job_response
 

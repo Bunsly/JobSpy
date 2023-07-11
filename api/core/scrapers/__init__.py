@@ -1,6 +1,11 @@
 from ..jobs import *
 
 
+class StatusException(Exception):
+    def __init__(self, status_code: int):
+        self.status_code = status_code
+
+
 class Site(Enum):
     LINKEDIN = "linkedin"
     INDEED = "indeed"

@@ -131,7 +131,7 @@ class LinkedInScraper(Scraper):
         job_response = JobResponse(
             success=True,
             jobs=job_list,
-            job_count=job_count,
+            total_results=job_count,
         )
         return job_response
 
