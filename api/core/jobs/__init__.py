@@ -11,6 +11,7 @@ class JobType(Enum):
     TEMPORARY = "temporary"
     PER_DIEM = "per_diem"
     NIGHTS = "nights"
+    OTHER = "other"
 
 
 class Location(BaseModel):
@@ -61,9 +62,5 @@ class JobResponse(BaseModel):
     success: bool
     error: str = None
 
-    total_pages: int = None
     job_count: int = None
-
-    page: int = None
     jobs: list[JobPost] = []
-
