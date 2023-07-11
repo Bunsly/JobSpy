@@ -211,9 +211,16 @@ class ZipRecruiterScraper(Scraper):
         :param job:
         :return: location
         """
-        location_string = job.find("a", {"class": "company_location"}).text.strip()
-        parts = location_string.split(", ")
-        city, state = parts
+        location_link = job.find("a", {"class": "company_location"})
+        if location_link is not None:
+            location_string = location_link.text.strip()
+            parts = location_string.split(", ")
+            if len(parts) == 2:
+                city, state = parts
+            else:
+                city, state = None, None
+        else:
+            city, state = None, None
         return Location(
             country="US",
             city=city,
