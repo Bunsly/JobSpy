@@ -17,7 +17,8 @@ class LinkedInScraper(Scraper):
         site = Site(Site.LINKEDIN)
         super().__init__(site)
 
-        self.url = "https://www.linkedin.com/jobs"
+        self.url = "https://www.linkedin.com/jobs/search/"
+        self.job_url = "https://www.linkedin.com/jobs/view/"
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -32,12 +33,13 @@ class LinkedInScraper(Scraper):
         with requests.Session() as session:
             while len(job_list) < scraper_input.results_wanted:
                 params = {
-                    "pageNum": page,
+                    "keywords": scraper_input.search_term,
                     "location": scraper_input.location,
                     "distance": scraper_input.distance,
+                    "f_WT": 2 if scraper_input.is_remote else None,
+                    "pageNum": page,
                 }
 
-                self.url = f"{self.url}/{scraper_input.search_term}-jobs"
                 response = session.get(self.url, params=params, allow_redirects=True)
 
                 if response.status_code != status.HTTP_200_OK:
@@ -58,8 +60,11 @@ class LinkedInScraper(Scraper):
                     "div",
                     class_="base-card relative w-full hover:no-underline focus:no-underline base-card--link base-search-card base-search-card--link job-search-card",
                 ):
-                    job_url_tag = job_card.find("a", class_="base-card__full-link")
-                    job_url = job_url_tag["href"] if job_url_tag else "N/A"
+                    data_entity_urn = job_card.get("data-entity-urn", "")
+                    job_id = (
+                        data_entity_urn.split(":")[-1] if data_entity_urn else "N/A"
+                    )
+                    job_url = f"{self.job_url}{job_id}"
                     if job_url in seen_urls:
                         continue
                     seen_urls.add(job_url)
@@ -91,7 +96,7 @@ class LinkedInScraper(Scraper):
                         company_name=company,
                         location=location,
                         date_posted=date_posted,
-                        delivery=Delivery(method=DeliveryEnum.URL, value=job_url),
+                        job_url=job_url,
                     )
                     job_list.append(job_post)
                     if len(job_list) >= scraper_input.results_wanted:

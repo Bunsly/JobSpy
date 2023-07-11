@@ -23,6 +23,7 @@ class IndeedScraper(Scraper):
         site = Site(Site.INDEED)
         super().__init__(site)
         self.url = "https://www.indeed.com/jobs"
+        self.job_url = "https://www.indeed.com/viewjob?jk="
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -41,14 +42,18 @@ class IndeedScraper(Scraper):
         while len(job_list) < scraper_input.results_wanted:
             params = {
                 "q": scraper_input.search_term,
-                "l": scraper_input.location,
+                "location": scraper_input.location,
+                "radius": scraper_input.distance,
+                "sc": "0kf:attr(DSQF7);" if scraper_input.is_remote else None,
                 "filter": 0,
                 "start": 0 + page * 10,
-                "radius": scraper_input.distance,
             }
 
             response = session.get(self.url, params=params)
 
+            if response.status_code == 307:
+                new_url = response.headers["Location"]
+                response = session.get(new_url)
             if response.status_code != status.HTTP_200_OK:
                 return JobResponse(
                     success=False,
@@ -78,7 +83,7 @@ class IndeedScraper(Scraper):
                 )
 
             for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]:
-                job_url = job["thirdPartyApplyUrl"]
+                job_url = f'{self.job_url}{job["jobkey"]}'
                 if job_url in seen_urls:
                     continue
                 snippet_html = BeautifulSoup(job["snippet"], "html.parser")
@@ -104,10 +109,6 @@ class IndeedScraper(Scraper):
                         )
 
                 job_type = IndeedScraper.get_job_type(job)
-                if job.get("thirdPartyApplyUrl"):
-                    delivery = Delivery(method=DeliveryEnum.URL, value=job_url)
-                else:
-                    delivery = None
                 timestamp_seconds = job["pubDate"] / 1000
                 date_posted = datetime.fromtimestamp(timestamp_seconds)
 
@@ -117,15 +118,15 @@ class IndeedScraper(Scraper):
                     description=first_li.text if first_li else None,
                     company_name=job["company"],
                     location=Location(
-                        city=job["jobLocationCity"],
-                        state=job["jobLocationState"],
+                        city=job.get("jobLocationCity"),
+                        state=job.get("jobLocationState"),
                         postal_code=job.get("jobLocationPostal"),
                         country="US",
                     ),
                     job_type=job_type,
                     compensation=compensation,
                     date_posted=date_posted,
-                    delivery=delivery,
+                    job_url=job_url,
                 )
                 job_list.append(job_post)
                 if len(job_list) >= scraper_input.results_wanted:
