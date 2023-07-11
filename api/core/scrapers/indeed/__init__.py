@@ -33,12 +33,8 @@ class IndeedScraper(Scraper):
         self.seen_urls = set()
 
     def scrape_page(
-            self,
-            scraper_input: ScraperInput,
-            page: int,
-            session: tls_client.Session
+        self, scraper_input: ScraperInput, page: int, session: tls_client.Session
     ) -> tuple[list[JobPost], int]:
-
         """
         Scrapes a page of Indeed for jobs with scraper_input criteria
         :param scraper_input:
@@ -67,22 +63,24 @@ class IndeedScraper(Scraper):
         response = session.get(self.url, params=params)
 
         if (
-                response.status_code != status.HTTP_200_OK
-                and response.status_code != status.HTTP_307_TEMPORARY_REDIRECT
+            response.status_code != status.HTTP_200_OK
+            and response.status_code != status.HTTP_307_TEMPORARY_REDIRECT
         ):
             raise StatusException(response.status_code)
 
         soup = BeautifulSoup(response.content, "html.parser")
 
-        jobs = IndeedScraper.parse_jobs(soup)  #: can raise exception, handled by main scrape function
+        jobs = IndeedScraper.parse_jobs(
+            soup
+        )  #: can raise exception, handled by main scrape function
         total_num_jobs = IndeedScraper.total_jobs(soup)
 
         if (
-                not jobs.get("metaData", {})
-                        .get("mosaicProviderJobCardsModel", {})
-                        .get("results")
+            not jobs.get("metaData", {})
+            .get("mosaicProviderJobCardsModel", {})
+            .get("results")
         ):
-            raise Exception('No jobs found.')
+            raise Exception("No jobs found.")
 
         for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]:
             job_url = f'{self.job_url}{job["jobkey"]}'
@@ -95,9 +93,7 @@ class IndeedScraper(Scraper):
             compensation = None
             if extracted_salary:
                 salary_snippet = job.get("salarySnippet")
-                currency = (
-                    salary_snippet.get("currency") if salary_snippet else None
-                )
+                currency = salary_snippet.get("currency") if salary_snippet else None
                 interval = (extracted_salary.get("type"),)
                 if isinstance(interval, tuple):
                     interval = interval[0]
@@ -145,7 +141,9 @@ class IndeedScraper(Scraper):
             client_identifier="chrome112", random_tls_extension_order=True
         )
 
-        pages_to_process = math.ceil(scraper_input.results_wanted / self.jobs_per_page) - 1
+        pages_to_process = (
+            math.ceil(scraper_input.results_wanted / self.jobs_per_page) - 1
+        )
 
         try:
             #: get first page to initialize session
@@ -153,9 +151,8 @@ class IndeedScraper(Scraper):
 
             with ThreadPoolExecutor(max_workers=10) as executor:
                 futures: list[Future] = [
-                    executor.submit(
-                        self.scrape_page, scraper_input, page, session
-                    ) for page in range(1, pages_to_process + 1)
+                    executor.submit(self.scrape_page, scraper_input, page, session)
+                    for page in range(1, pages_to_process + 1)
                 ]
 
                 for future in futures:
@@ -180,7 +177,7 @@ class IndeedScraper(Scraper):
             )
 
         if len(job_list) > scraper_input.results_wanted:
-            job_list = job_list[:scraper_input.results_wanted]
+            job_list = job_list[: scraper_input.results_wanted]
 
         job_response = JobResponse(
             success=True,
@@ -224,9 +221,9 @@ class IndeedScraper(Scraper):
             script_tags = soup.find_all("script")
             for tag in script_tags:
                 if (
-                        tag.string
-                        and "mosaic.providerData" in tag.string
-                        and "mosaic-provider-jobcards" in tag.string
+                    tag.string
+                    and "mosaic.providerData" in tag.string
+                    and "mosaic-provider-jobcards" in tag.string
                 ):
                     return tag
             return None
