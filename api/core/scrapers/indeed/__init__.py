@@ -1,6 +1,6 @@
 import re
 import json
-from typing import Optional
+from typing import Optional, Tuple, List
 
 import tls_client
 from bs4 import BeautifulSoup
@@ -8,9 +8,11 @@ from bs4.element import Tag
 from fastapi import status
 
 from api.core.jobs import *
+from api.core.jobs import JobPost
 from api.core.scrapers import Scraper, ScraperInput, Site, StatusException
 
 from concurrent.futures import ThreadPoolExecutor, Future
+import math
 
 
 class ParsingException(Exception):
@@ -30,7 +32,21 @@ class IndeedScraper(Scraper):
         self.jobs_per_page = 15
         self.seen_urls = set()
 
-    def scrape_page(self, scraper_input: ScraperInput, page: int, session: tls_client.Session) -> list[JobPost]:
+    def scrape_page(
+            self,
+            scraper_input: ScraperInput,
+            page: int,
+            session: tls_client.Session
+    ) -> tuple[list[JobPost], int]:
+
+        """
+        Scrapes a page of Indeed for jobs with scraper_input criteria
+        :param scraper_input:
+        :param page:
+        :param session:
+        :return: jobs found on page, total number of jobs found for search
+        """
+
         job_list = []
 
         params = {
@@ -59,8 +75,7 @@ class IndeedScraper(Scraper):
         soup = BeautifulSoup(response.content, "html.parser")
 
         jobs = IndeedScraper.parse_jobs(soup)  #: can raise exception, handled by main scrape function
-
-        #: total_num_jobs = IndeedScraper.total_jobs(soup)  #: for now
+        total_num_jobs = IndeedScraper.total_jobs(soup)
 
         if (
                 not jobs.get("metaData", {})
@@ -118,7 +133,7 @@ class IndeedScraper(Scraper):
             )
             job_list.append(job_post)
 
-        return job_list
+        return job_list, total_num_jobs
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -130,11 +145,11 @@ class IndeedScraper(Scraper):
             client_identifier="chrome112", random_tls_extension_order=True
         )
 
-        pages_to_process = scraper_input.results_wanted // self.jobs_per_page
+        pages_to_process = math.ceil(scraper_input.results_wanted / self.jobs_per_page) - 1
 
         try:
             #: get first page to initialize session
-            job_list = self.scrape_page(scraper_input, 0, session)
+            job_list, total_results = self.scrape_page(scraper_input, 0, session)
 
             with ThreadPoolExecutor(max_workers=10) as executor:
                 futures: list[Future] = [
@@ -144,9 +159,9 @@ class IndeedScraper(Scraper):
                 ]
 
                 for future in futures:
-                    result = future.result()
+                    jobs, _ = future.result()
 
-                    job_list += result
+                    job_list += jobs
 
         except StatusException as e:
             return JobResponse(
@@ -164,11 +179,13 @@ class IndeedScraper(Scraper):
                 error=f"Indeed failed to scrape: {e}",
             )
 
-        #: job_list = job_list[: scraper_input.results_wanted]
+        if len(job_list) > scraper_input.results_wanted:
+            job_list = job_list[:scraper_input.results_wanted]
+
         job_response = JobResponse(
             success=True,
             jobs=job_list,
-            job_count=len(job_list),
+            total_results=total_results,
         )
         return job_response
 
