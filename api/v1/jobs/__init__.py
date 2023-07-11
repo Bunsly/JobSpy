@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
 from api.core.scrapers.indeed import IndeedScraper
 from api.core.scrapers.ziprecruiter import ZipRecruiterScraper
@@ -15,9 +15,7 @@ SCRAPER_MAPPING = {
 
 
 @router.post("/", response_model=JobResponse)
-async def scrape_jobs(
-    scraper_input: ScraperInput
-):
+async def scrape_jobs(scraper_input: ScraperInput):
     scraper_class = SCRAPER_MAPPING[scraper_input.site_type]
     scraper = scraper_class()
 

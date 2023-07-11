@@ -1,8 +1,9 @@
 import json
+from typing import Optional
 from urllib.parse import urlparse, parse_qs
 
 import tls_client
-from fastapi import HTTPException, status
+from fastapi import status
 from bs4 import BeautifulSoup
 
 from api.core.scrapers import Scraper, ScraperInput, Site
@@ -11,87 +12,111 @@ from api.core.jobs import *
 
 class ZipRecruiterScraper(Scraper):
     def __init__(self):
+        """
+        Initializes LinkedInScraper with the ZipRecruiter job search url
+        """
         site = Site(Site.ZIP_RECRUITER)
         super().__init__(site)
 
         self.url = "https://www.ziprecruiter.com/jobs-search"
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
+        """
+        Scrapes ZipRecruiter for jobs with scraper_input criteria
+        :param scraper_input:
+        :return: job_response
+        """
         session = tls_client.Session(
             client_identifier="chrome112", random_tls_extension_order=True
         )
 
-        current_page = 1
-
-        params = {
-            "search": scraper_input.search_term,
-            "location": scraper_input.location,
-            "page": min(current_page, 10),
-            "radius": scraper_input.distance,
-        }
-
-        response = session.get(
-            self.url, headers=ZipRecruiterScraper.headers(), params=params
-        )
-        if response.status_code != status.HTTP_200_OK:
-            return JobResponse(
-                success=False,
-                error=f"Response returned {response.status_code}",
-            )
-
-        html_string = response.content
-        soup = BeautifulSoup(html_string, "html.parser")
-
-        job_posts = soup.find_all("div", {"class": "job_content"})
-
         job_list: list[JobPost] = []
-        for job in job_posts:
-            title = job.find("h2", {"class": "title"}).text
-            company = job.find("a", {"class": "company_name"}).text.strip()
-            description = job.find("p", {"class": "job_snippet"}).text.strip()
-            job_type_element = job.find("li", {"class": "perk_item perk_type"})
-            job_type = (
-                job_type_element.text.strip().lower().replace("-", "_")
-                if job_type_element
-                else None
-            )
+        page = 1
+        processed_jobs, job_count = 0, 0
+        seen_urls = set()
+        while len(job_list) < scraper_input.results_wanted:
+            params = {
+                "search": scraper_input.search_term,
+                "location": scraper_input.location,
+                "page": page,
+                "radius": scraper_input.distance,
+            }
 
-            url = job.find("a", {"class": "job_link"})["href"]
-            date_posted = ZipRecruiterScraper.get_date_posted(job)
-
-            job_type = job_type.replace(" ", "_") if job_type else job_type
-            job_post = JobPost(
-                title=title,
-                description=description,
-                company_name=company,
-                location=ZipRecruiterScraper.get_location(job),
-                job_type=job_type,
-                compensation=ZipRecruiterScraper.get_compensation(job),
-                date_posted=date_posted,
-                delivery=Delivery(method=DeliveryEnum.URL, value=url),
+            response = session.get(
+                self.url, headers=ZipRecruiterScraper.headers(), params=params
             )
-            job_list.append(job_post)
-            if len(job_list) > 20:
+            if response.status_code != status.HTTP_200_OK:
+                return JobResponse(
+                    success=False,
+                    error=f"Response returned {response.status_code}",
+                )
+
+            html_string = response.content
+            soup = BeautifulSoup(html_string, "html.parser")
+            if page == 1:
+                script_tag = soup.find("script", {"id": "js_variables"})
+                data = json.loads(script_tag.string)
+
+                job_count = data["totalJobCount"]
+                job_count = int(job_count.replace(",", ""))
+
+            job_posts = soup.find_all("div", {"class": "job_content"})
+
+            for job in job_posts:
+                processed_jobs += 1
+                job_url = job.find("a", {"class": "job_link"})["href"]
+                if job_url in seen_urls:
+                    continue
+                title = job.find("h2", {"class": "title"}).text
+                company = job.find("a", {"class": "company_name"}).text.strip()
+                description = job.find("p", {"class": "job_snippet"}).text.strip()
+                job_type_element = job.find("li", {"class": "perk_item perk_type"})
+                job_type = (
+                    job_type_element.text.strip().lower().replace("-", "_")
+                    if job_type_element
+                    else None
+                )
+
+                date_posted = ZipRecruiterScraper.get_date_posted(job)
+
+                job_type = job_type.replace(" ", "_") if job_type else job_type
+                job_post = JobPost(
+                    title=title,
+                    description=description,
+                    company_name=company,
+                    location=ZipRecruiterScraper.get_location(job),
+                    job_type=job_type,
+                    compensation=ZipRecruiterScraper.get_compensation(job),
+                    date_posted=date_posted,
+                    delivery=Delivery(method=DeliveryEnum.URL, value=job_url),
+                )
+                job_list.append(job_post)
+                if len(job_list) >= scraper_input.results_wanted:
+                    break
+
+            if (
+                len(job_list) >= scraper_input.results_wanted
+                or processed_jobs >= job_count
+            ):
                 break
 
-        script_tag = soup.find("script", {"id": "js_variables"})
+            page += 1
 
-        data = json.loads(script_tag.string)
-
-        job_count = data["totalJobCount"]
-        job_count = job_count.replace(",", "")
-        total_pages = data["maxPages"]
+        job_list = job_list[: scraper_input.results_wanted]
         job_response = JobResponse(
             success=True,
             jobs=job_list,
             job_count=job_count,
-            page=params["page"],
-            total_pages=total_pages,
         )
         return job_response
 
     @staticmethod
-    def get_interval(interval_str):
+    def get_interval(interval_str: str):
+        """
+         Maps the interval alias to its appropriate CompensationInterval.
+        :param interval_str
+        :return: CompensationInterval
+        """
         interval_alias = {"annually": CompensationInterval.YEARLY}
         interval_str = interval_str.lower()
 
@@ -101,7 +126,12 @@ class ZipRecruiterScraper(Scraper):
         return CompensationInterval(interval_str)
 
     @staticmethod
-    def get_date_posted(job: BeautifulSoup):
+    def get_date_posted(job: BeautifulSoup) -> Optional[str]:
+        """
+        Extracts the date a job was posted
+        :param job
+        :return: date the job was posted or None
+        """
         button = job.find(
             "button", {"class": "action_input save_job zrs_btn_secondary_200"}
         )
@@ -111,16 +141,50 @@ class ZipRecruiterScraper(Scraper):
         return params.get("posted_time", [None])[0]
 
     @staticmethod
-    def get_compensation(job: BeautifulSoup):
+    def get_compensation(job: BeautifulSoup) -> Optional[Compensation]:
+        """
+        Parses the compensation tag from the job BeautifulSoup object
+        :param job
+        :return: Compensation object or None
+        """
         pay_element = job.find("li", {"class": "perk_item perk_pay"})
         if pay_element is None:
             return None
         pay = pay_element.find("div", {"class": "value"}).find("span").text.strip()
 
-        return ZipRecruiterScraper.create_compensation_object(pay)
+        def create_compensation_object(pay_string: str) -> Compensation:
+            """
+            Creates a Compensation object from a pay_string
+            :param pay_string
+            :return: compensation
+            """
+            interval = ZipRecruiterScraper.get_interval(pay_string.split()[-1])
+
+            amounts = []
+            for amount in pay_string.split("to"):
+                amount = amount.replace(",", "").strip("$ ").split(" ")[0]
+                if "K" in amount:
+                    amount = amount.replace("K", "")
+                    amount = float(amount) * 1000
+                else:
+                    amount = float(amount)
+                amounts.append(amount)
+
+            compensation = Compensation(
+                interval=interval, min_amount=min(amounts), max_amount=max(amounts)
+            )
+
+            return compensation
+
+        return create_compensation_object(pay)
 
     @staticmethod
-    def get_location(job: BeautifulSoup):
+    def get_location(job: BeautifulSoup) -> Location:
+        """
+        Extracts the job location from BeatifulSoup object
+        :param job:
+        :return: location
+        """
         location_string = job.find("a", {"class": "company_location"}).text.strip()
         parts = location_string.split(", ")
         city, state = parts
@@ -131,27 +195,11 @@ class ZipRecruiterScraper(Scraper):
         )
 
     @staticmethod
-    def create_compensation_object(pay_string: str):
-        interval = ZipRecruiterScraper.get_interval(pay_string.split()[-1])
-
-        amounts = []
-        for amount in pay_string.split("to"):
-            amount = amount.replace(",", "").strip("$ ").split(" ")[0]
-            if "K" in amount:
-                amount = amount.replace("K", "")
-                amount = float(amount) * 1000
-            else:
-                amount = float(amount)
-            amounts.append(amount)
-
-        compensation = Compensation(
-            interval=interval, min_amount=min(amounts), max_amount=max(amounts)
-        )
-
-        return compensation
-
-    @staticmethod
-    def headers():
+    def headers() -> dict:
+        """
+        Returns headers needed for requests
+        :return: dict - Dictionary containing headers
+        """
         return {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36"
         }
