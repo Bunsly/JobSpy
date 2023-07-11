@@ -44,17 +44,23 @@ class IndeedScraper(Scraper):
                 "q": scraper_input.search_term,
                 "location": scraper_input.location,
                 "radius": scraper_input.distance,
-                "sc": "0kf:attr(DSQF7);" if scraper_input.is_remote else None,
                 "filter": 0,
                 "start": 0 + page * 10,
             }
+            sc_values = []
+            if scraper_input.is_remote:
+                sc_values.append("attr(DSQF7)")
+            if scraper_input.job_type:
+                sc_values.append("jt({})".format(scraper_input.job_type.value))
 
+            if sc_values:
+                params["sc"] = "0kf:" + "".join(sc_values) + ";"
             response = session.get(self.url, params=params)
 
-            if response.status_code == 307:
-                new_url = response.headers["Location"]
-                response = session.get(new_url)
-            if response.status_code != status.HTTP_200_OK:
+            if (
+                response.status_code != status.HTTP_200_OK
+                and response.status_code != status.HTTP_307_TEMPORARY_REDIRECT
+            ):
                 return JobResponse(
                     success=False,
                     error=f"Response returned {response.status_code}",
@@ -150,7 +156,7 @@ class IndeedScraper(Scraper):
     @staticmethod
     def get_job_type(job: dict) -> Optional[JobType]:
         """
-        Parses the job to get JobType
+        Parses the job to get JobTypeIndeed
         :param job:
         :return:
         """

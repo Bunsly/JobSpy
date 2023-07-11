@@ -1,15 +1,18 @@
-from pydantic import BaseModel
+from typing import Union
 from datetime import datetime
 from enum import Enum
 
+from pydantic import BaseModel
+
 
 class JobType(Enum):
-    FULL_TIME = "full_time"
-    PART_TIME = "part_time"
-    CONTRACT = "contractor"
-    INTERNSHIP = "internship"
+    FULL_TIME = "fulltime"
+    PART_TIME = "parttime"
+    CONTRACT = "contract"
     TEMPORARY = "temporary"
-    PER_DIEM = "per_diem"
+    INTERNSHIP = "internship"
+
+    PER_DIEM = "perdiem"
     NIGHTS = "nights"
     OTHER = "other"
 

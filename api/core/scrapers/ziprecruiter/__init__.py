@@ -35,6 +35,15 @@ class ZipRecruiterScraper(Scraper):
         processed_jobs, job_count = 0, 0
         seen_urls = set()
         while len(job_list) < scraper_input.results_wanted:
+            job_type_value = None
+            if scraper_input.job_type:
+                if scraper_input.job_type.value == "fulltime":
+                    job_type_value = "full_time"
+                elif scraper_input.job_type.value == "parttime":
+                    job_type_value = "part_time"
+                else:
+                    job_type_value = scraper_input.job_type.value
+
             params = {
                 "search": scraper_input.search_term,
                 "location": scraper_input.location,
@@ -42,12 +51,16 @@ class ZipRecruiterScraper(Scraper):
                 "refine_by_location_type": "only_remote"
                 if scraper_input.is_remote
                 else None,
+                "refine_by_employment": f"employment_type:employment_type:{job_type_value}"
+                if job_type_value
+                else None,
                 "page": page,
             }
 
             response = session.get(
                 self.url, headers=ZipRecruiterScraper.headers(), params=params
             )
+            print(response.url)
             if response.status_code != status.HTTP_200_OK:
                 return JobResponse(
                     success=False,
@@ -74,15 +87,22 @@ class ZipRecruiterScraper(Scraper):
                 company = job.find("a", {"class": "company_name"}).text.strip()
                 description = job.find("p", {"class": "job_snippet"}).text.strip()
                 job_type_element = job.find("li", {"class": "perk_item perk_type"})
-                job_type = (
-                    job_type_element.text.strip().lower().replace("-", "_")
-                    if job_type_element
-                    else None
-                )
+
+                if job_type_element:
+                    job_type_text = (
+                        job_type_element.text.strip()
+                        .lower()
+                        .replace("-", "")
+                        .replace(" ", "")
+                    )
+                    if job_type_text == "contractor":
+                        job_type_text = "contract"
+                    job_type = JobType(job_type_text)
+                else:
+                    job_type = None
 
                 date_posted = ZipRecruiterScraper.get_date_posted(job)
 
-                job_type = job_type.replace(" ", "_") if job_type else job_type
                 job_post = JobPost(
                     title=title,
                     description=description,

@@ -30,6 +30,17 @@ class LinkedInScraper(Scraper):
         seen_urls = set()
         page, processed_jobs, job_count = 0, 0, 0
 
+        def job_type_code(job_type):
+            mapping = {
+                JobType.FULL_TIME: "F",
+                JobType.PART_TIME: "P",
+                JobType.INTERNSHIP: "I",
+                JobType.CONTRACT: "C",
+                JobType.TEMPORARY: "T",
+            }
+
+            return mapping.get(job_type, "")
+
         with requests.Session() as session:
             while len(job_list) < scraper_input.results_wanted:
                 params = {
@@ -37,6 +48,9 @@ class LinkedInScraper(Scraper):
                     "location": scraper_input.location,
                     "distance": scraper_input.distance,
                     "f_WT": 2 if scraper_input.is_remote else None,
+                    "f_JT": job_type_code(scraper_input.job_type)
+                    if scraper_input.job_type
+                    else None,
                     "pageNum": page,
                 }
 
