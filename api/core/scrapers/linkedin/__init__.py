@@ -74,6 +74,7 @@ class LinkedInScraper(Scraper):
                     "div",
                     class_="base-card relative w-full hover:no-underline focus:no-underline base-card--link base-search-card base-search-card--link job-search-card",
                 ):
+                    processed_jobs += 1
                     data_entity_urn = job_card.get("data-entity-urn", "")
                     job_id = (
                         data_entity_urn.split(":")[-1] if data_entity_urn else "N/A"
@@ -113,7 +114,10 @@ class LinkedInScraper(Scraper):
                         job_url=job_url,
                     )
                     job_list.append(job_post)
-                    if len(job_list) >= scraper_input.results_wanted:
+                    if (
+                        len(job_list) >= scraper_input.results_wanted
+                        or processed_jobs >= job_count
+                    ):
                         break
                 if (
                     len(job_list) >= scraper_input.results_wanted

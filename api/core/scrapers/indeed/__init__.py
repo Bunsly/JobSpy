@@ -89,6 +89,7 @@ class IndeedScraper(Scraper):
                 )
 
             for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]:
+                processed_jobs += 1
                 job_url = f'{self.job_url}{job["jobkey"]}'
                 if job_url in seen_urls:
                     continue
@@ -135,7 +136,10 @@ class IndeedScraper(Scraper):
                     job_url=job_url,
                 )
                 job_list.append(job_post)
-                if len(job_list) >= scraper_input.results_wanted:
+                if (
+                    len(job_list) >= scraper_input.results_wanted
+                    or processed_jobs >= total_num_jobs
+                ):
                     break
 
             if (
