@@ -114,7 +114,10 @@ class ZipRecruiterScraper(Scraper):
                     job_url=job_url,
                 )
                 job_list.append(job_post)
-                if len(job_list) >= scraper_input.results_wanted:
+                if (
+                    len(job_list) >= scraper_input.results_wanted
+                    or processed_jobs >= job_count
+                ):
                     break
 
             if (
