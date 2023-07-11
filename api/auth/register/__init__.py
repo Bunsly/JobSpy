@@ -5,8 +5,14 @@ from api.auth.db_utils import get_user, get_password_hash, create_user
 router = APIRouter(prefix="/register", tags=["register"])
 
 
-@router.post("/")
-async def register_new_user(user: UserCreate):
+@router.post("/", response_model=dict)
+async def register_new_user(user: UserCreate) -> dict:
+    """
+    Creates new user
+    :param user:
+    :raises HTTPException: If the username already exists.
+    :return: A dictionary containing a detail key with a success message.
+    """
     existing_user = get_user(user.username)
     if existing_user is not None:
         raise HTTPException(
@@ -15,7 +21,6 @@ async def register_new_user(user: UserCreate):
         )
 
     hashed_password = get_password_hash(user.password)
-    print(f"Hashed password: {hashed_password}")
     user_create = UserInDB(
         username=user.username,
         email=user.email,
