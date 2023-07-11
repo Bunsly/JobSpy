@@ -1,6 +1,4 @@
-from pydantic import BaseModel
-from enum import Enum
-from ..jobs import JobResponse
+from ..jobs import *
 
 
 class Site(Enum):
@@ -16,6 +14,7 @@ class ScraperInput(BaseModel):
     location: str = None
     distance: int = None
     is_remote: bool = False
+    job_type: JobType = None
 
     results_wanted: int = 15
 
