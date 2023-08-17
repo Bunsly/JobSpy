@@ -52,6 +52,7 @@ class LinkedInScraper(Scraper):
                     if scraper_input.job_type
                     else None,
                     "pageNum": page,
+                    "f_AL": "true" if scraper_input.easy_apply else None,
                 }
 
                 response = session.get(self.url, params=params, allow_redirects=True)

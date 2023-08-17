@@ -20,6 +20,7 @@ class ScraperInput(BaseModel):
     distance: int = None
     is_remote: bool = False
     job_type: JobType = None
+    easy_apply: bool = None  # linkedin
 
     results_wanted: int = 15
 
