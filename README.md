@@ -17,9 +17,9 @@ JobSpy Backend is a RESTful API built with FastAPI that allows users to scrape j
 
 ## Installation
 
-1. Clone this repository.
-2. Install the dependencies with `pip install -r requirements.txt`.
-3. Run the server with `uvicorn main:app --reload`.
+1. Clone this repository
+2. Install the dependencies with `pip install -r requirements.txt`
+3. Run the server with `uvicorn main:app --reload`
 
 ## Usage
 
