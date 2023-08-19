@@ -1,27 +1,60 @@
 # JobSpy Backend
 
-JobSpy Backend is a RESTful API built with FastAPI that allows users to scrape job postings from various job boards such as LinkedIn, Indeed, and ZipRecruiter.
-
+RESTful API built with FastAPI  
+  
 ## Features
 
-- User authentication and token-based authorization
-- Scraping job postings from LinkedIn, Indeed, and ZipRecruiter
-- Detailed job data including title, location, company, and more
-
+- Scrapes job postings from **LinkedIn**, **Indeed**, **ZipRecruiter**
+- Returns jobs with title, location, company, and other data
+- JWT authorization
+  
+![jobspy_backend_demo](https://github.com/JobSpy-ai/backend/assets/78247585/d54d403a-2cac-48c9-97e6-69ffa3fb56f5)
 ## Endpoints
+![image](https://github.com/JobSpy-ai/backend/assets/78247585/dd619564-d7cb-4a93-8937-33e0beb0fb6a)
 
-- `/api/v1/jobs/`: POST endpoint to scrape jobs. Accepts parameters for site_type (job board), search term, location, distance, and results wanted.
-- `/api/auth/token/`: POST endpoint for user authentication. Returns an access token.
-- `/api/auth/register/`: POST endpoint to register a new user.
-- `/health`: GET endpoint for a simple health check of the application.
+### Jobs Endpoint
+
+**Endpoint**: `/api/v1/jobs/`
+
+#### Parameters:
+- **site_type**: str (Required) - Options: `linkedin`, `zip_recruiter`, `indeed`
+- **search_term**: str (Required)
+- **location**: int
+- **distance**: int
+- **job_type**: str - Options: `fulltime`, `parttime`, `internship`, `contract`
+- **is_remote**: bool
+- **results_wanted**: int
+- **easy_apply**: bool (Only for LinkedIn)
+
+## .env for auth
+
+The auth uses [supabase](https://supabase.com). Create a project with a `users` table and disable RLS.
+<img src="https://github.com/JobSpy-ai/backend/assets/78247585/d6ebf4f3-962f-4a91-b484-d610bd3f15fc" width="500">
+
+Add these two environment variables:
+
+- `SUPABASE_URL`: go to project settings -> API -> Project URL  
+- `SUPABASE_KEY`: go to project settings -> API -> service_role secret
+- `JWT_SECRET_KEY` - type `openssl rand -hex 32` in terminal to create a 32 byte secret key
 
 ## Installation
 
 1. Clone this repository
 2. Install the dependencies with `pip install -r requirements.txt`
-3. Run the server with `uvicorn main:app --reload`
+3. Add `.env` with variables from above
+4. Run the server with `uvicorn main:app --reload`
 
 ## Usage
 
-Visit http://localhost:8000/docs in your web browser to see the automatic interactive API documentation.
+Visit [http://localhost:8000/docs](http://localhost:8000/docs) in your web browser to see the interactive API documentation.
+
+## FAQ
+
+### I'm getting a 404 error when querying LinkedIn. What can I do?
+
+LinkedIn's API is generally more strict. If you encounter a 404 error, try reducing the `results_wanted` parameter. There may not be enough results.
+
+### I'm having issues with my queries. What should I do?
+
+Broadening your filters can often help. For instance, if you're using very specific criteria, try making them more general to retrieve results more reliably. If it still persists, submit an issue.
 
