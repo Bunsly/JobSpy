@@ -5,7 +5,7 @@ from api.core.scrapers.ziprecruiter import ZipRecruiterScraper
 from api.core.scrapers.linkedin import LinkedInScraper
 from api.core.scrapers import ScraperInput, Site, JobResponse
 
-router = APIRouter(prefix="/jobs")
+router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 SCRAPER_MAPPING = {
     Site.LINKEDIN: LinkedInScraper,

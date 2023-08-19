@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from api.core.users import UserCreate, UserInDB
 from api.auth.db_utils import get_user, get_password_hash, create_user
 
-router = APIRouter(prefix="/register", tags=["register"])
+router = APIRouter(prefix="/register")
 
 
 @router.post("/", response_model=dict)

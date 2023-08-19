@@ -5,7 +5,7 @@ from api import router as api_router
 
 app = FastAPI(
     title="JobSpy Backend",
-    description="Endpoints for job board scrapers",
+    description="Endpoints for job boardLinkedIn, Indeed, and ZipRecruiterscrapers",
     version="1.0.0",
 )
 app.include_router(api_router)

@@ -55,6 +55,8 @@ class LinkedInScraper(Scraper):
                     "f_AL": "true" if scraper_input.easy_apply else None,
                 }
 
+                params = {k: v for k, v in params.items() if v is not None}
+                print(params)
                 response = session.get(self.url, params=params, allow_redirects=True)
 
                 if response.status_code != status.HTTP_200_OK:

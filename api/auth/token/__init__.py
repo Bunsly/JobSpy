@@ -5,7 +5,7 @@ from api.core.users import Token
 from api.auth.db_utils import authenticate_user
 from api.auth.auth_utils import create_access_token
 
-router = APIRouter(prefix="/token", tags=["token"])
+router = APIRouter(prefix="/token")
 
 
 @router.post("/", response_model=Token)
