@@ -47,7 +47,7 @@ class IndeedScraper(Scraper):
 
         params = {
             "q": scraper_input.search_term,
-            "location": scraper_input.location,
+            "l": scraper_input.location,
             "radius": scraper_input.distance,
             "filter": 0,
             "start": 0 + page * 10,
