@@ -1,7 +1,5 @@
-# JobSpy Backend
+# JobSpy Scraper
 
-RESTful API built with FastAPI  
-  
 ## Features
 
 - Scrapes job postings from **LinkedIn**, **Indeed**, **ZipRecruiter**
@@ -38,7 +36,7 @@ Add these two environment variables:
 - `JWT_SECRET_KEY` - type `openssl rand -hex 32` in terminal to create a 32 byte secret key
 
 ## Installation
-
+_Python >= 3.10 required_  
 1. Clone this repository
 2. Install the dependencies with `pip install -r requirements.txt`
 3. Add `.env` with variables from above
@@ -46,7 +44,7 @@ Add these two environment variables:
 
 ## Usage
 
-Visit [http://localhost:8000/docs](http://localhost:8000/docs) in your web browser to see the interactive API documentation.
+Visit [http://localhost:8000/docs](http://localhost:8000/docs) to see the interactive API documentation.
 
 ## FAQ
 
@@ -58,3 +56,7 @@ LinkedIn's API is generally more strict. If you encounter a 404 error, try reduc
 
 Broadening your filters can often help. For instance, if you're using very specific criteria, try making them more general to retrieve results more reliably. If it still persists, submit an issue.
 
+### How to remove auth (no .env)?
+Remove this part from `api/v1/__init__.py`  
+  
+![image](https://github.com/cullenwatson/jobspy/assets/78247585/383ca172-cc36-4f89-b26d-c25d9c67bea7)
