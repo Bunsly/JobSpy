@@ -30,7 +30,6 @@
 _Python >= 3.10 required_  
 1. Clone this repository
 2. Install the dependencies with `pip install -r requirements.txt`
-3. Add `.env` with variables from above
 4. Run the server with `uvicorn main:app --reload`
 
 ## Usage
