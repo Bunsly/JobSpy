@@ -48,8 +48,10 @@ If issues still persist, feel free to submit an issue.
 
 Change `AUTH_REQUIRED` in `/settings.py` to `True`
 
-The auth uses [supabase](https://supabase.com). Create a project with a `users` table and disable RLS.
-<img src="https://github.com/JobSpy-ai/backend/assets/78247585/d6ebf4f3-962f-4a91-b484-d610bd3f15fc" width="500">
+The auth uses [supabase](https://supabase.com). Create a project with a `users` table and disable RLS.  
+  
+<img src="https://github.com/cullenwatson/jobspy/assets/78247585/72eb97a7-feae-401a-9f98-210f3c30c604" width="500">
+
 
 Add these three environment variables:
 
