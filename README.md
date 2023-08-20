@@ -25,17 +25,6 @@
 - **results_wanted**: int
 - **easy_apply**: bool (Only for LinkedIn)
 
-## .env for auth
-
-The auth uses [supabase](https://supabase.com). Create a project with a `users` table and disable RLS.
-<img src="https://github.com/JobSpy-ai/backend/assets/78247585/d6ebf4f3-962f-4a91-b484-d610bd3f15fc" width="500">
-
-Add these two environment variables:
-
-- `SUPABASE_URL`: go to project settings -> API -> Project URL  
-- `SUPABASE_KEY`: go to project settings -> API -> service_role secret
-- `JWT_SECRET_KEY` - type `openssl rand -hex 32` in terminal to create a 32 byte secret key
-
 ## Installation
 _Python >= 3.10 required_  
 1. Clone this repository
@@ -49,15 +38,20 @@ Visit [http://localhost:8000/docs](http://localhost:8000/docs) to see the intera
 
 ## FAQ
 
-### I'm getting a 404 error when querying LinkedIn. What can I do?
-
-LinkedIn's API is generally more strict. If you encounter a 404 error, try reducing the `results_wanted` parameter. There may not be enough results.
-
 ### I'm having issues with my queries. What should I do?
 
-Broadening your filters can often help. For instance, if you're using very specific criteria, try making them more general to retrieve results more reliably. If it still persists, submit an issue.
+Broadening your filters can often help. Additionally, try reducing the number of `results_wanted`.  
+If issues still persist, feel free to submit an issue.
 
-### How to remove auth (no .env)?
-Remove this part from `api/v1/__init__.py`  
-  
-![image](https://github.com/cullenwatson/jobspy/assets/78247585/383ca172-cc36-4f89-b26d-c25d9c67bea7)
+### How to enable auth?
+
+Change `AUTH_REQUIRED` in `/settings.py` to `True`
+
+The auth uses [supabase](https://supabase.com). Create a project with a `users` table and disable RLS.
+<img src="https://github.com/JobSpy-ai/backend/assets/78247585/d6ebf4f3-962f-4a91-b484-d610bd3f15fc" width="500">
+
+Add these three environment variables:
+
+- `SUPABASE_URL`: go to project settings -> API -> Project URL  
+- `SUPABASE_KEY`: go to project settings -> API -> service_role secret
+- `JWT_SECRET_KEY` - type `openssl rand -hex 32` in terminal to create a 32 byte secret key
