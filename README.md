@@ -36,7 +36,7 @@ Add these two environment variables:
 - `JWT_SECRET_KEY` - type `openssl rand -hex 32` in terminal to create a 32 byte secret key
 
 ## Installation
-
+_Python >= 3.10 required_  
 1. Clone this repository
 2. Install the dependencies with `pip install -r requirements.txt`
 3. Add `.env` with variables from above
@@ -44,7 +44,7 @@ Add these two environment variables:
 
 ## Usage
 
-Visit [http://localhost:8000/docs](http://localhost:8000/docs) in your web browser to see the interactive API documentation.
+Visit [http://localhost:8000/docs](http://localhost:8000/docs) to see the interactive API documentation.
 
 ## FAQ
 
