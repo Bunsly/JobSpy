@@ -1,7 +1,5 @@
-# JobSpy Backend
+# JobSpy Scraper
 
-RESTful API built with FastAPI  
-  
 ## Features
 
 - Scrapes job postings from **LinkedIn**, **Indeed**, **ZipRecruiter**
