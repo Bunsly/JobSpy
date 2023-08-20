@@ -58,3 +58,6 @@ LinkedIn's API is generally more strict. If you encounter a 404 error, try reduc
 
 Broadening your filters can often help. For instance, if you're using very specific criteria, try making them more general to retrieve results more reliably. If it still persists, submit an issue.
 
+### How to remove auth (no .env)?
+Remove this part from `api/v1/__init__.py`  
+![image](https://github.com/cullenwatson/jobspy/assets/78247585/383ca172-cc36-4f89-b26d-c25d9c67bea7)
