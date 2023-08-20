@@ -6,7 +6,8 @@
 - Returns jobs with title, location, company, and other data
 - JWT authorization
   
-![jobspy_backend_demo](https://github.com/JobSpy-ai/backend/assets/78247585/d54d403a-2cac-48c9-97e6-69ffa3fb56f5)
+![jobspy](https://github.com/cullenwatson/jobspy/assets/78247585/a0dd2154-2ab8-4378-a44e-9d7c51db1293)
+
 ## Endpoints
 ![image](https://github.com/JobSpy-ai/backend/assets/78247585/dd619564-d7cb-4a93-8937-33e0beb0fb6a)
 
