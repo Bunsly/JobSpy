@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "a0aa8829-fd18-47fa-a50d-03c8193adb9a",
+		"_postman_id": "7a1bba1d-9604-4e08-870d-e0a9e8b9bcd2",
 		"name": "JobSpy",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "24144392"
@@ -19,10 +19,19 @@
 						}
 					]
 				},
-				"method": "GET",
+				"method": "POST",
 				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"site_type\": \"linkedin\", // linkedin / indeed / zip_recruiter\r\n    \"search_term\": \"engineer\",\r\n\r\n    // optional\r\n    \"location\": \"tx\",\r\n    \"distance\": 10,\r\n    \"job_type\": \"fulltime\", // fulltime, parttime, internship, contract\r\n    // \"is_remote\": true,\r\n    \"easy_apply\": true, // linkedin only\r\n    \"results_wanted\": 10   \r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
 				"url": {
-					"raw": "http://127.0.0.1:8000/api/v1/jobs?site_type=indeed&search_term=software intern&location=dallas&page=2",
+					"raw": "http://127.0.0.1:8000/api/v1/jobs",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -35,24 +44,6 @@
 						"api",
 						"v1",
 						"jobs"
-					],
-					"query": [
-						{
-							"key": "site_type",
-							"value": "indeed"
-						},
-						{
-							"key": "search_term",
-							"value": "software intern"
-						},
-						{
-							"key": "location",
-							"value": "dallas"
-						},
-						{
-							"key": "page",
-							"value": "2"
-						}
 					]
 				}
 			},
@@ -160,7 +151,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"username\": \"cwatson\",\n    \"email\": \"cgwatson@smu.edu\",\n    \"password\": \"mypass\",\n    \"full_name\": \"cullen watson\"\n}",
+					"raw": "{\n    \"username\": \"cwatson\",\n    \"email\": \"cullen@cullen.ai\",\n    \"password\": \"mypass\",\n    \"full_name\": \"cullen watson\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
