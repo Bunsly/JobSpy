@@ -50,7 +50,7 @@ Change `AUTH_REQUIRED` in `/settings.py` to `True`
 
 The auth uses [supabase](https://supabase.com). Create a project with a `users` table and disable RLS.  
   
-<img src="https://github.com/cullenwatson/jobspy/assets/78247585/72eb97a7-feae-401a-9f98-210f3c30c604" width="500">
+<img src="https://github.com/cullenwatson/jobspy/assets/78247585/03af18e1-5386-49ad-a2cf-d34232d9d747" width="500">
 
 
 Add these three environment variables:
