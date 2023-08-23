@@ -32,8 +32,6 @@
 
 ## Response
 
-Upon successful query, the API will return a JSON object with the following schema:
-
 ### Schema
 
 #### JobResponse
@@ -45,13 +43,13 @@ Upon successful query, the API will return a JSON object with the following sche
 
 #### JobPost
 - **title**: str - Title of the job.
-- **company_name**: str - Company offering the job.
-- **job_url**: str - URL to the job posting.
-- **location**: object - Contains the location details (country, city, state, postal_code, address).
-- **description**: str - Description of the job.
-- **job_type**: str - Type of job (fulltime, parttime, internship, contract).
-- **compensation**: object - Contains compensation details (interval, min_amount, max_amount, currency).
-- **date_posted**: str - The date when the job was posted.
+- **company_name**: str 
+- **job_url**: str 
+- **location**: object - (country, city, state, postal_code, address)
+- **description**: str 
+- **job_type**: str - Options: `fulltime`, `parttime`, `internship`, `contract`
+- **compensation**: object - Contains: `interval`, `min_amount`, `max_amount`, `currency`
+- **date_posted**: str
 
 ### Example
 ![image](https://github.com/cullenwatson/jobspy/assets/78247585/73cb4423-8a53-456a-9da5-9ce7c56d5282)
