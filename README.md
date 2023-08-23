@@ -26,6 +26,10 @@
 - **results_wanted**: int
 - **easy_apply**: bool (Only for LinkedIn)
 
+### Example
+![image](https://github.com/cullenwatson/jobspy/assets/78247585/0e52db2d-ed6b-44e5-8ece-16de707f33ec)
+
+
 ## Response
 
 Upon successful query, the API will return a JSON object with the following schema:
