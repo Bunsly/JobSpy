@@ -35,14 +35,14 @@
 ### Schema
 
 #### JobResponse
-- **success**: bool - Indicates if the request was successful.
-- **error**: str - Any error messages, null if no error.
-- **jobs**: list[JobPost] - A list of job postings.
-- **total_results**: int - Total number of results found.
-- **returned_results**: int - Number of results returned in this request.
+- **success**: bool - Indicates if the request was successful
+- **error**: str - Any error messages, null if no error
+- **jobs**: list[JobPost] - A list of job postings
+- **total_results**: int - Total number of results found
+- **returned_results**: int - Number of results returned in this request
 
 #### JobPost
-- **title**: str - Title of the job.
+- **title**: str 
 - **company_name**: str 
 - **job_url**: str 
 - **location**: object - (country, city, state, postal_code, address)
