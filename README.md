@@ -26,6 +26,32 @@
 - **results_wanted**: int
 - **easy_apply**: bool (Only for LinkedIn)
 
+## Response
+
+Upon successful query, the API will return a JSON object with the following schema:
+
+### Schema
+
+#### JobResponse
+- **success**: bool - Indicates if the request was successful.
+- **error**: str - Any error messages, null if no error.
+- **jobs**: list[JobPost] - A list of job postings.
+- **total_results**: int - Total number of results found.
+- **returned_results**: int - Number of results returned in this request.
+
+#### JobPost
+- **title**: str - Title of the job.
+- **company_name**: str - Company offering the job.
+- **job_url**: str - URL to the job posting.
+- **location**: object - Contains the location details (country, city, state, postal_code, address).
+- **description**: str - Description of the job.
+- **job_type**: str - Type of job (fulltime, parttime, internship, contract).
+- **compensation**: object - Contains compensation details (interval, min_amount, max_amount, currency).
+- **date_posted**: str - The date when the job was posted.
+
+### Example
+![image](https://github.com/cullenwatson/jobspy/assets/78247585/73cb4423-8a53-456a-9da5-9ce7c56d5282)
+
 ## Installation
 _Python >= 3.10 required_  
 1. Clone this repository
