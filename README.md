@@ -62,7 +62,11 @@ _Python >= 3.10 required_
 
 ## Usage
 
-Visit [http://localhost:8000/docs](http://localhost:8000/docs) to see the interactive API documentation.
+To see the interactive API documentation, visit [localhost:8000/docs](http://localhost:8000/docs).
+
+For Postman integration:
+- Import the Postman collection and environment JSON files from the `postman` folder.
+
 
 ## FAQ
 
