@@ -1,4 +1,5 @@
 from ..jobs import *
+from typing import List
 
 
 class StatusException(Exception):
@@ -13,7 +14,7 @@ class Site(Enum):
 
 
 class ScraperInput(BaseModel):
-    site_type: Site
+    site_type: List[Site]
     search_term: str
 
     location: str = None
