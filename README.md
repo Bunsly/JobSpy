@@ -17,7 +17,7 @@
 **Endpoint**: `/api/v1/jobs/`
 
 #### Parameters:
-- **site_type**: str (Required) - Options: `linkedin`, `zip_recruiter`, `indeed`
+- **site_type**: List[str] (Required) - Options: `linkedin`, `zip_recruiter`, `indeed`
 - **search_term**: str (Required)
 - **location**: int
 - **distance**: int
