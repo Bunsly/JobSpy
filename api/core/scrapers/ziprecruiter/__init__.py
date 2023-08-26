@@ -171,12 +171,12 @@ class ZipRecruiterScraper(Scraper):
         return job_response
 
     @classmethod
-    def get_description(cls, job_page_url: str, session: tls_client.Session) -> str:
+    def get_description(cls, job_page_url: str, session: tls_client.Session) -> Tuple[Optional[str], str]:
         """
         Retrieves job description by going to the job page url
         :param job_page_url:
         :param session:
-        :return:  description or None
+        :return:  description or None, response url
         """
         response = session.get(
             job_page_url, headers=ZipRecruiterScraper.headers(), allow_redirects=True
