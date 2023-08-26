@@ -83,10 +83,15 @@ class ZipRecruiterScraper(Scraper):
 
         job_posts = soup.find_all("div", {"class": "job_content"})
 
-        for job in job_posts:
+        def process_job(job: Tag) -> Optional[JobPost]:
+            '''
+            Parses a job from the job content tag
+            :param job: BeautifulSoup Tag for one job post
+            :return JobPost
+            '''
             job_url = job.find("a", {"class": "job_link"})["href"]
             if job_url in self.seen_urls:
-                continue
+                return None
 
             title = job.find("h2", {"class": "title"}).text
             company = job.find("a", {"class": "company_name"}).text.strip()
@@ -121,7 +126,14 @@ class ZipRecruiterScraper(Scraper):
                 date_posted=date_posted,
                 job_url=job_url,
             )
-            job_list.append(job_post)
+            return job_post
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            job_results: list[Future] = [
+                executor.submit(process_job, job) for job in job_posts
+            ]
+
+        job_list = [result.result() for result in job_results if result.result()]
 
         return job_list, job_count
 
@@ -171,12 +183,14 @@ class ZipRecruiterScraper(Scraper):
         return job_response
 
     @classmethod
-    def get_description(cls, job_page_url: str, session: tls_client.Session) -> Tuple[Optional[str], str]:
+    def get_description(
+        cls, job_page_url: str, session: tls_client.Session
+    ) -> Tuple[Optional[str], str]:
         """
         Retrieves job description by going to the job page url
         :param job_page_url:
         :param session:
-        :return:  description or None, response url
+        :return: description or None, response url
         """
         response = session.get(
             job_page_url, headers=ZipRecruiterScraper.headers(), allow_redirects=True
