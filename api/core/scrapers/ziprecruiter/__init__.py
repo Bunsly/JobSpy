@@ -5,6 +5,7 @@ from urllib.parse import urlparse, parse_qs
 import tls_client
 from fastapi import status
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
 from api.core.jobs import JobPost
@@ -19,9 +20,9 @@ class ZipRecruiterScraper(Scraper):
         Initializes LinkedInScraper with the ZipRecruiter job search url
         """
         site = Site(Site.ZIP_RECRUITER)
-        super().__init__(site)
+        url = "https://www.ziprecruiter.com"
+        super().__init__(site, url)
 
-        self.url = "https://www.ziprecruiter.com/jobs-search"
         self.jobs_per_page = 20
         self.seen_urls = set()
 
@@ -61,7 +62,9 @@ class ZipRecruiterScraper(Scraper):
         }
 
         response = session.get(
-            self.url, headers=ZipRecruiterScraper.headers(), params=params
+            self.url + "/jobs-search",
+            headers=ZipRecruiterScraper.headers(),
+            params=params,
         )
 
         if response.status_code != status.HTTP_200_OK:
@@ -69,6 +72,7 @@ class ZipRecruiterScraper(Scraper):
 
         html_string = response.content
         soup = BeautifulSoup(html_string, "html.parser")
+
         if page == 1:
             script_tag = soup.find("script", {"id": "js_variables"})
             data = json.loads(script_tag.string)
@@ -79,16 +83,24 @@ class ZipRecruiterScraper(Scraper):
 
         job_posts = soup.find_all("div", {"class": "job_content"})
 
-        for job in job_posts:
+        def process_job(job: Tag) -> Optional[JobPost]:
+            """
+            Parses a job from the job content tag
+            :param job: BeautifulSoup Tag for one job post
+            :return JobPost
+            """
             job_url = job.find("a", {"class": "job_link"})["href"]
             if job_url in self.seen_urls:
-                continue
+                return None
 
             title = job.find("h2", {"class": "title"}).text
             company = job.find("a", {"class": "company_name"}).text.strip()
-            description = job.find("p", {"class": "job_snippet"}).text.strip()
-            job_type_element = job.find("li", {"class": "perk_item perk_type"})
 
+            description, job_url = ZipRecruiterScraper.get_description(job_url, session)
+            if description is None:
+                description = job.find("p", {"class": "job_snippet"}).text.strip()
+
+            job_type_element = job.find("li", {"class": "perk_item perk_type"})
             if job_type_element:
                 job_type_text = (
                     job_type_element.text.strip()
@@ -114,7 +126,14 @@ class ZipRecruiterScraper(Scraper):
                 date_posted=date_posted,
                 job_url=job_url,
             )
-            job_list.append(job_post)
+            return job_post
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            job_results: list[Future] = [
+                executor.submit(process_job, job) for job in job_posts
+            ]
+
+        job_list = [result.result() for result in job_results if result.result()]
 
         return job_list, job_count
 
@@ -162,6 +181,30 @@ class ZipRecruiterScraper(Scraper):
             total_results=total_results,
         )
         return job_response
+
+    @staticmethod
+    def get_description(
+        job_page_url: str, session: tls_client.Session
+    ) -> Tuple[Optional[str], str]:
+        """
+        Retrieves job description by going to the job page url
+        :param job_page_url:
+        :param session:
+        :return: description or None, response url
+        """
+        response = session.get(
+            job_page_url, headers=ZipRecruiterScraper.headers(), allow_redirects=True
+        )
+        if response.status_code not in range(200, 400):
+            return None
+
+        html_string = response.content
+        soup_job = BeautifulSoup(html_string, "html.parser")
+
+        job_description_div = soup_job.find("div", {"class": "job_description"})
+        if job_description_div:
+            return job_description_div.text.strip(), response.url
+        return None, response.url
 
     @staticmethod
     def get_interval(interval_str: str):
