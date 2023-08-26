@@ -26,8 +26,9 @@ class ScraperInput(BaseModel):
 
 
 class Scraper:
-    def __init__(self, site: Site):
+    def __init__(self, site: Site, url: str):
         self.site = site
+        self.url = url
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         ...
