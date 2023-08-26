@@ -1,62 +1,67 @@
-# JobSpy Scraper
+# JobSpy AIO Scraper
 
 ## Features
 
-- Scrapes job postings from **LinkedIn**, **Indeed**, **ZipRecruiter**
-- Returns jobs with title, location, company, and other data
-- JWT authorization
-  
-![jobspy](https://github.com/cullenwatson/jobspy/assets/78247585/25e66a30-f151-4a68-90b7-dc5874260ee1)
-
-## Endpoints
-![image](https://github.com/cullenwatson/jobspy/assets/78247585/22c8840d-41e5-4b56-998b-3979787ad76c)
+- Scrapes job postings from **LinkedIn**, **Indeed** & **ZipRecruiter** simultaneously
+- Returns jobs with title, location, company, description & other data
+- Optional JWT authorization
 
 
-### Jobs Endpoint
+### API
 
-**Endpoint**: `/api/v1/jobs/`
+POST `/api/v1/jobs/`
+### Request Schema
+#### Example
+<pre>
+{
+    "site_type": ["linkedin", "indeed"],
+    "search_term": "software engineer",
+    "location": "austin, tx",
+    "distance": 10,
+    "job_type": "fulltime",
+    "results_wanted": 10
+}
+</pre>
 
 #### Parameters:
-- **site_type**: List[str] (Required) - Options: `linkedin`, `zip_recruiter`, `indeed`
-- **search_term**: str (Required)
-- **location**: int
-- **distance**: int
-- **job_type**: str - Options: `fulltime`, `parttime`, `internship`, `contract`
-- **is_remote**: bool
-  - **results_wanted**: int (per `site_type`)
-- **easy_apply**: bool (Only for LinkedIn)
+##### Required
+- **site_type**: _List[str]_ - `linkedin`, `zip_recruiter`, `indeed`
+- **search_term**: _str_
 
+##### Optional
+- **location**: _int_
+- **distance**: _int_
+- **job_type**: _str_ - `fulltime`, `parttime`, `internship`, `contract`
+- **is_remote**: _bool_
+- **results_wanted**: _int_ (per `site_type`)
+- **easy_apply**: _bool_ (only for `linkedIn`)
+
+
+## Response Schema
 ### Example
-![image](https://github.com/cullenwatson/jobspy/assets/78247585/0e52db2d-ed6b-44e5-8ece-16de707f33ec)
-
-
-## Response
-
-### Schema
+![image](https://github.com/cullenwatson/jobspy/assets/78247585/63b313db-ce25-41aa-9ffd-ae86af6f2a45)
 
 #### JobResponse
-- **success**: bool - Indicates if the request was successful
-- **error**: str - Any error messages, null if no error
-- **jobs**: list[JobPost] - A list of job postings
-- **total_results**: int - Total number of results found
-- **returned_results**: int - Number of results returned in this request
+- **success**: _bool_ - Indicates if the request was successful
+- **error**: _str_
+- **jobs**: _list[JobPost]_
+  - #### JobPost
+    - **title**: _str_ 
+    - **company_name**: _str_ 
+    - **job_url**: _str_ 
+    - **location**: _object_ - (country, city, state, postal_code, address)
+    - **description**: _str_ 
+    - **job_type**: _str_ - `fulltime`, `parttime`, `internship`, `contract`
+    - **compensation**: _object_ - Contains: `interval`, `min_amount`, `max_amount`, `currency`
+    - **date_posted**: _str_
+      
+- **total_results**: _int_
+- **returned_results**: _int_ 
 
-#### JobPost
-- **title**: str 
-- **company_name**: str 
-- **job_url**: str 
-- **location**: object - (country, city, state, postal_code, address)
-- **description**: str 
-- **job_type**: str - Options: `fulltime`, `parttime`, `internship`, `contract`
-- **compensation**: object - Contains: `interval`, `min_amount`, `max_amount`, `currency`
-- **date_posted**: str
-
-### Example
-![image](https://github.com/cullenwatson/jobspy/assets/78247585/73cb4423-8a53-456a-9da5-9ce7c56d5282)
 
 ## Installation
 _Python >= 3.10 required_  
-1. Clone this repository
+1. Clone this repository `git clone https://github.com/cullenwatson/jobspy`
 2. Install the dependencies with `pip install -r requirements.txt`
 4. Run the server with `uvicorn main:app --reload`
 
@@ -65,7 +70,7 @@ _Python >= 3.10 required_
 To see the interactive API documentation, visit [localhost:8000/docs](http://localhost:8000/docs).
 
 For Postman integration:
-- Import the Postman collection and environment JSON files from the `postman` folder.
+- Import the Postman collection and environment JSON files from the `/postman/` folder.
 
 
 ## FAQ
@@ -89,3 +94,8 @@ Add these three environment variables:
 - `SUPABASE_URL`: go to project settings -> API -> Project URL  
 - `SUPABASE_KEY`: go to project settings -> API -> service_role secret
 - `JWT_SECRET_KEY` - type `openssl rand -hex 32` in terminal to create a 32 byte secret key
+
+Use these endpoints to register and get an access token: 
+
+![image](https://github.com/cullenwatson/jobspy/assets/78247585/c84c33ec-1fe8-4152-9c8c-6c4334aecfc3)
+
