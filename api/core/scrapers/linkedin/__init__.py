@@ -15,10 +15,8 @@ class LinkedInScraper(Scraper):
         Initializes LinkedInScraper with the LinkedIn job search url
         """
         site = Site(Site.LINKEDIN)
-        super().__init__(site)
-
-        self.url = "https://www.linkedin.com/jobs/search/"
-        self.job_url = "https://www.linkedin.com/jobs/view/"
+        url = "https://www.linkedin.com"
+        super().__init__(site, url)
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -57,7 +55,9 @@ class LinkedInScraper(Scraper):
 
                 params = {k: v for k, v in params.items() if v is not None}
                 print(params)
-                response = session.get(self.url, params=params, allow_redirects=True)
+                response = session.get(
+                    f"{self.url}/jobs/search", params=params, allow_redirects=True
+                )
 
                 if response.status_code != status.HTTP_200_OK:
                     return JobResponse(
@@ -82,7 +82,7 @@ class LinkedInScraper(Scraper):
                     job_id = (
                         data_entity_urn.split(":")[-1] if data_entity_urn else "N/A"
                     )
-                    job_url = f"{self.job_url}{job_id}"
+                    job_url = f"{self.url}/jobs/view/{job_id}"
                     if job_url in seen_urls:
                         continue
                     seen_urls.add(job_url)

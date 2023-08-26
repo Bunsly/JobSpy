@@ -5,6 +5,7 @@ from urllib.parse import urlparse, parse_qs
 import tls_client
 from fastapi import status
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
 from api.core.jobs import JobPost
@@ -14,14 +15,13 @@ import math
 
 
 class ZipRecruiterScraper(Scraper):
-    url = "https://www.ziprecruiter.com"
-
     def __init__(self):
         """
         Initializes LinkedInScraper with the ZipRecruiter job search url
         """
         site = Site(Site.ZIP_RECRUITER)
-        super().__init__(site)
+        url = "https://www.ziprecruiter.com"
+        super().__init__(site, url)
 
         self.jobs_per_page = 20
         self.seen_urls = set()
@@ -84,11 +84,11 @@ class ZipRecruiterScraper(Scraper):
         job_posts = soup.find_all("div", {"class": "job_content"})
 
         def process_job(job: Tag) -> Optional[JobPost]:
-            '''
+            """
             Parses a job from the job content tag
             :param job: BeautifulSoup Tag for one job post
             :return JobPost
-            '''
+            """
             job_url = job.find("a", {"class": "job_link"})["href"]
             if job_url in self.seen_urls:
                 return None
@@ -201,7 +201,7 @@ class ZipRecruiterScraper(Scraper):
 
         job_description_div = soup_job.find("div", {"class": "job_description"})
         if job_description_div:
-            return job_description_div.text.strip("\n"), response.url
+            return job_description_div.text.strip(), response.url
         return None, response.url
 
     @staticmethod

@@ -3,6 +3,7 @@ import json
 from typing import Optional, Tuple, List
 
 import tls_client
+import urllib.parse
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from fastapi import status
@@ -25,9 +26,8 @@ class IndeedScraper(Scraper):
         Initializes IndeedScraper with the Indeed job search url
         """
         site = Site(Site.INDEED)
-        super().__init__(site)
-        self.url = "https://www.indeed.com/jobs"
-        self.job_url = "https://www.indeed.com/viewjob?jk="
+        url = "https://www.indeed.com"
+        super().__init__(site, url)
 
         self.jobs_per_page = 15
         self.seen_urls = set()
@@ -60,7 +60,7 @@ class IndeedScraper(Scraper):
 
         if sc_values:
             params["sc"] = "0kf:" + "".join(sc_values) + ";"
-        response = session.get(self.url, params=params)
+        response = session.get(self.url + "/jobs", params=params)
 
         if (
             response.status_code != status.HTTP_200_OK
@@ -82,10 +82,10 @@ class IndeedScraper(Scraper):
         ):
             raise Exception("No jobs found.")
 
-        for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]:
-            job_url = f'{self.job_url}{job["jobkey"]}'
+        def process_job(job) -> Optional[JobPost]:
+            job_url = f'{self.url}/jobs/viewjob?jk={job["jobkey"]}'
             if job_url in self.seen_urls:
-                continue
+                return None
 
             snippet_html = BeautifulSoup(job["snippet"], "html.parser")
 
@@ -110,11 +110,8 @@ class IndeedScraper(Scraper):
             job_type = IndeedScraper.get_job_type(job)
             timestamp_seconds = job["pubDate"] / 1000
             date_posted = datetime.fromtimestamp(timestamp_seconds)
-            li_elements = snippet_html.find_all("li")
-            if li_elements:
-                description = " ".join(li.text for li in li_elements)
-            else:
-                description = None
+            description = self.get_description(job_url, session)
+
             first_li = snippet_html.find("li")
             job_post = JobPost(
                 title=job["normTitle"],
@@ -131,6 +128,10 @@ class IndeedScraper(Scraper):
                 date_posted=date_posted,
                 job_url=job_url,
             )
+            return job_post
+
+        for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]:
+            job_post = process_job(job)
             job_list.append(job_post)
 
         return job_list, total_num_jobs
@@ -189,6 +190,27 @@ class IndeedScraper(Scraper):
             total_results=total_results,
         )
         return job_response
+
+    def get_description(self, job_page_url: str, session: tls_client.Session) -> str:
+        """
+        Retrieves job description by going to the job page url
+        :param job_page_url:
+        :param session:
+        :return: description
+        """
+        parsed_url = urllib.parse.urlparse(job_page_url)
+        params = urllib.parse.parse_qs(parsed_url.query)
+        jk_value = params.get("jk", [None])[0]
+        formatted_url = f"{self.url}/viewjob?jk={jk_value}&spa=1"
+
+        response = session.get(formatted_url, allow_redirects=True)
+
+        raw_description = response.json()["body"]["jobInfoWrapperModel"][
+            "jobInfoModel"
+        ]["sanitizedJobDescription"]
+        soup = BeautifulSoup(raw_description, "html.parser")
+        text_content = " ".join(soup.get_text().split()).strip()
+        return text_content
 
     @staticmethod
     def get_job_type(job: dict) -> Optional[JobType]:
