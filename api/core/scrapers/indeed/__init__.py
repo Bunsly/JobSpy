@@ -110,11 +110,15 @@ class IndeedScraper(Scraper):
             job_type = IndeedScraper.get_job_type(job)
             timestamp_seconds = job["pubDate"] / 1000
             date_posted = datetime.fromtimestamp(timestamp_seconds)
-
+            li_elements = snippet_html.find_all("li")
+            if li_elements:
+                description = " ".join(li.text for li in li_elements)
+            else:
+                description = None
             first_li = snippet_html.find("li")
             job_post = JobPost(
                 title=job["normTitle"],
-                description=first_li.text if first_li else None,
+                description=description,
                 company_name=job["company"],
                 location=Location(
                     city=job.get("jobLocationCity"),
