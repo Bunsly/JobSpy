@@ -182,9 +182,9 @@ class ZipRecruiterScraper(Scraper):
         )
         return job_response
 
-    @classmethod
+    @staticmethod
     def get_description(
-        cls, job_page_url: str, session: tls_client.Session
+        job_page_url: str, session: tls_client.Session
     ) -> Tuple[Optional[str], str]:
         """
         Retrieves job description by going to the job page url
@@ -195,6 +195,8 @@ class ZipRecruiterScraper(Scraper):
         response = session.get(
             job_page_url, headers=ZipRecruiterScraper.headers(), allow_redirects=True
         )
+        if response.status_code not in range(200, 400):
+            return None
 
         html_string = response.content
         soup_job = BeautifulSoup(html_string, "html.parser")

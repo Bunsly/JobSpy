@@ -110,7 +110,11 @@ class IndeedScraper(Scraper):
             job_type = IndeedScraper.get_job_type(job)
             timestamp_seconds = job["pubDate"] / 1000
             date_posted = datetime.fromtimestamp(timestamp_seconds)
+
             description = self.get_description(job_url, session)
+            li_elements = snippet_html.find_all("li")
+            if description is None and li_elements:
+                description = " ".join(li.text for li in li_elements)
 
             first_li = snippet_html.find("li")
             job_post = JobPost(
@@ -204,6 +208,9 @@ class IndeedScraper(Scraper):
         formatted_url = f"{self.url}/viewjob?jk={jk_value}&spa=1"
 
         response = session.get(formatted_url, allow_redirects=True)
+
+        if response.status_code not in range(200, 400):
+            return None
 
         raw_description = response.json()["body"]["jobInfoWrapperModel"][
             "jobInfoModel"

@@ -54,7 +54,6 @@ class LinkedInScraper(Scraper):
                 }
 
                 params = {k: v for k, v in params.items() if v is not None}
-                print(params)
                 response = session.get(
                     f"{self.url}/jobs/search", params=params, allow_redirects=True
                 )
@@ -103,6 +102,7 @@ class LinkedInScraper(Scraper):
                     datetime_tag = metadata_card.find(
                         "time", class_="job-search-card__listdate"
                     )
+                    description = LinkedInScraper.get_description(job_url)
                     if datetime_tag:
                         datetime_str = datetime_tag["datetime"]
                         date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
@@ -111,6 +111,7 @@ class LinkedInScraper(Scraper):
 
                     job_post = JobPost(
                         title=title,
+                        description=description,
                         company_name=company,
                         location=location,
                         date_posted=date_posted,
@@ -137,6 +138,27 @@ class LinkedInScraper(Scraper):
             total_results=job_count,
         )
         return job_response
+
+    @staticmethod
+    def get_description(job_page_url: str) -> Optional[str]:
+        """
+        Retrieves job description by going to the job page url
+        :param job_page_url:
+        :return: description or None
+        """
+        response = requests.get(job_page_url, allow_redirects=True)
+        if response.status_code not in range(200, 400):
+            return None
+
+        soup = BeautifulSoup(response.text, "html.parser")
+        div_content = soup.find(
+            "div", class_=lambda x: x and "show-more-less-html__markup" in x
+        )
+
+        text_content = None
+        if div_content:
+            text_content = " ".join(div_content.get_text().split()).strip()
+        return text_content
 
     @staticmethod
     def get_location(metadata_card: Optional[Tag]) -> Location:
