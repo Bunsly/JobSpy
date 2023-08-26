@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import APIRouter
 
 from api.core.scrapers.indeed import IndeedScraper
@@ -16,12 +17,13 @@ SCRAPER_MAPPING = {
 
 
 @router.post("/", response_model=List[JobResponse])
-async def scrape_jobs(scraper_input: ScraperInput) -> JobResponse:
-    resp = []
-    for site in scraper_input.site_type:
+async def scrape_jobs(scraper_input: ScraperInput) -> List[JobResponse]:
+    def scrape_site(site: str) -> JobResponse:
         scraper_class = SCRAPER_MAPPING[site]
         scraper = scraper_class()
-        job_response = scraper.scrape(scraper_input)
-        resp.append(job_response)
+        return scraper.scrape(scraper_input)
+
+    with ThreadPoolExecutor() as executor:
+        resp = list(executor.map(scrape_site, scraper_input.site_type))
 
     return resp

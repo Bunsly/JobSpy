@@ -23,7 +23,7 @@
 - **distance**: int
 - **job_type**: str - Options: `fulltime`, `parttime`, `internship`, `contract`
 - **is_remote**: bool
-- **results_wanted**: int
+  - **results_wanted**: int (per `site_type`)
 - **easy_apply**: bool (Only for LinkedIn)
 
 ### Example
