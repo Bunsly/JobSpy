@@ -8,7 +8,8 @@ from api.core.users import UserInDB
 from settings import SUPABASE_URL, SUPABASE_KEY
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+if SUPABASE_URL:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 def create_user(user_create: UserInDB):

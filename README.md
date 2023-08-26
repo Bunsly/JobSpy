@@ -17,13 +17,13 @@
 **Endpoint**: `/api/v1/jobs/`
 
 #### Parameters:
-- **site_type**: str (Required) - Options: `linkedin`, `zip_recruiter`, `indeed`
+- **site_type**: List[str] (Required) - Options: `linkedin`, `zip_recruiter`, `indeed`
 - **search_term**: str (Required)
 - **location**: int
 - **distance**: int
 - **job_type**: str - Options: `fulltime`, `parttime`, `internship`, `contract`
 - **is_remote**: bool
-- **results_wanted**: int
+  - **results_wanted**: int (per `site_type`)
 - **easy_apply**: bool (Only for LinkedIn)
 
 ### Example

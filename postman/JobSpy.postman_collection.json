@@ -23,7 +23,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"site_type\": \"linkedin\", // linkedin / indeed / zip_recruiter\r\n    \"search_term\": \"engineer\",\r\n\r\n    // optional\r\n    \"location\": \"tx\",\r\n    \"distance\": 10,\r\n    \"job_type\": \"fulltime\", // fulltime, parttime, internship, contract\r\n    // \"is_remote\": true,\r\n    \"easy_apply\": true, // linkedin only\r\n    \"results_wanted\": 10   \r\n}",
+					"raw": "{\r\n    \"site_type\": [\"linkedin\"], // linkedin / indeed / zip_recruiter\r\n    \"search_term\": \"engineer\",\r\n\r\n    // optional\r\n    \"location\": \"tx\",\r\n    \"distance\": 10,\r\n    \"job_type\": \"fulltime\", // fulltime, parttime, internship, contract\r\n    // \"is_remote\": true,\r\n    \"easy_apply\": true, // linkedin only\r\n    \"results_wanted\": 10   \r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
