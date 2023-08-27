@@ -5,7 +5,7 @@ from api.core.scrapers.indeed import IndeedScraper
 from api.core.scrapers.ziprecruiter import ZipRecruiterScraper
 from api.core.scrapers.linkedin import LinkedInScraper
 from api.core.scrapers import ScraperInput, Site, JobResponse
-from typing import List
+from typing import List, Dict, Tuple
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -16,14 +16,21 @@ SCRAPER_MAPPING = {
 }
 
 
-@router.post("/", response_model=List[JobResponse])
-async def scrape_jobs(scraper_input: ScraperInput) -> List[JobResponse]:
-    def scrape_site(site: str) -> JobResponse:
+@router.post("/")
+async def scrape_jobs(scraper_input: ScraperInput) -> Dict[str, JobResponse]:
+    """
+    Asynchronously scrapes job data from multiple job sites.
+    :param scraper_input:
+    :return: Dict[str, JobResponse]: where each key is a site
+    """
+    def scrape_site(site: Site) -> Tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
         scraper = scraper_class()
-        return scraper.scrape(scraper_input)
+        scraped_data = scraper.scrape(scraper_input)
+        return (site.value, scraped_data)
 
     with ThreadPoolExecutor() as executor:
-        resp = list(executor.map(scrape_site, scraper_input.site_type))
+        resp_dict = {site: resp for site, resp in executor.map(scrape_site, scraper_input.site_type)}
 
-    return resp
+    return resp_dict
+
