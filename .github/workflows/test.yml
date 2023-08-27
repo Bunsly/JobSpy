@@ -32,13 +32,15 @@ jobs:
 
     - name: Verify results count
       run: |
-        response=$(curl -s -X 'POST' -H 'Content-Type: application/json' -d '{
+        response=$(curl -L -s -X 'POST' -H 'Content-Type: application/json' -d '{
           ...
         }' http://0.0.0.0:8000/api/v1/jobs -w "%{http_code}")
         
         status_code="${response: -3}"
+        echo "Received status code: $status_code"
+        
         if [ "$status_code" != "200" ]; then
-          echo "Error: Received status code $status_code"
+          echo "Error: Expected status code 200, but got $status_code"
           exit 1
         fi
 
