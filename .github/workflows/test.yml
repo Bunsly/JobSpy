@@ -24,7 +24,7 @@ jobs:
 
     - name: Start JobSpy FastAPI app
       run: |
-        uvicorn my_app:app --host 0.0.0.0 --port 8000 &
+        uvicorn main:app --host 0.0.0.0 --port 8000 &
 
     - name: Wait for server to be up
       run: sleep 10
@@ -32,7 +32,7 @@ jobs:
     - name: Verify results count
       run: |
         curl -X 'POST' -H 'Content-Type: application/json' -d '{
-          "site_type": ["indeed", "linkedin", "zip_recruiter"],   # <-- Added the missing closing double quote here
+          "site_type": ["indeed", "linkedin", "zip_recruiter"], 
           "search_term": "software engineer",
           "location": "austin, tx",
           "distance": 10,
@@ -40,8 +40,7 @@ jobs:
           "results_wanted": 5
         }' http://0.0.0.0:8000/api/v1/jobs > response.json
         
-        # Debugging log
-        cat response.json   # <-- This will print the server response
+        cat response.json
         
         indeed_results=$(jq '.indeed.returned_results' response.json)
         linkedin_results=$(jq '.linkedin.returned_results' response.json)
