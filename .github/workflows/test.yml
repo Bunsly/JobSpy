@@ -1,0 +1,53 @@
+name: API Check
+
+on: [push, pull_request]
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Install jq
+      run: sudo apt-get install jq
+
+    - name: Start JobSpy FastAPI app
+      run: |
+        uvicorn my_app:app --host 0.0.0.0 --port 8000 &
+
+    - name: Wait for server to be up
+      run: sleep 10
+
+    - name: Verify results count
+      run: |
+        curl -X 'POST' -H 'Content-Type: application/json' -d '{
+          "site_type": ["indeed", "linkedin", "zip_recruiter],
+          "search_term": "software engineer",
+          "location": "austin, tx",
+          "distance": 10,
+          "job_type": "fulltime",
+          "results_wanted": 5
+        }' http://0.0.0.0:8000/api/v1/jobs > response.json
+        
+        indeed_results=$(jq '.indeed.returned_results' response.json)
+        linkedin_results=$(jq '.linkedin.returned_results' response.json)
+        zip_recruiter_results=$(jq '.zip_recruiter.returned_results' response.json)
+
+        if [[ $indeed_results -ne 5 || $linkedin_results -ne 5 || $zip_recruiter_results -ne 5 ]]; then
+          echo "Mismatch in results_wanted and returned_results:"
+          echo "Indeed: Expected 5, Got $indeed_results"
+          echo "LinkedIn: Expected 5, Got $linkedin_results"
+          echo "ZipRecruiter: Expected 5, Got $zip_recruiter_results"
+          exit 1
+        fi
