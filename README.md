@@ -24,6 +24,7 @@ Request
     ├── is_remote (bool)
     ├── results_wanted (int): per site_type
     └── easy_apply (bool): only for linkedin
+    └── output_format (enum): json, csv
 ```
 
 ### Request Example
@@ -34,7 +35,8 @@ Request
   "location": "austin, tx",
   "distance": 10,
   "job_type": "fulltime",
-  "results_wanted": 15
+  "results_wanted": 15,
+  "output_format": "json"
 }
 ```
 
@@ -65,7 +67,7 @@ site_type (enum)
     └── returned_results (int)
 ```
 
-### Response Example
+### Response Example (JSON)
 ```json
 {
     "indeed": {
@@ -118,6 +120,12 @@ site_type (enum)
         "returned_results": 15
     }
 }
+```
+### Response Example (CSV)
+```
+Site, Title, Company Name, Job URL, Country, City, State, Job Type, Compensation Interval, Min Amount, Max Amount, Currency, Date Posted, Description
+indeed, Software Engineer, INTEL, https://www.indeed.com/jobs/viewjob?jk=a2cfbb98d2002228, USA, Austin, TX, fulltime, yearly, 209760.0, 139480.0, USD, 2023-08-18T00:00:00, Job Description Designs...
+linkedin, Software Engineer 1, Public Partnerships | PPL, https://www.linkedin.com/jobs/view/3690013792, USA, Austin, TX, , , , , , 2023-07-31T00:00:00, Public Partnerships LLC supports...
 ```
 
 ## Installation

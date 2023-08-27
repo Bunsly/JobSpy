@@ -1,5 +1,6 @@
 from ..jobs import *
-from typing import List
+from ..formatters import OutputFormat
+from typing import List, Dict, Optional
 
 
 class StatusException(Exception):
@@ -16,6 +17,7 @@ class Site(Enum):
 class ScraperInput(BaseModel):
     site_type: List[Site]
     search_term: str
+    output_format: OutputFormat = OutputFormat.JSON
 
     location: str = None
     distance: int = None
@@ -24,6 +26,12 @@ class ScraperInput(BaseModel):
     easy_apply: bool = None  # linkedin
 
     results_wanted: int = 15
+
+
+class ScraperResponse(BaseModel):
+    linkedin: Optional[JobResponse]
+    indeed: Optional[JobResponse]
+    zip_recruiter: Optional[JobResponse]
 
 
 class Scraper:
