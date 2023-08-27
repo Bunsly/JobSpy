@@ -13,18 +13,19 @@ POST `/api/v1/jobs/`
 ### Request Schema
 
 ```plaintext
-Request
-├── Required
-│   ├── site_type (List[enum]): linkedin, zip_recruiter, indeed
-│   └── search_term (str)
-└── Optional
+{
+    Required
+    ├── site_type (List[enum]): linkedin, zip_recruiter, indeed
+    └── search_term (str)
+    Optional
     ├── location (int)
     ├── distance (int)
     ├── job_type (enum): fulltime, parttime, internship, contract
     ├── is_remote (bool)
     ├── results_wanted (int): per site_type
-    └── easy_apply (bool): only for linkedin
+    ├── easy_apply (bool): only for linkedin
     └── output_format (enum): json, csv
+}
 ```
 
 ### Request Example
@@ -35,36 +36,40 @@ Request
   "location": "austin, tx",
   "distance": 10,
   "job_type": "fulltime",
-  "results_wanted": 15,
-  "output_format": "json"
+  "results_wanted": 15
 }
 ```
 
 ### Response Schema
 ```plaintext
-site_type (enum)
-└── response (SiteResponse)
-    ├── success (bool)
-    ├── error (str)
-    ├── jobs (List[JobPost])
-    │   └── JobPost
-    │       ├── title (str)
-    │       ├── company_name (str)
-    │       ├── job_url (str)
-    │       ├── location (object)
-    │       │   ├── country (str)
-    │       │   ├── city (str)
-    │       │   ├── state (str)
-    │       ├── description (str)
-    │       ├── job_type (enum)
-    │       ├── compensation (object)
-    │       │   ├── interval (CompensationInterval): yearly, monthly, weekly, daily, hourly
-    │       │   ├── min_amount (float)
-    │       │   ├── max_amount (float)
-    │       │   └── currency (str)
-    │       └── date_posted (datetime)
-    ├── total_results (int)
-    └── returned_results (int)
+{
+    site_type (enum): {
+        JobResponse
+        ├── success (bool)
+        ├── error (str)
+        ├── jobs (List[JobPost])
+        │   └── JobPost
+        │       ├── title (str)
+        │       ├── company_name (str)
+        │       ├── job_url (str)
+        │       ├── location (object)
+        │       │   ├── country (str)
+        │       │   ├── city (str)
+        │       │   ├── state (str)
+        │       ├── description (str)
+        │       ├── job_type (enum)
+        │       ├── compensation (object)
+        │       │   ├── interval (CompensationInterval): yearly, monthly, weekly, daily, hourly
+        │       │   ├── min_amount (float)
+        │       │   ├── max_amount (float)
+        │       │   └── currency (str): default is "US"
+        │       └── date_posted (datetime)
+        │
+        ├── total_results (int)
+        └── returned_results (int)
+    }, ...
+}
+
 ```
 
 ### Response Example (JSON)
