@@ -12,64 +12,56 @@
 POST `/api/v1/jobs/`
 ### Request Schema
 
-```plaintext
-{
-    Required
-    ├── site_type (List[enum]): linkedin, zip_recruiter, indeed
-    └── search_term (str)
-    Optional
-    ├── location (int)
-    ├── distance (int)
-    ├── job_type (enum): fulltime, parttime, internship, contract
-    ├── is_remote (bool)
-    ├── results_wanted (int): per site_type
-    ├── easy_apply (bool): only for linkedin
-    └── output_format (enum): json, csv
-}
+```plaintex
+Required
+├── site_type (List[enum]): linkedin, zip_recruiter, indeed
+└── search_term (str)
+Optional
+├── location (int)
+├── distance (int)
+├── job_type (enum): fulltime, parttime, internship, contract
+├── is_remote (bool)
+├── results_wanted (int): per site_type
+├── easy_apply (bool): only for linkedin
+└── output_format (enum): json, csv
 ```
 
 ### Request Example
 ```json
-{
-  "site_type": ["indeed", "linkedin"],
-  "search_term": "software engineer",
-  "location": "austin, tx",
-  "distance": 10,
-  "job_type": "fulltime",
-  "results_wanted": 15
-}
+"site_type": ["indeed", "linkedin"],
+"search_term": "software engineer",
+"location": "austin, tx",
+"distance": 10,
+"job_type": "fulltime",
+"results_wanted": 15
 ```
 
 ### Response Schema
 ```plaintext
-{
-    site_type (enum): {
-        JobResponse
-        ├── success (bool)
-        ├── error (str)
-        ├── jobs (List[JobPost])
-        │   └── JobPost
-        │       ├── title (str)
-        │       ├── company_name (str)
-        │       ├── job_url (str)
-        │       ├── location (object)
-        │       │   ├── country (str)
-        │       │   ├── city (str)
-        │       │   ├── state (str)
-        │       ├── description (str)
-        │       ├── job_type (enum)
-        │       ├── compensation (object)
-        │       │   ├── interval (CompensationInterval): yearly, monthly, weekly, daily, hourly
-        │       │   ├── min_amount (float)
-        │       │   ├── max_amount (float)
-        │       │   └── currency (str): default is "US"
-        │       └── date_posted (datetime)
-        │
-        ├── total_results (int)
-        └── returned_results (int)
-    }, ...
-}
-
+site_type (enum): 
+JobResponse
+├── success (bool)
+├── error (str)
+├── jobs (List[JobPost])
+│   └── JobPost
+│       ├── title (str)
+│       ├── company_name (str)
+│       ├── job_url (str)
+│       ├── location (object)
+│       │   ├── country (str)
+│       │   ├── city (str)
+│       │   ├── state (str)
+│       ├── description (str)
+│       ├── job_type (enum)
+│       ├── compensation (object)
+│       │   ├── interval (CompensationInterval): yearly, monthly, weekly, daily, hourly
+│       │   ├── min_amount (float)
+│       │   ├── max_amount (float)
+│       │   └── currency (str)
+│       └── date_posted (datetime)
+│
+├── total_results (int)
+└── returned_results (int) 
 ```
 
 ### Response Example (JSON)
@@ -134,7 +126,7 @@ linkedin, Software Engineer 1, Public Partnerships | PPL, https://www.linkedin.c
 ```
 
 ## Installation
-_Python >= 3.10 required_  
+_Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_  
 1. Clone this repository `git clone https://github.com/cullenwatson/jobspy`
 2. Install the dependencies with `pip install -r requirements.txt`
 4. Run the server with `uvicorn main:app --reload`
@@ -153,8 +145,10 @@ To use Postman:
 
 ### I'm having issues with my queries. What should I do?
 
-Broadening your filters can often help. Additionally, try reducing the number of `results_wanted`.  
-If issues still persist, feel free to submit an issue.
+Try reducing the number of `results_wanted` and/or broadening the filters. If issues still persist, feel free to submit an issue. 
+
+### I'm getting response code 429. What should I do?
+You have been blocked by the job board site for sending too many requests. Wait a couple seconds or use a VPN.
 
 ### How to enable auth?
 
