@@ -96,7 +96,9 @@ class ZipRecruiterScraper(Scraper):
             title = job.find("h2", {"class": "title"}).text
             company = job.find("a", {"class": "company_name"}).text.strip()
 
-            description, job_url = ZipRecruiterScraper.get_description(job_url, session)
+            description, updated_job_url = ZipRecruiterScraper.get_description(job_url, session)
+            if updated_job_url is not None:
+                job_url = updated_job_url
             if description is None:
                 description = job.find("p", {"class": "job_snippet"}).text.strip()
 
@@ -185,7 +187,7 @@ class ZipRecruiterScraper(Scraper):
     @staticmethod
     def get_description(
         job_page_url: str, session: tls_client.Session
-    ) -> Tuple[Optional[str], str]:
+    ) -> Tuple[Optional[str], Optional[str]]:
         """
         Retrieves job description by going to the job page url
         :param job_page_url:
@@ -196,7 +198,7 @@ class ZipRecruiterScraper(Scraper):
             job_page_url, headers=ZipRecruiterScraper.headers(), allow_redirects=True
         )
         if response.status_code not in range(200, 400):
-            return None
+            return None, None
 
         html_string = response.content
         soup_job = BeautifulSoup(html_string, "html.parser")
