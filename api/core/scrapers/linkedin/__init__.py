@@ -167,9 +167,6 @@ class LinkedInScraper(Scraper):
         :param metadata_card
         :return: location
         """
-        location = Location(
-            country="US",
-        )
         if metadata_card is not None:
             location_tag = metadata_card.find(
                 "span", class_="job-search-card__location"
@@ -179,7 +176,6 @@ class LinkedInScraper(Scraper):
             if len(parts) == 2:
                 city, state = parts
                 location = Location(
-                    country="US",
                     city=city,
                     state=state,
                 )

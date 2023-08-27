@@ -292,7 +292,6 @@ class ZipRecruiterScraper(Scraper):
         else:
             city, state = None, None
         return Location(
-            country="US",
             city=city,
             state=state,
         )

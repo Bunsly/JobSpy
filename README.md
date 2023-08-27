@@ -53,8 +53,6 @@ site_type (enum)
     │       │   ├── country (str)
     │       │   ├── city (str)
     │       │   ├── state (str)
-    │       │   ├── postal_code (str)
-    │       │   └── address (str)
     │       ├── description (str)
     │       ├── job_type (enum)
     │       ├── compensation (object)
@@ -79,11 +77,9 @@ site_type (enum)
                 "company_name": "INTEL",
                 "job_url": "https://www.indeed.com/jobs/viewjob?jk=a2cfbb98d2002228",
                 "location": {
-                    "country": "US",
+                    "country": "USA",
                     "city": "Austin",
                     "state": "TX",
-                    "postal_code": null,
-                    "address": null
                 },
                 "description": "Job Description Designs, develops, tests, and debugs..."
                 "job_type": "fulltime",
@@ -95,7 +91,10 @@ site_type (enum)
                 },
                 "date_posted": "2023-08-18T00:00:00"
             }, ...
-          ]
+        ],
+        "total_results": 845,
+        "returned_results": 15
+    },
     "linkedin": {
         "success": true,
         "error": null,
@@ -105,11 +104,9 @@ site_type (enum)
                 "company_name": "Public Partnerships | PPL",
                 "job_url": "https://www.linkedin.com/jobs/view/3690013792",
                 "location": {
-                    "country": "US",
+                    "country": "USA",
                     "city": "Austin",
                     "state": "TX",
-                    "postal_code": null,
-                    "address": null
                 },
                 "description": "Public Partnerships LLC supports individuals with disabilities..."
                 "job_type": null,

@@ -19,11 +19,9 @@ class JobType(Enum):
 
 
 class Location(BaseModel):
-    country: str
+    country: str = "USA"
     city: str = None
     state: str = None
-    postal_code: str = None
-    address: str = None
 
 
 class CompensationInterval(Enum):
@@ -38,7 +36,7 @@ class Compensation(BaseModel):
     interval: CompensationInterval
     min_amount: float
     max_amount: float
-    currency: str = "US"
+    currency: str = "USA"
 
 
 class JobPost(BaseModel):

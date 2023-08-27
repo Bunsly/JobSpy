@@ -125,7 +125,6 @@ class IndeedScraper(Scraper):
                     city=job.get("jobLocationCity"),
                     state=job.get("jobLocationState"),
                     postal_code=job.get("jobLocationPostal"),
-                    country="US",
                 ),
                 job_type=job_type,
                 compensation=compensation,
