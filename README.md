@@ -25,7 +25,7 @@ Request
     ├── job_type (enum): fulltime, parttime, internship, contract
     ├── is_remote (bool)
     ├── results_wanted (int): per site_type
-    └── easy_apply (bool): only for linkedIn
+    └── easy_apply (bool): only for linkedin
 ```
 
 #### Example
@@ -47,7 +47,7 @@ site_type (enum)
 └── response (SiteResponse)
     ├── success (bool)
     ├── error (str)
-    ├── jobs (list[JobPost])
+    ├── jobs (List[JobPost])
     │   └── JobPost
     │       ├── title (str)
     │       ├── company_name (str)
@@ -64,7 +64,7 @@ site_type (enum)
     │       │   ├── interval (CompensationInterval): yearly, monthly, weekly, daily, hourly
     │       │   ├── min_amount (float)
     │       │   ├── max_amount (float)
-    │       │   └── currency (str): Default is "US"
+    │       │   └── currency (str): default is "US"
     │       └── date_posted (datetime)
     ├── total_results (int)
     └── returned_results (int)
@@ -279,11 +279,13 @@ _Python >= 3.10 required_
 
 ## Usage
 
-To see the interactive API documentation, visit [localhost:8000/docs](http://localhost:8000/docs).
+### Swagger UI:
+To interact with the API documentation, navigate to [localhost:8000/docs](http://localhost:8000/docs).
 
-For Postman integration:
-- Import the Postman collection and environment JSON files from the `/postman/` folder.
-
+### Postman:
+To use Postman:
+1. Locate the files in the `/postman/` directory.
+2. Import the Postman collection and environment JSON files.
 
 ## FAQ
 
