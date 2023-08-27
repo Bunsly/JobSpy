@@ -66,7 +66,7 @@ jobs:
         indeed_error=$(jq '.indeed.error' response.json)
         linkedin_error=$(jq '.linkedin.error' response.json)
 
-#        if [[ "$indeed_error" != "null" || "$linkedin_error" != "null" ]]; then
+        if [[ "$indeed_error" != "null" || "$linkedin_error" != "null" ]]; then
           echo "Error found in response:"
           echo "Indeed Error: $indeed_error"
           echo "LinkedIn Error: $linkedin_error"
