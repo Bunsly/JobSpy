@@ -23,6 +23,7 @@ async def scrape_jobs(scraper_input: ScraperInput) -> Dict[str, JobResponse]:
     :param scraper_input:
     :return: Dict[str, JobResponse]: where each key is a site
     """
+
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
         scraper = scraper_class()
@@ -30,7 +31,9 @@ async def scrape_jobs(scraper_input: ScraperInput) -> Dict[str, JobResponse]:
         return (site.value, scraped_data)
 
     with ThreadPoolExecutor() as executor:
-        resp_dict = {site: resp for site, resp in executor.map(scrape_site, scraper_input.site_type)}
+        resp_dict = {
+            site: resp
+            for site, resp in executor.map(scrape_site, scraper_input.site_type)
+        }
 
     return resp_dict
-

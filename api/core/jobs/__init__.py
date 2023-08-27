@@ -22,8 +22,6 @@ class Location(BaseModel):
     country: str
     city: str = None
     state: str = None
-    postal_code: str = None
-    address: str = None
 
 
 class CompensationInterval(Enum):
