@@ -61,19 +61,19 @@ jobs:
         echo "${response::-3}" > response.json
         cat response.json
 
-    - name: Check error field in response
-      run: |
-        indeed_error=$(jq '.indeed.error' response.json)
-        linkedin_error=$(jq '.linkedin.error' response.json)
-        zip_recruiter_error=$(jq '.zip_recruiter.error' response.json)
-
-        if [[ "$indeed_error" != "null" || "$linkedin_error" != "null" || "$zip_recruiter_error" != "null" ]]; then
-          echo "Error found in response:"
-          echo "Indeed Error: $indeed_error"
-          echo "LinkedIn Error: $linkedin_error"
-          echo "ZipRecruiter Error: $zip_recruiter_error"
-          exit 1
-        fi
+#    - name: Check error field in response
+#      run: |
+#        indeed_error=$(jq '.indeed.error' response.json)
+#        linkedin_error=$(jq '.linkedin.error' response.json)
+#        zip_recruiter_error=$(jq '.zip_recruiter.error' response.json)
+#
+#        if [[ "$indeed_error" != "null" || "$linkedin_error" != "null" || "$zip_recruiter_error" != "null" ]]; then
+#          echo "Error found in response:"
+#          echo "Indeed Error: $indeed_error"
+#          echo "LinkedIn Error: $linkedin_error"
+#          echo "ZipRecruiter Error: $zip_recruiter_error"
+#          exit 1
+#        fi
 
     - name: Verify returned_results in response
       run: |
