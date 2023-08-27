@@ -1,0 +1,86 @@
+name: JobSpy API Tests
+
+on: [push, pull_request]
+
+jobs:
+  test_api:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Install jq
+      run: sudo apt-get install jq
+
+    - name: Start JobSpy FastAPI app
+      run: uvicorn main:app --host 0.0.0.0 --port 8000 &
+
+    - name: Wait for server to be up
+      run: |
+        for i in {1..10}; do
+          curl -s http://0.0.0.0:8000/api/v1/jobs && break || sleep 1
+        done
+
+    - name: Check health
+      run: |
+        health_status=$(curl -L -s -o /dev/null -w "%{http_code}" http://0.0.0.0:8000/health)
+        
+        if [ "$health_status" != "200" ]; then
+          echo "Error: Health check failed with status code $health_status"
+          exit 1
+        fi
+
+    - name: Check HTTP status to POST /api/v1/jobs/
+      run: |
+        response=$(curl -L -s -X 'POST' -H 'Content-Type: application/json' -d '{
+          "site_type": ["indeed", "linkedin"], 
+          "search_term": "software engineer",
+          "location": "austin, tx",
+          "distance": 10,
+          "job_type": "fulltime",
+          "results_wanted": 5
+        }' http://0.0.0.0:8000/api/v1/jobs -w "%{http_code}")
+        
+        status_code="${response: -3}"
+        echo "Received status code: $status_code"
+        
+        if [ "$status_code" != "200" ]; then
+          echo "Error: Expected status code 200, but got $status_code"
+          exit 1
+        fi
+
+        echo "${response::-3}" > response.json
+        cat response.json
+
+    - name: Check error field in response
+      run: |
+        indeed_error=$(jq '.indeed.error' response.json)
+        linkedin_error=$(jq '.linkedin.error' response.json)
+
+        if [[ "$indeed_error" != "null" || "$linkedin_error" != "null" ]]; then
+          echo "Error found in response:"
+          echo "Indeed Error: $indeed_error"
+          echo "LinkedIn Error: $linkedin_error"
+          exit 1
+        fi
+
+    - name: Verify returned_results in response
+      run: |
+        indeed_results=$(jq '.indeed.returned_results' response.json)
+        linkedin_results=$(jq '.linkedin.returned_results' response.json)
+        
+        if [[ $indeed_results -ne 5 || $linkedin_results -ne 5 ]]; then
+          echo "Mismatch in results_wanted and returned_results:"
+          echo "Indeed: Expected 5, Got $indeed_results"
+          echo "LinkedIn: Expected 5, Got $linkedin_results"
+          exit 1
+        fi
