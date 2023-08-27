@@ -91,7 +91,10 @@ site_type (enum)
                 },
                 "date_posted": "2023-08-18T00:00:00"
             }, ...
-        ]
+        ],
+        "total_results": 845,
+        "returned_results": 15
+    },
     "linkedin": {
         "success": true,
         "error": null,
