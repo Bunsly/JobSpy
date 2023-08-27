@@ -3,7 +3,7 @@
 ## Features
 
 - Scrapes job postings from **LinkedIn**, **Indeed** & **ZipRecruiter** simultaneously
-- Returns jobs with title, location, company, description & other data
+- Returns jobs as JSON or CSV with title, location, company, description & other data
 - Optional JWT authorization
 
 
