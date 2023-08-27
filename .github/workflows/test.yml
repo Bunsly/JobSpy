@@ -76,15 +76,15 @@ jobs:
         fi
 
     - name: Verify returned_results in response
-        run: |
-          indeed_results=$(jq '.indeed.returned_results' response.json)
-          linkedin_results=$(jq '.linkedin.returned_results' response.json)
-          zip_recruiter_results=$(jq '.zip_recruiter.returned_results' response.json)
-          
-          if [[ $indeed_results -ne 5 || $linkedin_results -ne 5 || $zip_recruiter_results -ne 5 ]]; then
-            echo "Mismatch in results_wanted and returned_results:"
-            echo "Indeed: Expected 5, Got $indeed_results"
-            echo "LinkedIn: Expected 5, Got $linkedin_results"
-            echo "ZipRecruiter: Expected 5, Got $zip_recruiter_results"
-            exit 1
-          fi
+      run: |
+        indeed_results=$(jq '.indeed.returned_results' response.json)
+        linkedin_results=$(jq '.linkedin.returned_results' response.json)
+        zip_recruiter_results=$(jq '.zip_recruiter.returned_results' response.json)
+        
+        if [[ $indeed_results -ne 5 || $linkedin_results -ne 5 || $zip_recruiter_results -ne 5 ]]; then
+          echo "Mismatch in results_wanted and returned_results:"
+          echo "Indeed: Expected 5, Got $indeed_results"
+          echo "LinkedIn: Expected 5, Got $linkedin_results"
+          echo "ZipRecruiter: Expected 5, Got $zip_recruiter_results"
+          exit 1
+        fi
