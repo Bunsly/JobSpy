@@ -29,7 +29,6 @@ jobs:
         for i in {1..10}; do
           curl -s http://0.0.0.0:8000/api/v1/jobs && break || sleep 1
         done
-
     - name: Check health
       run: |
         health_status=$(curl -L -s -o /dev/null -w "%{http_code}" http://0.0.0.0:8000/health)
@@ -38,11 +37,10 @@ jobs:
           echo "Error: Health check failed with status code $health_status"
           exit 1
         fi
-
     - name: Check HTTP status to POST /api/v1/jobs/
       run: |
         response=$(curl -L -s -X 'POST' -H 'Content-Type: application/json' -d '{
-          "site_type": ["indeed", "linkedin"], 
+          "site_type": ["indeed", "linkedin", "zip_recruiter"], 
           "search_term": "software engineer",
           "location": "austin, tx",
           "distance": 10,
@@ -57,30 +55,30 @@ jobs:
           echo "Error: Expected status code 200, but got $status_code"
           exit 1
         fi
-
         echo "${response::-3}" > response.json
         cat response.json
-
     - name: Check error field in response
       run: |
         indeed_error=$(jq '.indeed.error' response.json)
         linkedin_error=$(jq '.linkedin.error' response.json)
-
-        if [[ "$indeed_error" != "null" || "$linkedin_error" != "null" ]]; then
+        zip_recruiter_error=$(jq '.zip_recruiter.error' response.json)
+        if [[ "$indeed_error" != "null" || "$linkedin_error" != "null" || "$zip_recruiter_error" != "null" ]]; then
           echo "Error found in response:"
           echo "Indeed Error: $indeed_error"
           echo "LinkedIn Error: $linkedin_error"
+          echo "ZipRecruiter Error: $zip_recruiter_error"
           exit 1
         fi
-
     - name: Verify returned_results in response
       run: |
         indeed_results=$(jq '.indeed.returned_results' response.json)
         linkedin_results=$(jq '.linkedin.returned_results' response.json)
+        zip_recruiter_results=$(jq '.zip_recruiter.returned_results' response.json)
         
-        if [[ $indeed_results -ne 5 || $linkedin_results -ne 5 ]]; then
+        if [[ $indeed_results -ne 5 || $linkedin_results -ne 5 || $zip_recruiter_results -ne 5 ]]; then
           echo "Mismatch in results_wanted and returned_results:"
           echo "Indeed: Expected 5, Got $indeed_results"
           echo "LinkedIn: Expected 5, Got $linkedin_results"
+          echo "ZipRecruiter: Expected 5, Got $zip_recruiter_results"
           exit 1
         fi
