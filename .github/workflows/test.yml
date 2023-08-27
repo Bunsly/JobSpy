@@ -53,3 +53,9 @@ jobs:
           echo "ZipRecruiter: Expected 5, Got $zip_recruiter_results"
           exit 1
         fi
+
+  - name: Upload response.json as artifact
+    uses: actions/upload-artifact@v2
+    with:
+      name: response.json
+      path: ./response.json
