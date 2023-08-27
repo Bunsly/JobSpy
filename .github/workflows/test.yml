@@ -3,14 +3,14 @@ name: Test API
 on: [push, pull_request]
 
 jobs:
-  test-api:
+  test_returned_results:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Set up Python
+    - name: Set up Python 3.10
       uses: actions/setup-python@v2
       with:
         python-version: '3.10'
@@ -62,10 +62,10 @@ jobs:
 
         cat response.json
   
-        if [[ $indeed_results -ne 5 || $linkedin_results -ne 5 || $zip_recruiter_results -ne 5 ]]; then
+        if [[ $indeed.returned_results -ne 5 || $linkedin.returned_results -ne 5 || $zip_recruiter.returned_results -ne 5 ]]; then
           echo "Mismatch in results_wanted and returned_results:"
-          echo "Indeed: Expected 5, Got $indeed_results"
-          echo "LinkedIn: Expected 5, Got $linkedin_results"
-          echo "ZipRecruiter: Expected 5, Got $zip_recruiter_results"
+          echo "Indeed: Expected 5, Got $indeed.returned_results"
+          echo "LinkedIn: Expected 5, Got $linkedin.returned_results"
+          echo "ZipRecruiter: Expected 5, Got $zip_recruiter.returned_results"
           exit 1
         fi
