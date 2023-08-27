@@ -80,8 +80,6 @@ site_type (enum)
                     "country": "US",
                     "city": "Austin",
                     "state": "TX",
-                    "postal_code": null,
-                    "address": null
                 },
                 "description": "Job Description Designs, develops, tests, and debugs..."
                 "job_type": "fulltime",
@@ -106,8 +104,6 @@ site_type (enum)
                     "country": "US",
                     "city": "Austin",
                     "state": "TX",
-                    "postal_code": null,
-                    "address": null
                 },
                 "description": "Public Partnerships LLC supports individuals with disabilities..."
                 "job_type": null,
