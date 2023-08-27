@@ -41,7 +41,6 @@ Request
 </pre>
 
 ## Response Schema
-### Fields
 ```plaintext
 site_type (enum)
 └── response (SiteResponse)
@@ -72,7 +71,7 @@ site_type (enum)
 
 ### Example
 <details>
-  <summary>Sample Response JSON</summary>
+  <summary><code>Sample Response JSON</code></summary>
 <pre><code>{
     "linkedin": {
         "success": true,
