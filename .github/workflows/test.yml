@@ -30,10 +30,24 @@ jobs:
           curl -s http://0.0.0.0:8000/api/v1/jobs && break || sleep 1
         done
 
+    - name: Check health
+      run: |
+        health_status=$(curl -L -s -o /dev/null -w "%{http_code}" http://0.0.0.0:8000/health)
+        
+        if [ "$health_status" != "200" ]; then
+          echo "Error: Health check failed with status code $health_status"
+          exit 1
+        fi
+
     - name: Verify results count
       run: |
         response=$(curl -L -s -X 'POST' -H 'Content-Type: application/json' -d '{
-          ...
+          "site_type": ["indeed", "linkedin", "zip_recruiter"], 
+          "search_term": "software engineer",
+          "location": "austin, tx",
+          "distance": 10,
+          "job_type": "fulltime",
+          "results_wanted": 5
         }' http://0.0.0.0:8000/api/v1/jobs -w "%{http_code}")
         
         status_code="${response: -3}"
