@@ -61,7 +61,7 @@ site_type (enum)
     │       │   ├── interval (CompensationInterval): yearly, monthly, weekly, daily, hourly
     │       │   ├── min_amount (float)
     │       │   ├── max_amount (float)
-    │       │   └── currency (str): default is "US"
+    │       │   └── currency (str)
     │       └── date_posted (datetime)
     ├── total_results (int)
     └── returned_results (int)
