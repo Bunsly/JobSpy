@@ -13,17 +13,19 @@ POST `/api/v1/jobs/`
 ### Request Schema
 
 ```plaintext
-Request
-├── Required
-│   ├── site_type (List[enum]): linkedin, zip_recruiter, indeed
-│   └── search_term (str)
-└── Optional
+{
+    Required
+    ├── site_type (List[enum]): linkedin, zip_recruiter, indeed
+    └── search_term (str)
+    Optional
     ├── location (int)
     ├── distance (int)
     ├── job_type (enum): fulltime, parttime, internship, contract
     ├── is_remote (bool)
     ├── results_wanted (int): per site_type
-    └── easy_apply (bool): only for linkedin
+    ├── easy_apply (bool): only for linkedin
+    └── output_format (enum): json, csv
+}
 ```
 
 ### Request Example
@@ -40,32 +42,37 @@ Request
 
 ### Response Schema
 ```plaintext
-site_type (enum)
-└── response (SiteResponse)
-    ├── success (bool)
-    ├── error (str)
-    ├── jobs (List[JobPost])
-    │   └── JobPost
-    │       ├── title (str)
-    │       ├── company_name (str)
-    │       ├── job_url (str)
-    │       ├── location (object)
-    │       │   ├── country (str)
-    │       │   ├── city (str)
-    │       │   ├── state (str)
-    │       ├── description (str)
-    │       ├── job_type (enum)
-    │       ├── compensation (object)
-    │       │   ├── interval (CompensationInterval): yearly, monthly, weekly, daily, hourly
-    │       │   ├── min_amount (float)
-    │       │   ├── max_amount (float)
-    │       │   └── currency (str): default is "US"
-    │       └── date_posted (datetime)
-    ├── total_results (int)
-    └── returned_results (int)
+{
+    site_type (enum): {
+        JobResponse
+        ├── success (bool)
+        ├── error (str)
+        ├── jobs (List[JobPost])
+        │   └── JobPost
+        │       ├── title (str)
+        │       ├── company_name (str)
+        │       ├── job_url (str)
+        │       ├── location (object)
+        │       │   ├── country (str)
+        │       │   ├── city (str)
+        │       │   ├── state (str)
+        │       ├── description (str)
+        │       ├── job_type (enum)
+        │       ├── compensation (object)
+        │       │   ├── interval (CompensationInterval): yearly, monthly, weekly, daily, hourly
+        │       │   ├── min_amount (float)
+        │       │   ├── max_amount (float)
+        │       │   └── currency (str): default is "US"
+        │       └── date_posted (datetime)
+        │
+        ├── total_results (int)
+        └── returned_results (int)
+    }, ...
+}
+
 ```
 
-### Response Example
+### Response Example (JSON)
 ```json
 {
     "indeed": {
@@ -118,6 +125,12 @@ site_type (enum)
         "returned_results": 15
     }
 }
+```
+### Response Example (CSV)
+```
+Site, Title, Company Name, Job URL, Country, City, State, Job Type, Compensation Interval, Min Amount, Max Amount, Currency, Date Posted, Description
+indeed, Software Engineer, INTEL, https://www.indeed.com/jobs/viewjob?jk=a2cfbb98d2002228, USA, Austin, TX, fulltime, yearly, 209760.0, 139480.0, USD, 2023-08-18T00:00:00, Job Description Designs...
+linkedin, Software Engineer 1, Public Partnerships | PPL, https://www.linkedin.com/jobs/view/3690013792, USA, Austin, TX, , , , , , 2023-07-31T00:00:00, Public Partnerships LLC supports...
 ```
 
 ## Installation

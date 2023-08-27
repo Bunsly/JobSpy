@@ -96,7 +96,9 @@ class ZipRecruiterScraper(Scraper):
             title = job.find("h2", {"class": "title"}).text
             company = job.find("a", {"class": "company_name"}).text.strip()
 
-            description, updated_job_url = ZipRecruiterScraper.get_description(job_url, session)
+            description, updated_job_url = ZipRecruiterScraper.get_description(
+                job_url, session
+            )
             if updated_job_url is not None:
                 job_url = updated_job_url
             if description is None:
