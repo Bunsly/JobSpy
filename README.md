@@ -12,7 +12,6 @@
 POST `/api/v1/jobs/`
 ### Request Schema
 
-
 ```plaintext
 Request
 ├── Required
@@ -27,7 +26,7 @@ Request
     └── easy_apply (bool): only for linkedin
 ```
 
-### Example
+### Request Example
 <pre>
 {
     "site_type": ["linkedin", "indeed"],
@@ -39,7 +38,7 @@ Request
 }
 </pre>
 
-## Response Schema
+### Response Schema
 ```plaintext
 site_type (enum)
 └── response (SiteResponse)
@@ -68,7 +67,7 @@ site_type (enum)
     └── returned_results (int)
 ```
 
-### Example
+### Response Example
 <details>
   <summary><code>Sample Response JSON</code></summary>
 <pre><code>{
