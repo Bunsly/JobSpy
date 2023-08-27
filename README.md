@@ -77,7 +77,7 @@ site_type (enum)
                 "company_name": "INTEL",
                 "job_url": "https://www.indeed.com/jobs/viewjob?jk=a2cfbb98d2002228",
                 "location": {
-                    "country": "US",
+                    "country": "USA",
                     "city": "Austin",
                     "state": "TX",
                 },
@@ -101,7 +101,7 @@ site_type (enum)
                 "company_name": "Public Partnerships | PPL",
                 "job_url": "https://www.linkedin.com/jobs/view/3690013792",
                 "location": {
-                    "country": "US",
+                    "country": "USA",
                     "city": "Austin",
                     "state": "TX",
                 },
