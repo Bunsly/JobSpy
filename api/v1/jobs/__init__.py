@@ -44,7 +44,6 @@ async def scrape_jobs(scraper_input: ScraperInput) -> ScraperResponse:
 
     scraper_response = ScraperResponse(**results)
 
-    print(scraper_input.output_format)
     if scraper_input.output_format == OutputFormat.CSV:
         csv_output = CSVFormatter.format(scraper_response)
         response = StreamingResponse(csv_output, media_type="text/csv")
