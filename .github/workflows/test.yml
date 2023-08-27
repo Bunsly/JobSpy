@@ -32,13 +32,16 @@ jobs:
     - name: Verify results count
       run: |
         curl -X 'POST' -H 'Content-Type: application/json' -d '{
-          "site_type": ["indeed", "linkedin", "zip_recruiter],
+          "site_type": ["indeed", "linkedin", "zip_recruiter"],   # <-- Added the missing closing double quote here
           "search_term": "software engineer",
           "location": "austin, tx",
           "distance": 10,
           "job_type": "fulltime",
           "results_wanted": 5
         }' http://0.0.0.0:8000/api/v1/jobs > response.json
+        
+        # Debugging log
+        cat response.json   # <-- This will print the server response
         
         indeed_results=$(jq '.indeed.returned_results' response.json)
         linkedin_results=$(jq '.linkedin.returned_results' response.json)
