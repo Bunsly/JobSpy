@@ -10,7 +10,6 @@ app = FastAPI(
 )
 app.include_router(api_router)
 
-
 @app.get("/health", tags=["health"])
 async def health_check():
     return {"message": "JobSpy ready to scrape"}

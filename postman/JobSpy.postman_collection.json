@@ -222,7 +222,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://127.0.0.1:8000/",
+					"raw": "http://127.0.0.1:8000/health",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -232,7 +232,7 @@
 					],
 					"port": "8000",
 					"path": [
-						""
+						"health"
 					]
 				}
 			},
@@ -243,7 +243,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://127.0.0.1:8000/",
+							"raw": "http://127.0.0.1:8000/health",
 							"protocol": "http",
 							"host": [
 								"127",
@@ -253,7 +253,7 @@
 							],
 							"port": "8000",
 							"path": [
-								""
+								"health"
 							]
 						}
 					},
