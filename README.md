@@ -13,7 +13,6 @@ POST `/api/v1/jobs/`
 ### Request Schema
 
 
-#### Parameters:
 ```plaintext
 Request
 ├── Required
@@ -28,7 +27,7 @@ Request
     └── easy_apply (bool): only for linkedin
 ```
 
-#### Example
+### Example
 <pre>
 {
     "site_type": ["linkedin", "indeed"],
