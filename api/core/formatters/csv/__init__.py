@@ -1,11 +1,9 @@
-import json
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
 import csv
 from io import StringIO
-
-import gspread
-from google.oauth2.service_account import Credentials
 from datetime import datetime
-
 
 from ...jobs import *
 from ...scrapers import *
@@ -21,15 +19,9 @@ class CSVFormatter:
                 "https://www.googleapis.com/auth/drive.file",
                 "https://www.googleapis.com/auth/drive",
             ]
-            if not GSHEET_SECRET_JSON:
-                raise ValueError("GSHEET_SECRET_JSON not provided!")
-
-            secret_dict = json.loads(GSHEET_SECRET_JSON)
-
-            credentials = Credentials.from_service_account_info(
-                secret_dict, scopes=scope
+            credentials = ServiceAccountCredentials.from_json_keyfile_name(
+                GSHEET_JSON_KEY_PATH, scope
             )
-
             gc = gspread.authorize(credentials)
             sh = gc.open(GSHEET_NAME)
 
@@ -45,6 +37,11 @@ class CSVFormatter:
                 worksheet.append_row(row)
         except Exception as e:
             raise e
+
+    @staticmethod
+    def generate_filename() -> str:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return f"JobSpy_results_{timestamp}.csv"
 
     @staticmethod
     def generate_filename() -> str:
