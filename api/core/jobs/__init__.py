@@ -66,4 +66,3 @@ class JobResponse(BaseModel):
         if v is None and values.get("jobs"):
             return len(values["jobs"])
         return v
-
