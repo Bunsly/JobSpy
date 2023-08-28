@@ -64,7 +64,6 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Attach Docker Image to Release
+      - name: Notify Docker Image Availability
         run: |
-          echo "Image ghcr.io/${{ github.repository }}/jobspy_api:latest is available under assets in the release."
-
+          echo "JobSpy Docker Image - ghcr.io/${{ github.repository }}/jobspy_api:latest"
