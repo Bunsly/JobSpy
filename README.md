@@ -7,6 +7,7 @@
 - Imports directly into **Google Sheets**
 - Optional JWT authorization
 
+![jobspy_gsheet](https://github.com/cullenwatson/JobSpy/assets/78247585/66dba8e9-25d9-4c4e-a65d-dec047fb6aea)
 
 ### API
 
