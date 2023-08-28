@@ -20,7 +20,7 @@ class CSVFormatter:
                 "https://www.googleapis.com/auth/drive",
             ]
             credentials = ServiceAccountCredentials.from_json_keyfile_name(
-                GSHEET_JSON_KEY_PATH, scope
+                "client_secret.json", scope
             )
             gc = gspread.authorize(credentials)
             sh = gc.open(GSHEET_NAME)
@@ -37,6 +37,11 @@ class CSVFormatter:
                 worksheet.append_row(row)
         except Exception as e:
             raise e
+
+    @staticmethod
+    def generate_filename() -> str:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return f"JobSpy_results_{timestamp}.csv"
 
     @staticmethod
     def generate_filename() -> str:
