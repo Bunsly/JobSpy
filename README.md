@@ -151,10 +151,11 @@ docker pull ghcr.io/cullenwatson/jobspy:latest
 By default:
 * Port: `8000`
 * Google sheet name: `JobSpy`
-* Relative path of `client_secret.json` (for Google Sheets, see below to obtain)
+* Uses relative path of `client_secret.json` (for Google Sheets, see below to obtain)
+
   
- To run the image with these default settings, use:
-  
+To run the image with these default settings, use:
+    
 Example (Windows):
 ```bash
 docker run -v %cd%/client_secret.json:/app/client_secret.json -p 8000:8000 ghcr.io/cullenwatson/jobspy
@@ -168,10 +169,11 @@ docker run -v $(pwd)/client_secret.json:/app/client_secret.json -p 8000:8000 ghc
 #### Using custom params
 
   Example: 
-   * Port `8030`
-   * Google sheet named `CustomName`
+   * Port: `8030`
+   * Google sheet name: `CustomName`
    * Absolute path of `client_secret.json`: `C:\config\client_secret.json`
-  
+
+  To pass these custom params:
 ```bash
 docker run -v C:\config\client_secret.json:/app/client_secret.json -e GSHEET_NAME=CustomName -e PORT=8030 -p 8030:8030 ghcr.io/cullenwatson/jobspy
 ```
