@@ -1,6 +1,6 @@
 from ..jobs import *
 from ..formatters import OutputFormat
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 
 class StatusException(Exception):
@@ -28,10 +28,12 @@ class ScraperInput(BaseModel):
     results_wanted: int = 15
 
 
-class ScraperResponse(BaseModel):
-    linkedin: Optional[JobResponse]
-    indeed: Optional[JobResponse]
-    zip_recruiter: Optional[JobResponse]
+class CommonResponse(BaseModel):
+    status: Optional[str]
+    error: Optional[str]
+    linkedin: Optional[Any] = None
+    indeed: Optional[Any] = None
+    zip_recruiter: Optional[Any] = None
 
 
 class Scraper:
