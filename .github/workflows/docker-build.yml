@@ -32,7 +32,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/$REPO_NAME_LOWER/jobspy_api:latest
+          tags: ghcr.io/${{ github.repository_owner }}/${{ env.REPO_NAME_LOWER }}/jobspy_api:latest
 
       - name: Create Release
         id: create_release
