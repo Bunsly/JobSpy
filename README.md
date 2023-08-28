@@ -142,11 +142,7 @@ linkedin, Software Engineer 1, Public Partnerships | PPL, https://www.linkedin.c
 ## Docker Image (simple)
 _Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/)_
 
-[Our Docker image](https://ghcr.io/cullenwatson/jobspy:latest) is continuously updated and available on GitHub Container Registry. You can pull and use the image with:
-
-```bash
-docker pull ghcr.io/cullenwatson/jobspy:latest
-```
+[JobSpy API Image](https://ghcr.io/cullenwatson/jobspy:latest) is continuously updated and available on GitHub Container Registry. You can pull and use the image with:
 
 ## Usage Docker
 
@@ -156,33 +152,37 @@ To pull the Docker image:
 docker pull ghcr.io/cullenwatson/jobspy:latest
 ```
 
-### Default params
+### Params
 
 By default, 
-* the Docker image expects `client_secret.json` (if using Google Sheets, to obtain see below) in the same directory as your terminal
+* `client_secret.json` in current directory  (if using Google Sheets, see below to obtain)
 * Listens on port `8000`
-* Put the jobs into a sheet that is named JobSpy
+* Places the jobs into a sheet that is named JobSpy
 
  To run the image with these default settings, use:
 
+Example (Windows):
 ```bash
-docker run -v client_secret.json:/app/client_secret.json -p 8000:8000 ghcr.io/cullenwatson/jobspy
+docker run -v %cd%/client_secret.json:/app/client_secret.json -p 8000:8000 ghcr.io/cullenwatson/jobspy
 ```
 
-### Using custom params (port, path & sheet name)
+Example (Unix):
+```bash
+docker run -v $(pwd)/client_secret.json:/app/client_secret.json -p 8000:8000 ghcr.io/cullenwatson/jobspy
+```
 
-For a custom port and path configuration, 
-  for example, 
+### Using custom params
+
+  For example, 
    * port `8030`,
    * path `C:\config\client_secret.json`
-   * Google sheet name "JobSheet"
+   * Google sheet name `JobSheet`
 
 ```bash
 docker run -v C:\config\client_secret.json:/app/client_secret.json -e GSHEET_NAME=JobSheet -e PORT=8030 -p 8030:8030 ghcr.io/cullenwatson/jobspy
 ```
 
-## Usage
-### Google Sheets Integration (you need a `client_secret.json`)
+### Google Sheets Integration
 
 #### Obtaining an Access Key: [Video Guide](https://youtu.be/w533wJuilao?si=5u3m50pRtdhqkg9Z&t=43)
   * Enable the [Google Sheets & Google Drive API](https://console.cloud.google.com/)
@@ -197,12 +197,6 @@ docker run -v C:\config\client_secret.json:/app/client_secret.json -e GSHEET_NAM
   * Share the Google sheet with the email in `client_email` in the `client_secret.json`  above with editor rights
   * If you changed the name of the sheet, put the name in `GSHEET_NAME` in `/settings.py`
 
-## Python installtion (alternative to Docker)
-_Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_  
-1. Clone this repository `git clone https://github.com/cullenwatson/jobspy`
-2. Install the dependencies with `pip install -r requirements.txt`
-4. Run the server with `uvicorn main:app --reload`
-
 ### How to call the API
 
 #### [Postman](https://www.postman.com/downloads/) (preferred):
@@ -213,6 +207,12 @@ To use Postman:
 #### Swagger UI:
 Or you can call the API with the interactive documentation at [localhost:8000/docs](http://localhost:8000/docs).
 
+
+## Python installtion (alternative to Docker)
+_Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_  
+1. Clone this repository `git clone https://github.com/cullenwatson/jobspy`
+2. Install the dependencies with `pip install -r requirements.txt`
+4. Run the server with `uvicorn main:app --reload`
 ## FAQ
 
 ### I'm having issues with my queries. What should I do?
