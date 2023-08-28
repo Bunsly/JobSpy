@@ -146,7 +146,7 @@ _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/)
 ## Usage
 ### Google Sheets Integration (Optional)
 
-#### Obtaining an Access Key : [Video Guide](https://www.youtube.com/watch?v=w533wJuilao)
+#### Obtaining an Access Key: [Video Guide](https://youtu.be/w533wJuilao?si=5u3m50pRtdhqkg9Z&t=43)
   * Enable the [Google Sheets & Google Drive API](https://console.cloud.google.com/)
   * Create credentials -> service account -> create & continue
   * Select role -> basic: editor -> done
@@ -156,7 +156,7 @@ _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/)
 #### Using the key in the repo
   * Copy the key file into the JobSpy repo as `/client_secret.json`
   * Go to [my template sheet](https://docs.google.com/spreadsheets/d/1mOgb-ZGZy_YIhnW9OCqIVvkFwiKFvhMBjNcbakW7BLo/edit?usp=sharing) & save as a copy into your account
-  * Share the sheet with the email from the service account above with editor rights
+  * Share the Google sheet with the email in `client_email` in the `client_secret.json`  above with editor rights
   * If you changed the name of the sheet, put the name in `GSHEET_NAME` in `/settings.py`
 
 ### How to call the API
