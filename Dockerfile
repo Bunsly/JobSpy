@@ -5,11 +5,8 @@ WORKDIR /app
 COPY . /app
 
 RUN apt-get update && \
-    apt-get install -y jq build-essential && \
-    pip install --no-cache-dir -r requirements.txt && \
-    apt-get remove -y build-essential && \
-    apt-get autoremove -y && \
-    apt-get clean
+    apt-get install -y jq && \
+    pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8000
 
