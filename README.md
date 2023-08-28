@@ -151,7 +151,7 @@ docker pull ghcr.io/cullenwatson/jobspy:latest
 By default:
 * Port: `8000`
 * Google sheet name: `JobSpy`
-* Uses relative path of `client_secret.json` (for Google Sheets, see below to obtain)
+* Relative path of `client_secret.json` (for Google Sheets, see below to obtain)
 
   
 To run the image with these default settings, use:
