@@ -138,13 +138,51 @@ linkedin, Software Engineer 1, Public Partnerships | PPL, https://www.linkedin.c
 ```
 
 ## Installation
-_Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_  
-1. Clone this repository `git clone https://github.com/cullenwatson/jobspy`
-2. Install the dependencies with `pip install -r requirements.txt`
-4. Run the server with `uvicorn main:app --reload`
+
+## Docker Image (simple)
+_Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/)_
+
+[Our Docker image](https://ghcr.io/cullenwatson/jobspy:latest) is continuously updated and available on GitHub Container Registry. You can pull and use the image with:
+
+```bash
+docker pull ghcr.io/cullenwatson/jobspy:latest
+```
+
+## Usage Docker
+
+To pull the Docker image:
+
+```bash
+docker pull ghcr.io/cullenwatson/jobspy:latest
+```
+
+### Default params
+
+By default, 
+* the Docker image expects `client_secret.json` (if using Google Sheets, to obtain see below) in the same directory as your terminal
+* Listens on port `8000`
+* Put the jobs into a sheet that is named JobSpy
+
+ To run the image with these default settings, use:
+
+```bash
+docker run -v client_secret.json:/app/client_secret.json -p 8000:8000 ghcr.io/cullenwatson/jobspy
+```
+
+### Using custom params (port, path & sheet name)
+
+For a custom port and path configuration, 
+  for example, 
+   * port `8030`,
+   * path `C:\config\client_secret.json`
+   * Google sheet name "JobSheet"
+
+```bash
+docker run -v C:\config\client_secret.json:/app/client_secret.json -e GSHEET_NAME=JobSheet -e PORT=8030 -p 8030:8030 ghcr.io/cullenwatson/jobspy
+```
 
 ## Usage
-### Google Sheets Integration (Optional)
+### Google Sheets Integration (you need a `client_secret.json`)
 
 #### Obtaining an Access Key: [Video Guide](https://youtu.be/w533wJuilao?si=5u3m50pRtdhqkg9Z&t=43)
   * Enable the [Google Sheets & Google Drive API](https://console.cloud.google.com/)
@@ -159,9 +197,13 @@ _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/)
   * Share the Google sheet with the email in `client_email` in the `client_secret.json`  above with editor rights
   * If you changed the name of the sheet, put the name in `GSHEET_NAME` in `/settings.py`
 
+## Python installtion (alternative to Docker)
+_Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_  
+1. Clone this repository `git clone https://github.com/cullenwatson/jobspy`
+2. Install the dependencies with `pip install -r requirements.txt`
+4. Run the server with `uvicorn main:app --reload`
+
 ### How to call the API
-
-
 
 #### [Postman](https://www.postman.com/downloads/) (preferred):
 To use Postman:
