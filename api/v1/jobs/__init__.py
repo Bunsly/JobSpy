@@ -6,13 +6,13 @@ from concurrent.futures import ThreadPoolExecutor
 from api.core.scrapers.indeed import IndeedScraper
 from api.core.scrapers.ziprecruiter import ZipRecruiterScraper
 from api.core.scrapers.linkedin import LinkedInScraper
-from api.core.formatters.csv import CSVFormatter, generate_filename
+from api.core.formatters.csv import CSVFormatter
 from api.core.scrapers import (
     ScraperInput,
     Site,
     JobResponse,
     OutputFormat,
-    ScraperResponse,
+    CommonResponse,
 )
 from typing import List, Dict, Tuple, Union
 
@@ -26,7 +26,7 @@ SCRAPER_MAPPING = {
 
 
 @router.post("/")
-async def scrape_jobs(scraper_input: ScraperInput) -> ScraperResponse:
+async def scrape_jobs(scraper_input: ScraperInput) -> CommonResponse:
     """
     Asynchronously scrapes job data from multiple job sites.
     :param scraper_input:
@@ -42,14 +42,26 @@ async def scrape_jobs(scraper_input: ScraperInput) -> ScraperResponse:
     with ThreadPoolExecutor() as executor:
         results = dict(executor.map(scrape_site, scraper_input.site_type))
 
-    scraper_response = ScraperResponse(**results)
+    scraper_response = CommonResponse(status="JSON response success", **results)
 
     if scraper_input.output_format == OutputFormat.CSV:
         csv_output = CSVFormatter.format(scraper_response)
         response = StreamingResponse(csv_output, media_type="text/csv")
         response.headers[
             "Content-Disposition"
-        ] = f"attachment; filename={generate_filename()}"
+        ] = f"attachment; filename={CSVFormatter.generate_filename()}"
         return response
 
-    return scraper_response
+    elif scraper_input.output_format == OutputFormat.GSHEET:
+        csv_output = CSVFormatter.format(scraper_response)
+        try:
+            CSVFormatter.upload_to_google_sheet(csv_output)
+            return CommonResponse(status="Successfully uploaded to Google Sheets")
+
+        except Exception as e:
+            return CommonResponse(
+                status="Failed to upload to Google Sheet", error=str(e)
+            )
+
+    else:
+        return scraper_response

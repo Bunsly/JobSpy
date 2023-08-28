@@ -63,11 +63,13 @@ jobs:
 
     - name: Check error field in response
       run: |
+        global_error=$(jq '.error' response.json)
         indeed_error=$(jq '.indeed.error' response.json)
         linkedin_error=$(jq '.linkedin.error' response.json)
 
         if [[ "$indeed_error" != "null" || "$linkedin_error" != "null" ]]; then
           echo "Error found in response:"
+          echo "Global Error: $global_error"
           echo "Indeed Error: $indeed_error"
           echo "LinkedIn Error: $linkedin_error"
           exit 1

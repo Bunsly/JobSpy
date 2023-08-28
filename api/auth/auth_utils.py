@@ -4,11 +4,9 @@ from jose import jwt, JWTError
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 
-from settings import *
 from api.core.users import TokenData
 from api.auth.db_utils import UserInDB, get_user
 
-load_dotenv()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 
