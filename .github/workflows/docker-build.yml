@@ -35,7 +35,9 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/${{ env.REPO_NAME_LOWER }}/jobspy_api:latest
 
       - name: Set Release Tag Name
-        run: echo "RELEASE_TAG=${{ github.ref }}-$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+        run: |
+          TAG_NAME=$(echo ${{ github.ref }} | sed -e 's/refs\/heads\///' -e 's/\//-/g')
+          echo "RELEASE_TAG=${TAG_NAME}-$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
 
       - name: Create Release
         id: create_release

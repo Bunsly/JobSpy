@@ -26,7 +26,9 @@ class CSVFormatter:
 
             secret_dict = json.loads(GSHEET_SECRET_JSON)
 
-            credentials = Credentials.from_service_account_info(secret_dict, scopes=scope)
+            credentials = Credentials.from_service_account_info(
+                secret_dict, scopes=scope
+            )
 
             gc = gspread.authorize(credentials)
             sh = gc.open(GSHEET_NAME)
