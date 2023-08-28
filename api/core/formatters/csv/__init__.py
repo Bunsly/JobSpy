@@ -20,7 +20,7 @@ class CSVFormatter:
                 "https://www.googleapis.com/auth/drive",
             ]
             credentials = ServiceAccountCredentials.from_json_keyfile_name(
-                GSHEET_JSON_KEY_PATH, scope
+                "/app/client_secret.json", scope
             )
             gc = gspread.authorize(credentials)
             sh = gc.open(GSHEET_NAME)
