@@ -23,13 +23,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Set Repo Name to Lowercase
+        run: echo "REPO_NAME_LOWER=$(echo ${{ github.event.repository.name }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Build and Push Image
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name | lower }}/jobspy_api:latest
+          tags: ghcr.io/${{ github.repository_owner }}/$REPO_NAME_LOWER/jobspy_api:latest
 
       - name: Create Release
         id: create_release
