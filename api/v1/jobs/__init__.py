@@ -60,7 +60,7 @@ async def scrape_jobs(scraper_input: ScraperInput) -> CommonResponse:
 
         except Exception as e:
             return CommonResponse(
-                status="Failed to upload to Google Sheet", error=str(e)
+                status="Failed to upload to Google Sheet", error=repr(e)
             )
 
     else:
