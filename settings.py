@@ -2,11 +2,11 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-# gsheets (template to copy at https://docs.google.com/spreadsheets/d/1HAnn-aPv-BO4QTEzfIWc-5iw50duyMoTgX8o3RsEOWs/edit?usp=sharing)
-GSHEET_JSON_KEY_PATH = "client_secret.json"
-GSHEET_NAME = "JobSpy"
+# Google sheets output_format
+GSHEET_NAME = os.environ.get("GSHEET_NAME", "JobSpy")
+GSHEET_SECRET_JSON = os.environ.get("GSHEET_SECRET_JSON")
 
-# optional autha
+# optional auth
 AUTH_REQUIRED = False
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")

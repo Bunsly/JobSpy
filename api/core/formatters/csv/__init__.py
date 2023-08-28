@@ -1,9 +1,11 @@
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-
+import json
 import csv
 from io import StringIO
+
+import gspread
+from google.oauth2.service_account import Credentials
 from datetime import datetime
+
 
 from ...jobs import *
 from ...scrapers import *
@@ -19,9 +21,13 @@ class CSVFormatter:
                 "https://www.googleapis.com/auth/drive.file",
                 "https://www.googleapis.com/auth/drive",
             ]
-            credentials = ServiceAccountCredentials.from_json_keyfile_name(
-                GSHEET_JSON_KEY_PATH, scope
-            )
+            if not GSHEET_SECRET_JSON:
+                raise ValueError("GSHEET_SECRET_JSON not provided!")
+
+            secret_dict = json.loads(GSHEET_SECRET_JSON)
+
+            credentials = Credentials.from_service_account_info(secret_dict, scopes=scope)
+
             gc = gspread.authorize(credentials)
             sh = gc.open(GSHEET_NAME)
 
