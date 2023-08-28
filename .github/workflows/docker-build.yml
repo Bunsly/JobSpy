@@ -29,4 +29,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/JobSpy:latest
+          tags: ghcr.io/${{ github.repository_owner }}/jobspy:latest
