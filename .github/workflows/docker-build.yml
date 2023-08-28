@@ -34,11 +34,24 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/${{ env.REPO_NAME_LOWER }}/jobspy_api:latest
 
+      - name: Fetch Latest Release Tag
+        id: latest_version
+        run: |
+          LATEST_TAG=$(curl --silent "https://api.github.com/repos/${{ github.repository }}/releases/latest" \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" | jq -r .tag_name)
+          echo "::set-output name=version::${LATEST_TAG}"
+
       - name: Set Release Tag Name
         run: |
-          # This creates a tag based on the current date: v0.YYMMDD.0
-          TAG_VERSION="v0.$(date +'%y%m%d').0"
-          echo "RELEASE_TAG=${TAG_VERSION}" >> $GITHUB_ENV
+          CURRENT_VERSION=${{ steps.latest_version.outputs.version }}
+          if [[ $CURRENT_VERSION == v0.*.0 ]]; then
+            MINOR_VERSION=$(echo $CURRENT_VERSION | cut -d. -f2)
+            NEW_MINOR_VERSION=$((MINOR_VERSION + 1))
+            RELEASE_TAG="v0.${NEW_MINOR_VERSION}.0"
+          else
+            RELEASE_TAG="v0.1.0"
+          fi
+          echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
       - name: Create Release
         id: create_release
@@ -47,7 +60,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ env.RELEASE_TAG }}
-          release_name: Release ${{ env.RELEASE_TAG }}
+          release_name: Docker ${{ env.RELEASE_TAG }}
           draft: false
           prerelease: false
 
