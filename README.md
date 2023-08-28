@@ -13,8 +13,7 @@
 
 POST `/api/v1/jobs/`
 ### Request Schema
-
-```plaintex
+```plaintext
 Required
 ├── site_type (List[enum]): linkedin, zip_recruiter, indeed
 └── search_term (str)
@@ -27,7 +26,6 @@ Optional
 ├── easy_apply (bool): only for linkedin
 └── output_format (enum): json, csv, gsheet
 ```
-
 ### Request Example
 ```json
 "site_type": ["indeed", "linkedin"],
@@ -38,7 +36,6 @@ Optional
 "results_wanted": 15
 "output_format": "gsheet"
 ```
-
 ### Response Schema
 ```plaintext
 site_type (enum): 
@@ -138,106 +135,104 @@ linkedin, Software Engineer 1, Public Partnerships | PPL, https://www.linkedin.c
 ```
 
 ## Installation
-
-## Docker Image (simple)
+### Docker Setup
 _Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/)_
 
-[JobSpy API Image](https://ghcr.io/cullenwatson/jobspy:latest) is continuously updated and available on GitHub Container Registry. You can pull and use the image with:
-
-## Usage Docker
-
+[JobSpy API Image](https://ghcr.io/cullenwatson/jobspy:latest) is continuously updated and available on GitHub Container Registry.
+  
 To pull the Docker image:
 
 ```bash
 docker pull ghcr.io/cullenwatson/jobspy:latest
 ```
-
-### Params
-
-By default, 
-* `client_secret.json` in current directory  (if using Google Sheets, see below to obtain)
-* Listens on port `8000`
-* Places the jobs into a sheet that is named JobSpy
-
+  
+#### Params
+  
+By default:
+* Port: `8000`
+* Google sheet name: `JobSpy`
+* Relative path of `client_secret.json` (for Google Sheets, see below to obtain)
+  
  To run the image with these default settings, use:
-
+  
 Example (Windows):
 ```bash
 docker run -v %cd%/client_secret.json:/app/client_secret.json -p 8000:8000 ghcr.io/cullenwatson/jobspy
 ```
-
+  
 Example (Unix):
 ```bash
 docker run -v $(pwd)/client_secret.json:/app/client_secret.json -p 8000:8000 ghcr.io/cullenwatson/jobspy
 ```
+  
+#### Using custom params
 
-### Using custom params
-
-  For example, 
-   * port `8030`,
-   * path `C:\config\client_secret.json`
-   * Google sheet name `JobSheet`
-
+  Example: 
+   * Port `8030`
+   * Google sheet named `CustomName`
+   * Absolute path of `client_secret.json`: `C:\config\client_secret.json`
+  
 ```bash
-docker run -v C:\config\client_secret.json:/app/client_secret.json -e GSHEET_NAME=JobSheet -e PORT=8030 -p 8030:8030 ghcr.io/cullenwatson/jobspy
+docker run -v C:\config\client_secret.json:/app/client_secret.json -e GSHEET_NAME=CustomName -e PORT=8030 -p 8030:8030 ghcr.io/cullenwatson/jobspy
 ```
-
-### Google Sheets Integration
-
+  
+### Python installation (alternative to Docker)
+_Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_  
+1. Clone this repository `git clone https://github.com/cullenwatson/jobspy`
+2. Install the dependencies with `pip install -r requirements.txt`
+4. Run the server with `uvicorn main:app --reload`
+  
+### Google Sheets Setup
+  
 #### Obtaining an Access Key: [Video Guide](https://youtu.be/w533wJuilao?si=5u3m50pRtdhqkg9Z&t=43)
   * Enable the [Google Sheets & Google Drive API](https://console.cloud.google.com/)
   * Create credentials -> service account -> create & continue
   * Select role -> basic: editor -> done
   * Click on the email you just created in the service account list
   * Go to the Keys tab -> add key -> create new key -> JSON -> Create
-
+  
 #### Using the key in the repo
-  * Copy the key file into the JobSpy repo as `/client_secret.json`
-  * Go to [my template sheet](https://docs.google.com/spreadsheets/d/1mOgb-ZGZy_YIhnW9OCqIVvkFwiKFvhMBjNcbakW7BLo/edit?usp=sharing) & save as a copy into your account
-  * Share the Google sheet with the email in `client_email` in the `client_secret.json`  above with editor rights
-  * If you changed the name of the sheet, put the name in `GSHEET_NAME` in `/settings.py`
-
+  * Copy the key file into the JobSpy repo as `client_secret.json`
+  * Go to [my template sheet](https://docs.google.com/spreadsheets/d/1mOgb-ZGZy_YIhnW9OCqIVvkFwiKFvhMBjNcbakW7BLo/edit?usp=sharing): File -> Make a Copy -> Rename to JobSpy
+  * Share the Google sheet with the email located in the field `client_email` in the `client_secret.json` above with editor rights
+  * If you changed the name of the sheet:
+    - Python install: add `.env` in the repo and add `GSHEET_NAME` param with the sheet name as the value, e.g. `GSHEET_NAME=CustomName`
+    - Docker install: use custom param `-e GSHEET_NAME=CustomName` in `docker run` (see above)
+  
 ### How to call the API
-
+  
 #### [Postman](https://www.postman.com/downloads/) (preferred):
 To use Postman:
 1. Locate the files in the `/postman/` directory.
 2. Import the Postman collection and environment JSON files.
-
+  
 #### Swagger UI:
 Or you can call the API with the interactive documentation at [localhost:8000/docs](http://localhost:8000/docs).
-
-
-## Python installtion (alternative to Docker)
-_Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_  
-1. Clone this repository `git clone https://github.com/cullenwatson/jobspy`
-2. Install the dependencies with `pip install -r requirements.txt`
-4. Run the server with `uvicorn main:app --reload`
+  
 ## FAQ
-
+  
 ### I'm having issues with my queries. What should I do?
-
+  
 Try reducing the number of `results_wanted` and/or broadening the filters. If issues still persist, feel free to submit an issue. 
-
+  
 ### I'm getting response code 429. What should I do?
 You have been blocked by the job board site for sending too many requests. Wait a couple seconds or use a VPN.
-
+  
 ### How to enable auth?
-
+  
 Change `AUTH_REQUIRED` in `/settings.py` to `True`
-
+  
 The auth uses [supabase](https://supabase.com). Create a project with a `users` table and disable RLS.  
   
 <img src="https://github.com/cullenwatson/jobspy/assets/78247585/03af18e1-5386-49ad-a2cf-d34232d9d747" width="500">
-
-
+  
 Add these three environment variables:
-
+  
 - `SUPABASE_URL`: go to project settings -> API -> Project URL  
 - `SUPABASE_KEY`: go to project settings -> API -> service_role secret
 - `JWT_SECRET_KEY` - type `openssl rand -hex 32` in terminal to create a 32 byte secret key
-
+  
 Use these endpoints to register and get an access token: 
-
+  
 ![image](https://github.com/cullenwatson/jobspy/assets/78247585/c84c33ec-1fe8-4152-9c8c-6c4334aecfc3)
 
