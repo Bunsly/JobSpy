@@ -155,7 +155,7 @@ _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/)
 
 #### Using the key in the repo
   * Copy the key file into the JobSpy repo as `/client_secret.json`
-  * Go to [my template sheet](https://docs.google.com/spreadsheets/d/1HAnn-aPv-BO4QTEzfIWc-5iw50duyMoTgX8o3RsEOWs/edit?usp=sharing) & save as a copy into your account
+  * Go to [my template sheet](https://docs.google.com/spreadsheets/d/1mOgb-ZGZy_YIhnW9OCqIVvkFwiKFvhMBjNcbakW7BLo/edit?usp=sharing) & save as a copy into your account
   * Share the sheet with the email from the service account above with editor rights
   * If you changed the name of the sheet, put the name in `GSHEET_NAME` in `/settings.py`
 
