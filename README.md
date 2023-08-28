@@ -4,6 +4,7 @@
 
 - Scrapes job postings from **LinkedIn**, **Indeed** & **ZipRecruiter** simultaneously
 - Returns jobs as JSON or CSV with title, location, company, description & other data
+- Imports directly into **Google Sheets**
 - Optional JWT authorization
 
 
@@ -23,7 +24,7 @@ Optional
 ├── is_remote (bool)
 ├── results_wanted (int): per site_type
 ├── easy_apply (bool): only for linkedin
-└── output_format (enum): json, csv
+└── output_format (enum): json, csv, gsheet
 ```
 
 ### Request Example
@@ -34,6 +35,7 @@ Optional
 "distance": 10,
 "job_type": "fulltime",
 "results_wanted": 15
+"output_format": "gsheet"
 ```
 
 ### Response Schema
@@ -63,7 +65,16 @@ JobResponse
 ├── total_results (int)
 └── returned_results (int) 
 ```
-
+### Response Example (GOOGLE SHEETS)
+```json
+{
+    "status": "Successfully uploaded to Google Sheets",
+    "error": null,
+    "linkedin": null,
+    "indeed": null,
+    "zip_recruiter": null
+}
+```
 ### Response Example (JSON)
 ```json
 {
@@ -132,14 +143,32 @@ _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/)
 4. Run the server with `uvicorn main:app --reload`
 
 ## Usage
+### Google Sheets Integration (Optional)
 
-### Swagger UI:
-To interact with the API documentation, navigate to [localhost:8000/docs](http://localhost:8000/docs).
+#### Obtaining an Access Key : [Video Guide](https://www.youtube.com/watch?v=w533wJuilao)
+  * Enable the [Google Sheets & Google Drive API](https://console.cloud.google.com/)
+  * Create credentials -> service account -> create & continue
+  * Select role -> basic: editor -> done
+  * Click on the email you just created in the service account list
+  * Go to the Keys tab -> add key -> create new key -> JSON -> Create
 
-### Postman:
+#### Using the key in the repo
+  * Copy the key file into the JobSpy repo as `/client_secret.json`
+  * Go to [my template sheet](https://docs.google.com/spreadsheets/d/1HAnn-aPv-BO4QTEzfIWc-5iw50duyMoTgX8o3RsEOWs/edit?usp=sharing) & save as a copy into your account
+  * Share the sheet with the email from the service account above
+  * If you changed the name of the sheet, put the name in `GSHEET_NAME` in `/settings.py`
+
+### How to call the API
+
+
+
+#### [Postman](https://www.postman.com/downloads/) (preferred):
 To use Postman:
 1. Locate the files in the `/postman/` directory.
 2. Import the Postman collection and environment JSON files.
+
+#### Swagger UI:
+Or you can call the API with the interactive documentation at [localhost:8000/docs](http://localhost:8000/docs).
 
 ## FAQ
 
