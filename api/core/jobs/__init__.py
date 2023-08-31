@@ -16,6 +16,7 @@ class JobType(Enum):
     NIGHTS = "nights"
     OTHER = "other"
     SUMMER = "summer"
+    VOLUNTEER = "volunteer"
 
 
 class Location(BaseModel):
@@ -48,7 +49,6 @@ class JobPost(BaseModel):
     description: str = None
     job_type: JobType = None
     compensation: Compensation = None
-    # why is 08-28-2023 a validiation error for type date? how do I fix this?
     date_posted: date = None
 
 
