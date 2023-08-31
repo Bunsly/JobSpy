@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 from datetime import datetime
 
 import requests
@@ -103,7 +103,7 @@ class LinkedInScraper(Scraper):
                     datetime_tag = metadata_card.find(
                         "time", class_="job-search-card__listdate"
                     )
-                    description = LinkedInScraper.get_description(job_url)
+                    description, job_type = LinkedInScraper.get_description(job_url)
                     if datetime_tag:
                         datetime_str = datetime_tag["datetime"]
                         date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
@@ -117,6 +117,7 @@ class LinkedInScraper(Scraper):
                         location=location,
                         date_posted=date_posted,
                         job_url=job_url,
+                        job_type=job_type,
                     )
                     job_list.append(job_post)
                     if (
@@ -149,7 +150,7 @@ class LinkedInScraper(Scraper):
         """
         response = requests.get(job_page_url, allow_redirects=True)
         if response.status_code not in range(200, 400):
-            return None
+            return None, None
 
         soup = BeautifulSoup(response.text, "html.parser")
         div_content = soup.find(
@@ -159,7 +160,36 @@ class LinkedInScraper(Scraper):
         text_content = None
         if div_content:
             text_content = " ".join(div_content.get_text().split()).strip()
-        return text_content
+
+        def get_job_type(
+            soup: BeautifulSoup,
+        ) -> Tuple[Optional[str], Optional[JobType]]:
+            """
+            Gets the job type from job page
+            :param soup:
+            :return: JobType
+            """
+            h3_tag = soup.find(
+                "h3",
+                class_="description__job-criteria-subheader",
+                string=lambda text: "Employment type" in text,
+            )
+
+            employment_type = None
+            if h3_tag:
+                employment_type_span = h3_tag.find_next_sibling(
+                    "span",
+                    class_="description__job-criteria-text description__job-criteria-text--criteria",
+                )
+                if employment_type_span:
+                    employment_type = employment_type_span.get_text(strip=True)
+                    employment_type = employment_type.lower()
+                    employment_type = employment_type.replace("-", "")
+                    print(employment_type)
+
+            return JobType(employment_type)
+
+        return text_content, get_job_type(soup)
 
     @staticmethod
     def get_location(metadata_card: Optional[Tag]) -> Location:

@@ -16,6 +16,7 @@ class JobType(Enum):
     NIGHTS = "nights"
     OTHER = "other"
     SUMMER = "summer"
+    VOLUNTEER = "volunteer"
 
 
 class Location(BaseModel):
