@@ -39,9 +39,8 @@ async def scrape_jobs(scraper_input: ScraperInput) -> CommonResponse:
         scraped_data: JobResponse = scraper.scrape(scraper_input)
         return (site.value, scraped_data)
 
-    with ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor(max_workers=3) as executor:
         results = dict(executor.map(scrape_site, scraper_input.site_type))
-
     scraper_response = CommonResponse(status="JSON response success", **results)
 
     if scraper_input.output_format == OutputFormat.CSV:
@@ -56,11 +55,13 @@ async def scrape_jobs(scraper_input: ScraperInput) -> CommonResponse:
         csv_output = CSVFormatter.format(scraper_response)
         try:
             CSVFormatter.upload_to_google_sheet(csv_output)
-            return CommonResponse(status="Successfully uploaded to Google Sheets")
+            return CommonResponse(
+                status="Successfully uploaded to Google Sheets", **results
+            )
 
         except Exception as e:
             return CommonResponse(
-                status="Failed to upload to Google Sheet", error=repr(e)
+                status="Failed to upload to Google Sheet", error=repr(e), **results
             )
 
     else:

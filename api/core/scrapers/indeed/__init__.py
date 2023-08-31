@@ -1,6 +1,7 @@
 import re
 import json
 from typing import Optional, Tuple, List
+from datetime import datetime
 
 import tls_client
 import urllib.parse
@@ -14,6 +15,8 @@ from api.core.scrapers import Scraper, ScraperInput, Site, StatusException
 
 from concurrent.futures import ThreadPoolExecutor, Future
 import math
+import traceback
+import sys
 
 
 class ParsingException(Exception):
@@ -69,6 +72,8 @@ class IndeedScraper(Scraper):
             raise StatusException(response.status_code)
 
         soup = BeautifulSoup(response.content, "html.parser")
+        if "did not match any jobs" in str(soup):
+            raise ParsingException("Search did not match any jobs")
 
         jobs = IndeedScraper.parse_jobs(
             soup
@@ -84,6 +89,7 @@ class IndeedScraper(Scraper):
 
         def process_job(job) -> Optional[JobPost]:
             job_url = f'{self.url}/jobs/viewjob?jk={job["jobkey"]}'
+            job_url_client = f'{self.url}/viewjob?jk={job["jobkey"]}'
             if job_url in self.seen_urls:
                 return None
 
@@ -102,14 +108,15 @@ class IndeedScraper(Scraper):
                 if interval in CompensationInterval.__members__:
                     compensation = Compensation(
                         interval=CompensationInterval[interval],
-                        min_amount=extracted_salary.get("max"),
-                        max_amount=extracted_salary.get("min"),
+                        min_amount=int(extracted_salary.get("max")),
+                        max_amount=int(extracted_salary.get("min")),
                         currency=currency,
                     )
 
             job_type = IndeedScraper.get_job_type(job)
             timestamp_seconds = job["pubDate"] / 1000
             date_posted = datetime.fromtimestamp(timestamp_seconds)
+            date_posted = date_posted.strftime("%Y-%m-%d")
 
             description = self.get_description(job_url, session)
             li_elements = snippet_html.find_all("li")
@@ -129,7 +136,7 @@ class IndeedScraper(Scraper):
                 job_type=job_type,
                 compensation=compensation,
                 date_posted=date_posted,
-                job_url=job_url,
+                job_url=job_url_client,
             )
             return job_post
 
@@ -167,12 +174,12 @@ class IndeedScraper(Scraper):
                     jobs, _ = future.result()
 
                     job_list += jobs
-
         except StatusException as e:
             return JobResponse(
                 success=False,
                 error=f"Indeed returned status code {e.status_code}",
             )
+
         except ParsingException as e:
             return JobResponse(
                 success=False,
@@ -251,6 +258,7 @@ class IndeedScraper(Scraper):
             :return: script_tag
             """
             script_tags = soup.find_all("script")
+
             for tag in script_tags:
                 if (
                     tag.string
