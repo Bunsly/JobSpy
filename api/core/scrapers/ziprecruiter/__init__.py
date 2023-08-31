@@ -1,4 +1,6 @@
+import math
 import json
+from datetime import datetime
 from typing import Optional, Tuple, List
 from urllib.parse import urlparse, parse_qs
 
@@ -11,7 +13,6 @@ from concurrent.futures import ThreadPoolExecutor, Future
 from api.core.jobs import JobPost
 from api.core.scrapers import Scraper, ScraperInput, Site, StatusException
 from api.core.jobs import *
-import math
 
 
 class ZipRecruiterScraper(Scraper):
@@ -173,6 +174,11 @@ class ZipRecruiterScraper(Scraper):
                 success=False,
                 error=f"ZipRecruiter returned status code {e.status_code}",
             )
+        except Exception as e:
+            return JobResponse(
+                success=False,
+                error=f"ZipRecruiter failed to scrape: {e}",
+            )
 
         #: note: this does not handle if the results are more or less than the results_wanted
 
@@ -226,7 +232,7 @@ class ZipRecruiterScraper(Scraper):
         return CompensationInterval(interval_str)
 
     @staticmethod
-    def get_date_posted(job: BeautifulSoup) -> Optional[str]:
+    def get_date_posted(job: BeautifulSoup) -> Optional[datetime.date]:
         """
         Extracts the date a job was posted
         :param job
@@ -235,10 +241,21 @@ class ZipRecruiterScraper(Scraper):
         button = job.find(
             "button", {"class": "action_input save_job zrs_btn_secondary_200"}
         )
-        url_time = button["data-href"]
+        if not button:
+            return None
+
+        url_time = button.get("data-href", "")
         url_components = urlparse(url_time)
         params = parse_qs(url_components.query)
-        return params.get("posted_time", [None])[0]
+        posted_time_str = params.get("posted_time", [None])[0]
+
+        if posted_time_str:
+            posted_date = datetime.strptime(
+                posted_time_str, "%Y-%m-%dT%H:%M:%SZ"
+            ).date()
+            return posted_date
+
+        return None
 
     @staticmethod
     def get_compensation(job: BeautifulSoup) -> Optional[Compensation]:
@@ -265,9 +282,9 @@ class ZipRecruiterScraper(Scraper):
                 amount = amount.replace(",", "").strip("$ ").split(" ")[0]
                 if "K" in amount:
                     amount = amount.replace("K", "")
-                    amount = float(amount) * 1000
+                    amount = int(float(amount)) * 1000
                 else:
-                    amount = float(amount)
+                    amount = int(float(amount))
                 amounts.append(amount)
 
             compensation = Compensation(

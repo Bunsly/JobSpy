@@ -1,5 +1,5 @@
 from typing import Union
-from datetime import datetime
+from datetime import date
 from enum import Enum
 
 from pydantic import BaseModel, validator
@@ -34,9 +34,9 @@ class CompensationInterval(Enum):
 
 class Compensation(BaseModel):
     interval: CompensationInterval
-    min_amount: float
-    max_amount: float
-    currency: str = "USA"
+    min_amount: int
+    max_amount: int
+    currency: str = "USD"
 
 
 class JobPost(BaseModel):
@@ -48,7 +48,8 @@ class JobPost(BaseModel):
     description: str = None
     job_type: JobType = None
     compensation: Compensation = None
-    date_posted: datetime = None
+    # why is 08-28-2023 a validiation error for type date? how do I fix this?
+    date_posted: date = None
 
 
 class JobResponse(BaseModel):
