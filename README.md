@@ -156,7 +156,7 @@ By default:
   
 To run the image with these default settings, use:
     
-Example (Windows):
+Example (Cmd Prompt - Windows):
 ```bash
 docker run -v %cd%/client_secret.json:/app/client_secret.json -p 8000:8000 ghcr.io/cullenwatson/jobspy
 ```
