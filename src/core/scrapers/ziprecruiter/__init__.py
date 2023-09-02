@@ -51,15 +51,17 @@ class ZipRecruiterScraper(Scraper):
         params = {
             "search": scraper_input.search_term,
             "location": scraper_input.location,
-            "radius": scraper_input.distance,
-            "refine_by_location_type": "only_remote"
-            if scraper_input.is_remote
-            else None,
-            "refine_by_employment": f"employment_type:employment_type:{job_type_value}"
-            if job_type_value
-            else None,
             "page": page,
         }
+
+        if scraper_input.is_remote:
+            params["refine_by_location_type"] = "only_remote"
+
+        if scraper_input.distance:
+            params["radius"] = scraper_input.distance
+
+        if job_type_value:
+            params["refine_by_employment"] = f"employment_type:employment_type:{job_type_value}"
 
         response = session.get(
             self.url + "/jobs-search",
@@ -70,7 +72,7 @@ class ZipRecruiterScraper(Scraper):
         if response.status_code != status.HTTP_200_OK:
             raise StatusException(response.status_code)
 
-        html_string = response.content
+        html_string = response.text
         soup = BeautifulSoup(html_string, "html.parser")
 
         if page == 1:

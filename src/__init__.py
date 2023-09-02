@@ -1,6 +1,3 @@
-import io
-from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
 from concurrent.futures import ThreadPoolExecutor
 
 from .core.scrapers.indeed import IndeedScraper
@@ -14,9 +11,10 @@ from .core.scrapers import (
     OutputFormat,
     CommonResponse,
 )
-from typing import List, Dict, Tuple, Union
 
-router = APIRouter(prefix="/jobs", tags=["jobs"])
+import pandas as pd
+from .core.jobs import JobType
+from typing import List, Dict, Tuple, Union
 
 SCRAPER_MAPPING = {
     Site.LINKEDIN: LinkedInScraper,
@@ -24,14 +22,43 @@ SCRAPER_MAPPING = {
     Site.ZIP_RECRUITER: ZipRecruiterScraper,
 }
 
+def _map_str_to_site(site_name: str) -> Site:
+    return Site[site_name.upper()]
 
-@router.post("/")
-async def scrape_jobs(scraper_input: ScraperInput) -> CommonResponse:
+
+def scrape_jobs(
+        site_name: str | Site | List[Site],
+        search_term: str,
+
+        output_format: OutputFormat = OutputFormat.JSON,
+        location: str = "",
+        distance: int = None,
+        is_remote: bool = False,
+        job_type: JobType = None,
+        easy_apply: bool = False,  # linkedin
+        results_wanted: int = 15
+) -> pd.DataFrame:
     """
     Asynchronously scrapes job data from multiple job sites.
     :param scraper_input:
     :return: scraper_response
     """
+
+    if type(site_name) == str:
+        site_name = _map_str_to_site(site_name)
+
+    site_type = [site_name] if type(site_name) == Site else site_name
+    scraper_input = ScraperInput(
+        site_type=site_type,
+        search_term=search_term,
+        location=location,
+        distance=distance,
+        is_remote=is_remote,
+        job_type=job_type,
+        easy_apply=easy_apply,
+        results_wanted=results_wanted,
+        output_format=output_format
+    )
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
@@ -41,28 +68,19 @@ async def scrape_jobs(scraper_input: ScraperInput) -> CommonResponse:
 
     with ThreadPoolExecutor(max_workers=3) as executor:
         results = dict(executor.map(scrape_site, scraper_input.site_type))
-    scraper_response = CommonResponse(status="JSON response success", **results)
 
-    if scraper_input.output_format == OutputFormat.CSV:
-        csv_output = CSVFormatter.format(scraper_response)
-        response = StreamingResponse(csv_output, media_type="text/csv")
-        response.headers[
-            "Content-Disposition"
-        ] = f"attachment; filename={CSVFormatter.generate_filename()}"
-        return response
+    df = pd.DataFrame()
 
-    elif scraper_input.output_format == OutputFormat.GSHEET:
-        csv_output = CSVFormatter.format(scraper_response)
-        try:
-            CSVFormatter.upload_to_google_sheet(csv_output)
-            return CommonResponse(
-                status="Successfully uploaded to Google Sheets", **results
-            )
+    for site in results:
+        for job in results[site].jobs:
+            data = job.json()
 
-        except Exception as e:
-            return CommonResponse(
-                status="Failed to upload to Google Sheet", error=repr(e), **results
-            )
+            data_df = pd.read_json(data, typ='series')
+            data_df['site'] = site
 
-    else:
-        return scraper_response
+            #: concat
+            df = pd.concat([df, data_df], axis=1)
+
+    return df
+
+
