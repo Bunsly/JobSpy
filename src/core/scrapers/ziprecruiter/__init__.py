@@ -10,9 +10,8 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
-from api.core.jobs import JobPost
-from api.core.scrapers import Scraper, ScraperInput, Site, StatusException
-from api.core.jobs import *
+from ...scrapers import Scraper, ScraperInput, Site, StatusException
+from ...jobs import JobPost, Compensation, CompensationInterval, Location, JobResponse, JobType
 
 
 class ZipRecruiterScraper(Scraper):

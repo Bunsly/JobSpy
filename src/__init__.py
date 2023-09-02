@@ -3,11 +3,11 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from concurrent.futures import ThreadPoolExecutor
 
-from api.core.scrapers.indeed import IndeedScraper
-from api.core.scrapers.ziprecruiter import ZipRecruiterScraper
-from api.core.scrapers.linkedin import LinkedInScraper
-from api.core.formatters.csv import CSVFormatter
-from api.core.scrapers import (
+from .core.scrapers.indeed import IndeedScraper
+from .core.scrapers.ziprecruiter import ZipRecruiterScraper
+from .core.scrapers.linkedin import LinkedInScraper
+from .core.formatters.csv import CSVFormatter
+from .core.scrapers import (
     ScraperInput,
     Site,
     JobResponse,
@@ -37,7 +37,7 @@ async def scrape_jobs(scraper_input: ScraperInput) -> CommonResponse:
         scraper_class = SCRAPER_MAPPING[site]
         scraper = scraper_class()
         scraped_data: JobResponse = scraper.scrape(scraper_input)
-        return (site.value, scraped_data)
+        return site.value, scraped_data
 
     with ThreadPoolExecutor(max_workers=3) as executor:
         results = dict(executor.map(scrape_site, scraper_input.site_type))

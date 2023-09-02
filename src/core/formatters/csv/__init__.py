@@ -7,20 +7,20 @@ from datetime import datetime
 
 from ...jobs import *
 from ...scrapers import *
-from settings import *
 
 
 class CSVFormatter:
     @staticmethod
-    def fetch_job_urls(credentials: Any) -> set:
+    def fetch_job_urls(credentials: Any, google_sheet_name: str) -> set:
         """
         Fetches all the job urls from the google sheet to prevent duplicates
         :param credentials:
+        :param google_sheet_name:
         :return: urls
         """
         try:
             gc = gspread.authorize(credentials)
-            sh = gc.open(GSHEET_NAME)
+            sh = gc.open(google_sheet_name)
 
             worksheet = sh.get_worksheet(0)
             data = worksheet.get_all_values()
@@ -32,10 +32,11 @@ class CSVFormatter:
             raise e
 
     @staticmethod
-    def upload_to_google_sheet(csv_data: str):
+    def upload_to_google_sheet(csv_data: str, google_sheet_name: str):
         """
         Appends rows to google sheet
         :param csv_data:
+        :param google_sheet_name:
         :return:
         """
         try:
@@ -48,7 +49,7 @@ class CSVFormatter:
                 "client_secret.json", scope
             )
             gc = gspread.authorize(credentials)
-            sh = gc.open(GSHEET_NAME)
+            sh = gc.open(google_sheet_name)
 
             worksheet = sh.get_worksheet(0)
             data_string = csv_data.getvalue()

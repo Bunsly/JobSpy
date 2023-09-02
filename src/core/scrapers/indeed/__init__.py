@@ -9,9 +9,8 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from fastapi import status
 
-from api.core.jobs import *
-from api.core.jobs import JobPost
-from api.core.scrapers import Scraper, ScraperInput, Site, StatusException
+from ...jobs import JobPost, Compensation, CompensationInterval, Location, JobResponse, JobType
+from .. import Scraper, ScraperInput, Site, StatusException
 
 from concurrent.futures import ThreadPoolExecutor, Future
 import math

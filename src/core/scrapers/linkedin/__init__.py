@@ -6,8 +6,8 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from fastapi import status
 
-from api.core.scrapers import Scraper, ScraperInput, Site
-from api.core.jobs import *
+from .. import Scraper, ScraperInput, Site
+from ...jobs import JobPost, Location, JobResponse, JobType
 
 
 class LinkedInScraper(Scraper):

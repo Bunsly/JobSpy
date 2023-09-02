@@ -40,7 +40,7 @@ jobs:
         fi
 
 # not checking currently because of bad ip at Github's servers being blocked
-#    - name: Check HTTP status to POST /api/v1/jobs/
+#    - name: Check HTTP status to POST /src/v1/jobs/
 #      run: |
 #        response=$(curl -L -s -X 'POST' -H 'Content-Type: application/json' -d '{
 #          "site_type": ["indeed", "linkedin"],
