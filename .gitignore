@@ -6,3 +6,4 @@
 *.pyc
 .env
 client_secret.json
+dist

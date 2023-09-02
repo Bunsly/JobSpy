@@ -127,15 +127,20 @@ class IndeedScraper(Scraper):
                 description=description,
                 company_name=job["company"],
                 location=Location(
-                    city=job.get("jobLocationCity"),
-                    state=job.get("jobLocationState"),
-                    postal_code=job.get("jobLocationPostal"),
+                    city=job.get("jobLocationCity", ""),
+                    state=job.get("jobLocationState", ""),
+                    postal_code=job.get("jobLocationPostal", ""),
                 ),
-                job_type=job_type,
-                compensation=compensation,
                 date_posted=date_posted,
                 job_url=job_url_client,
             )
+
+            if compensation:
+                job_post.compensation = compensation
+
+            if job_type:
+                job_post.job_type = job_type
+
             return job_post
 
         for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]:

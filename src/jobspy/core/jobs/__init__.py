@@ -21,8 +21,8 @@ class JobType(Enum):
 
 class Location(BaseModel):
     country: str = "USA"
-    city: str = None
-    state: str = None
+    city: str = ""
+    state: str = ""
 
 
 class CompensationInterval(Enum):

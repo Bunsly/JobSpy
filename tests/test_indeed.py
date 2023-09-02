@@ -1,4 +1,4 @@
-from src import scrape_jobs
+from src.jobspy import scrape_jobs
 
 
 def test_indeed():

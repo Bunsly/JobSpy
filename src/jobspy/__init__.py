@@ -7,12 +7,11 @@ from .core.scrapers import (
     ScraperInput,
     Site,
     JobResponse,
-    CommonResponse,
 )
 
 import pandas as pd
 from .core.jobs import JobType
-from typing import List, Dict, Tuple, Union
+from typing import List, Tuple
 
 SCRAPER_MAPPING = {
     Site.LINKEDIN: LinkedInScraper,
@@ -49,12 +48,16 @@ def scrape_jobs(
         site_type=site_type,
         search_term=search_term,
         location=location,
-        distance=distance,
         is_remote=is_remote,
-        job_type=job_type,
         easy_apply=easy_apply,
         results_wanted=results_wanted,
     )
+
+    if distance:
+        scraper_input.distance = distance
+
+    if job_type:
+        scraper_input.job_type = job_type
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
