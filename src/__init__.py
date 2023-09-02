@@ -3,12 +3,10 @@ from concurrent.futures import ThreadPoolExecutor
 from .core.scrapers.indeed import IndeedScraper
 from .core.scrapers.ziprecruiter import ZipRecruiterScraper
 from .core.scrapers.linkedin import LinkedInScraper
-from .core.formatters.csv import CSVFormatter
 from .core.scrapers import (
     ScraperInput,
     Site,
     JobResponse,
-    OutputFormat,
     CommonResponse,
 )
 
@@ -22,6 +20,7 @@ SCRAPER_MAPPING = {
     Site.ZIP_RECRUITER: ZipRecruiterScraper,
 }
 
+
 def _map_str_to_site(site_name: str) -> Site:
     return Site[site_name.upper()]
 
@@ -30,7 +29,6 @@ def scrape_jobs(
         site_name: str | Site | List[Site],
         search_term: str,
 
-        output_format: OutputFormat = OutputFormat.JSON,
         location: str = "",
         distance: int = None,
         is_remote: bool = False,
@@ -40,8 +38,7 @@ def scrape_jobs(
 ) -> pd.DataFrame:
     """
     Asynchronously scrapes job data from multiple job sites.
-    :param scraper_input:
-    :return: scraper_response
+    :return: results_wanted: pandas dataframe containing job data
     """
 
     if type(site_name) == str:
@@ -57,7 +54,6 @@ def scrape_jobs(
         job_type=job_type,
         easy_apply=easy_apply,
         results_wanted=results_wanted,
-        output_format=output_format
     )
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:

@@ -17,7 +17,6 @@ class Site(Enum):
 class ScraperInput(BaseModel):
     site_type: List[Site]
     search_term: str
-    output_format: OutputFormat = OutputFormat.JSON
 
     location: str = None
     distance: int = None

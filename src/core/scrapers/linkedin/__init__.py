@@ -4,7 +4,6 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-from fastapi import status
 
 from .. import Scraper, ScraperInput, Site
 from ...jobs import JobPost, Location, JobResponse, JobType
@@ -59,7 +58,7 @@ class LinkedInScraper(Scraper):
                     f"{self.url}/jobs/search", params=params, allow_redirects=True
                 )
 
-                if response.status_code != status.HTTP_200_OK:
+                if response.status_code != 200:
                     return JobResponse(
                         success=False,
                         error=f"Response returned {response.status_code}",

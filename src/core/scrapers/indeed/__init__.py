@@ -7,7 +7,6 @@ import tls_client
 import urllib.parse
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-from fastapi import status
 
 from ...jobs import JobPost, Compensation, CompensationInterval, Location, JobResponse, JobType
 from .. import Scraper, ScraperInput, Site, StatusException
@@ -65,8 +64,8 @@ class IndeedScraper(Scraper):
         response = session.get(self.url + "/jobs", params=params)
 
         if (
-            response.status_code != status.HTTP_200_OK
-            and response.status_code != status.HTTP_307_TEMPORARY_REDIRECT
+            response.status_code != 200
+            and response.status_code != 307
         ):
             raise StatusException(response.status_code)
 

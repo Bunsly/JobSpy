@@ -5,7 +5,6 @@ from typing import Optional, Tuple, List
 from urllib.parse import urlparse, parse_qs
 
 import tls_client
-from fastapi import status
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
@@ -69,7 +68,7 @@ class ZipRecruiterScraper(Scraper):
             params=params,
         )
 
-        if response.status_code != status.HTTP_200_OK:
+        if response.status_code != 200:
             raise StatusException(response.status_code)
 
         html_string = response.text
