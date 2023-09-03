@@ -1,4 +1,4 @@
-# JobSpy
+# <img src="https://github.com/cullenwatson/JobSpy/assets/78247585/2f61a059-9647-4a9c-bfb9-e3a9448bdc6a" style="vertical-align: sub; margin-right: 5px;"> JobSpy
 
 **JobSpy** is a simple, yet comprehensive, job scraping library.
 ## Features
