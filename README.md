@@ -7,7 +7,7 @@
 - Aggregates the job postings in a Pandas DataFrame
 
 ### Installation
-`pip install jobscrape`  
+`pip install python-jobspy`  
   
   _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_ 
 
