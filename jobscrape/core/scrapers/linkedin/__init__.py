@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 
 from .. import Scraper, ScraperInput, Site
-from ...jobs import JobPost, Location, JobResponse, JobType
+from ...jobs import JobPost, Location, JobResponse, JobType, Compensation, CompensationInterval
 
 
 class LinkedInScraper(Scraper):
@@ -117,6 +117,7 @@ class LinkedInScraper(Scraper):
                         date_posted=date_posted,
                         job_url=job_url,
                         job_type=job_type,
+                        compensation=Compensation(interval=CompensationInterval.YEARLY, currency="USD")
                     )
                     job_list.append(job_post)
                     if (
@@ -184,7 +185,6 @@ class LinkedInScraper(Scraper):
                     employment_type = employment_type_span.get_text(strip=True)
                     employment_type = employment_type.lower()
                     employment_type = employment_type.replace("-", "")
-                    print(employment_type)
 
             return JobType(employment_type)
 

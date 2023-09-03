@@ -1,4 +1,4 @@
-from src.jobspy import scrape_jobs
+from jobscrape import scrape_jobs
 
 
 def test_ziprecruiter():
