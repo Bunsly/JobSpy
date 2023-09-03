@@ -1,17 +1,14 @@
 import pandas as pd
-from typing import List, Dict, Tuple, Union
+from typing import List, Tuple
 
-from concurrent.futures import ThreadPoolExecutor
-
-from .core.jobs import JobType
-from .core.scrapers.indeed import IndeedScraper
-from .core.scrapers.ziprecruiter import ZipRecruiterScraper
-from .core.scrapers.linkedin import LinkedInScraper
-from .core.scrapers import (
+from .jobs import JobType
+from .scrapers.indeed import IndeedScraper
+from .scrapers.ziprecruiter import ZipRecruiterScraper
+from .scrapers.linkedin import LinkedInScraper
+from .scrapers import (
     ScraperInput,
     Site,
     JobResponse,
-    CommonResponse,
 )
 
 
