@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-jobspy"
-version = "1.0.0"
+version = "1.0.1"
 description = "Job scraper for LinkedIn, Indeed & ZipRecruiter"
 authors = ["Zachary Hampton <zachary@zacharysproducts.com>", "Cullen Watson <cullen@cullen.ai>"]
 readme = "README.md"
