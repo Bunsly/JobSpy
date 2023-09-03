@@ -14,7 +14,7 @@
 ### Usage
 
 ```python
-from jobspy import scrape_jobs
+from python_jobspy.jobspy import scrape_jobs
 import pandas as pd
 
 jobs: pd.DataFrame = scrape_jobs(
