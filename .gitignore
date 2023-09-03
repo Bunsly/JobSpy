@@ -5,4 +5,5 @@
 **/__pycache__/
 *.pyc
 .env
-client_secret.json
+dist
+/.ipynb_checkpoints/

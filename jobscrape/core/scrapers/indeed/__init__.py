@@ -1,22 +1,18 @@
 import re
+import sys
+import math
 import json
-from typing import Optional, Tuple, List
 from datetime import datetime
+from typing import Optional, Tuple, List
 
 import tls_client
 import urllib.parse
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-from fastapi import status
-
-from api.core.jobs import *
-from api.core.jobs import JobPost
-from api.core.scrapers import Scraper, ScraperInput, Site, StatusException
-
 from concurrent.futures import ThreadPoolExecutor, Future
-import math
-import traceback
-import sys
+
+from ...jobs import JobPost, Compensation, CompensationInterval, Location, JobResponse, JobType
+from .. import Scraper, ScraperInput, Site, StatusException
 
 
 class ParsingException(Exception):
@@ -66,8 +62,8 @@ class IndeedScraper(Scraper):
         response = session.get(self.url + "/jobs", params=params)
 
         if (
-            response.status_code != status.HTTP_200_OK
-            and response.status_code != status.HTTP_307_TEMPORARY_REDIRECT
+            response.status_code != 200
+            and response.status_code != 307
         ):
             raise StatusException(response.status_code)
 
@@ -131,7 +127,6 @@ class IndeedScraper(Scraper):
                 location=Location(
                     city=job.get("jobLocationCity"),
                     state=job.get("jobLocationState"),
-                    postal_code=job.get("jobLocationPostal"),
                 ),
                 job_type=job_type,
                 compensation=compensation,
@@ -140,9 +135,11 @@ class IndeedScraper(Scraper):
             )
             return job_post
 
-        for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]:
-            job_post = process_job(job)
-            job_list.append(job_post)
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            job_results: list[Future] = [executor.submit(process_job, job) for job in
+                                         jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]]
+
+        job_list = [result.result() for result in job_results if result.result()]
 
         return job_list, total_num_jobs
 

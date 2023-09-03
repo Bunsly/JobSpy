@@ -1,5 +1,4 @@
-from ..jobs import *
-from ..formatters import OutputFormat
+from ..jobs import Enum, BaseModel, JobType, JobResponse
 from typing import List, Dict, Optional, Any
 
 
@@ -17,12 +16,11 @@ class Site(Enum):
 class ScraperInput(BaseModel):
     site_type: List[Site]
     search_term: str
-    output_format: OutputFormat = OutputFormat.JSON
 
     location: str = None
-    distance: int = None
+    distance: Optional[int] = None
     is_remote: bool = False
-    job_type: JobType = None
+    job_type: Optional[JobType] = None
     easy_apply: bool = None  # linkedin
 
     results_wanted: int = 15
