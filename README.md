@@ -26,7 +26,6 @@ jobs: pd.DataFrame = scrape_jobs(
 if jobs.empty:
     print("No jobs found.")
 else:
-
     #1 print
     pd.set_option('display.max_columns', None)
     pd.set_option('display.max_rows', None)
@@ -35,10 +34,10 @@ else:
     print(jobs)
 
     #2 display in Jupyter Notebook
-    display(jobs)
+    # display(jobs)
     
     #3 output to csv
-    jobs.to_csv('jobs.csv', index=False)
+    # jobs.to_csv('jobs.csv', index=False)
 ```
 
 ### Output
