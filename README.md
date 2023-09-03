@@ -84,7 +84,6 @@ JobPost
 │   ├── max_amount (float)
 │   └── currency (str)
 └── date_posted (datetime)
-
 ```
 
 
@@ -95,5 +94,5 @@ JobPost
 Try reducing the number of `results_wanted` and/or broadening the filters. If problems persist, please submit an issue.
   
 #### Received a response code 429?
-This means you've been blocked by the job board site for sending too many requests. Consider waiting a few seconds, or try using a VPN. Proxy support coming soon.
+You have been blocked by the job board site for sending too many requests. ZipRecruiter seems to be the most aggressive at the moment. Consider waiting a few seconds, or try using a VPN. Proxy support coming soon.
   
