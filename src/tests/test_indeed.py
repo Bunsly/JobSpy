@@ -1,4 +1,4 @@
-from jobspy import scrape_jobs
+from ..jobspy import scrape_jobs
 
 
 def test_indeed():

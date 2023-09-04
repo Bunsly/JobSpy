@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
-from src.jobspy.jobs import (
+from ...jobs import (
     JobPost,
     Compensation,
     CompensationInterval,

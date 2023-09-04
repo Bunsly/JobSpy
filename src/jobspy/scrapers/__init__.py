@@ -1,4 +1,4 @@
-from src.jobspy.jobs import Enum, BaseModel, JobType, JobResponse
+from ..jobs import Enum, BaseModel, JobType, JobResponse
 from typing import List, Optional, Any
 
 
