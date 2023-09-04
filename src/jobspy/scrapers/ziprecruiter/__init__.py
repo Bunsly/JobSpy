@@ -2,7 +2,7 @@ import math
 import json
 import re
 from datetime import datetime
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 from urllib.parse import urlparse, parse_qs
 
 import tls_client
@@ -11,7 +11,7 @@ from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
 from .. import Scraper, ScraperInput, Site, StatusException
-from ...jobs import JobPost, Compensation, CompensationInterval, Location, JobResponse, JobType
+from src.jobspy.jobs import JobPost, Compensation, CompensationInterval, Location, JobResponse, JobType
 
 
 class ZipRecruiterScraper(Scraper):

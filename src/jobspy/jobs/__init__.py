@@ -19,7 +19,6 @@ class JobType(Enum):
     VOLUNTEER = "volunteer"
 
 
-
 class Location(BaseModel):
     country: str = "USA"
     city: str = None
@@ -47,10 +46,10 @@ class JobPost(BaseModel):
     job_url: str
     location: Optional[Location]
 
-    description: str = None
+    description: Optional[str] = None
     job_type: Optional[JobType] = None
     compensation: Optional[Compensation] = None
-    date_posted: date = None
+    date_posted: Optional[date] = None
 
 
 class JobResponse(BaseModel):

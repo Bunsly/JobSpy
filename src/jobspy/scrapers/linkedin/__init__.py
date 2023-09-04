@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 
 from .. import Scraper, ScraperInput, Site
-from ...jobs import JobPost, Location, JobResponse, JobType, Compensation, CompensationInterval
+from src.jobspy.jobs import JobPost, Location, JobResponse, JobType, Compensation, CompensationInterval
 
 
 class LinkedInScraper(Scraper):

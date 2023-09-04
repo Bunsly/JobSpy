@@ -1,9 +1,8 @@
 import re
-import sys
 import math
 import json
 from datetime import datetime
-from typing import Optional, Tuple, List
+from typing import Optional
 
 import tls_client
 import urllib.parse
@@ -11,7 +10,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
-from ...jobs import JobPost, Compensation, CompensationInterval, Location, JobResponse, JobType
+from src.jobspy.jobs import JobPost, Compensation, CompensationInterval, Location, JobResponse, JobType
 from .. import Scraper, ScraperInput, Site, StatusException
 
 

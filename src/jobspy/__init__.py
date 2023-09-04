@@ -1,11 +1,11 @@
 import pandas as pd
 from typing import List, Tuple
 
-from .jobs import JobType
-from .scrapers.indeed import IndeedScraper
-from .scrapers.ziprecruiter import ZipRecruiterScraper
-from .scrapers.linkedin import LinkedInScraper
-from .scrapers import (
+from src.jobspy.jobs import JobType
+from src.jobspy.scrapers import IndeedScraper
+from src.jobspy.scrapers import ZipRecruiterScraper
+from src.jobspy.scrapers import LinkedInScraper
+from src.jobspy.scrapers import (
     ScraperInput,
     Site,
     JobResponse,
