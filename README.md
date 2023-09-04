@@ -5,7 +5,9 @@
 
 - Scrapes job postings from **LinkedIn**, **Indeed** & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
-
+  
+![jobspy](https://github.com/cullenwatson/JobSpy/assets/78247585/ec7ef355-05f6-4fd3-8161-a817e31c5c57)
+  
 ### Installation
 `pip install python-jobspy`  
   
