@@ -24,15 +24,14 @@ def _map_str_to_site(site_name: str) -> Site:
 
 
 def scrape_jobs(
-        site_name: str | Site | List[Site],
-        search_term: str,
-
-        location: str = "",
-        distance: int = None,
-        is_remote: bool = False,
-        job_type: JobType = None,
-        easy_apply: bool = False,  # linkedin
-        results_wanted: int = 15
+    site_name: str | Site | List[Site],
+    search_term: str,
+    location: str = "",
+    distance: int = None,
+    is_remote: bool = False,
+    job_type: JobType = None,
+    easy_apply: bool = False,  # linkedin
+    results_wanted: int = 15,
 ) -> pd.DataFrame:
     """
     Asynchronously scrapes job data from multiple job sites.
@@ -71,48 +70,59 @@ def scrape_jobs(
     for site, job_response in results.items():
         for job in job_response.jobs:
             data = job.dict()
-            data['site'] = site
+            data["site"] = site
 
             # Formatting JobType
-            data['job_type'] = data['job_type'].value if data['job_type'] else None
+            data["job_type"] = data["job_type"].value if data["job_type"] else None
 
             # Formatting Location
-            location_obj = data.get('location')
+            location_obj = data.get("location")
             if location_obj and isinstance(location_obj, dict):
-                data['city'] = location_obj.get('city', '')
-                data['state'] = location_obj.get('state', '')
-                data['country'] = location_obj.get('country', 'USA')
+                data["city"] = location_obj.get("city", "")
+                data["state"] = location_obj.get("state", "")
+                data["country"] = location_obj.get("country", "USA")
             else:
-                data['city'] = None
-                data['state'] = None
-                data['country'] = None
+                data["city"] = None
+                data["state"] = None
+                data["country"] = None
 
             # Formatting Compensation
-            compensation_obj = data.get('compensation')
+            compensation_obj = data.get("compensation")
             if compensation_obj and isinstance(compensation_obj, dict):
-                data['interval'] = compensation_obj.get('interval').value if compensation_obj.get('interval') else None
-                data['min_amount'] = compensation_obj.get('min_amount')
-                data['max_amount'] = compensation_obj.get('max_amount')
-                data['currency'] = compensation_obj.get('currency', 'USD')
+                data["interval"] = (
+                    compensation_obj.get("interval").value
+                    if compensation_obj.get("interval")
+                    else None
+                )
+                data["min_amount"] = compensation_obj.get("min_amount")
+                data["max_amount"] = compensation_obj.get("max_amount")
+                data["currency"] = compensation_obj.get("currency", "USD")
             else:
-                data['interval'] = None
-                data['min_amount'] = None
-                data['max_amount'] = None
-                data['currency'] = None
+                data["interval"] = None
+                data["min_amount"] = None
+                data["max_amount"] = None
+                data["currency"] = None
 
             job_df = pd.DataFrame([data])
             dfs.append(job_df)
 
     if dfs:
         df = pd.concat(dfs, ignore_index=True)
-        desired_order = ['site', 'title', 'company_name', 'city', 'state','job_type',
-                         'interval', 'min_amount', 'max_amount',  'job_url', 'description',]
+        desired_order = [
+            "site",
+            "title",
+            "company_name",
+            "city",
+            "state",
+            "job_type",
+            "interval",
+            "min_amount",
+            "max_amount",
+            "job_url",
+            "description",
+        ]
         df = df[desired_order]
     else:
         df = pd.DataFrame()
 
     return df
-
-
-
-

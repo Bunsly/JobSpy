@@ -3,6 +3,7 @@
 /venv/
 /ven/
 **/__pycache__/
+**/.pytest_cache/
 *.pyc
 .env
 dist

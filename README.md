@@ -5,7 +5,9 @@
 
 - Scrapes job postings from **LinkedIn**, **Indeed** & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
-
+  
+![jobspy](https://github.com/cullenwatson/JobSpy/assets/78247585/ec7ef355-05f6-4fd3-8161-a817e31c5c57)
+  
 ### Installation
 `pip install python-jobspy`  
   
@@ -26,18 +28,18 @@ jobs: pd.DataFrame = scrape_jobs(
 if jobs.empty:
     print("No jobs found.")
 else:
-    # 1 print
+    #1 print
     pd.set_option('display.max_columns', None)
     pd.set_option('display.max_rows', None)
     pd.set_option('display.width', None)
     pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
     print(jobs)
 
-    # 2 display in Jupyter Notebook
-    # display(jobs)
+    #2 display in Jupyter Notebook
+    #display(jobs)
 
-    # 3 output to csv
-    # jobs.to_csv('jobs.csv', index=False)
+    #3 output to .csv
+    #jobs.to_csv('jobs.csv', index=False)
 ```
 
 ### Output
@@ -51,8 +53,6 @@ zip_recruiter Software Engineer - New Grad       ZipRecruiter      Santa Monica 
 zip_recruiter Software Developer                 TEKsystems        Phoenix       AZ     fulltime  hourly    65          75          https://www.ziprecruiter.com/jobs/teksystems-0...  Top Skills' Details• 6 years of Java developme...
 ```
 ### Parameters for `scrape_jobs()`
-
-
 ```plaintext
 Required
 ├── site_type (List[enum]): linkedin, zip_recruiter, indeed
@@ -87,12 +87,23 @@ JobPost
 ```
 
 
-### FAQ
-  
-#### Encountering issues with your queries?
-  
-Try reducing the number of `results_wanted` and/or broadening the filters. If problems persist, please submit an issue.
-  
-#### Received a response code 429?
-You have been blocked by the job board site for sending too many requests. ZipRecruiter seems to be the most aggressive at the moment. Consider waiting a few seconds, or try using a VPN. Proxy support coming soon.
+## Frequently Asked Questions
+
+---
+
+**Q: Encountering issues with your queries?**  
+**A:** Try reducing the number of `results_wanted` and/or broadening the filters. If problems persist, [submit an issue](#).
+
+---
+
+**Q: Received a response code 429?**  
+**A:** This indicates that you have been blocked by the job board site for sending too many requests. Currently, **ZipRecruiter** is particularly aggressive with blocking. We recommend:
+
+- Waiting a few seconds between requests.
+- Trying a VPN to change your IP address.
+
+**Note:** Proxy support is in development and coming soon!
+
+---
+
   

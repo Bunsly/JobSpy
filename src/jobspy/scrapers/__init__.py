@@ -1,5 +1,5 @@
 from ..jobs import Enum, BaseModel, JobType, JobResponse
-from typing import List, Dict, Optional, Any
+from typing import List, Optional, Any
 
 
 class StatusException(Exception):
