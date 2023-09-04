@@ -10,7 +10,14 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
-from src.jobspy.jobs import JobPost, Compensation, CompensationInterval, Location, JobResponse, JobType
+from src.jobspy.jobs import (
+    JobPost,
+    Compensation,
+    CompensationInterval,
+    Location,
+    JobResponse,
+    JobType,
+)
 from .. import Scraper, ScraperInput, Site, StatusException
 
 
@@ -60,10 +67,7 @@ class IndeedScraper(Scraper):
             params["sc"] = "0kf:" + "".join(sc_values) + ";"
         response = session.get(self.url + "/jobs", params=params)
 
-        if (
-            response.status_code != 200
-            and response.status_code != 307
-        ):
+        if response.status_code != 200 and response.status_code != 307:
             raise StatusException(response.status_code)
 
         soup = BeautifulSoup(response.content, "html.parser")
@@ -135,8 +139,10 @@ class IndeedScraper(Scraper):
             return job_post
 
         with ThreadPoolExecutor(max_workers=10) as executor:
-            job_results: list[Future] = [executor.submit(process_job, job) for job in
-                                         jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]]
+            job_results: list[Future] = [
+                executor.submit(process_job, job)
+                for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]
+            ]
 
         job_list = [result.result() for result in job_results if result.result()]
 
