@@ -11,7 +11,7 @@ from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
 from .. import Scraper, ScraperInput, Site, StatusException
-from src.jobspy.jobs import (
+from ...jobs import (
     JobPost,
     Compensation,
     CompensationInterval,

@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 
 from .. import Scraper, ScraperInput, Site
-from src.jobspy.jobs import (
+from ...jobs import (
     JobPost,
     Location,
     JobResponse,
