@@ -106,7 +106,7 @@ ZipRecruiter searches for jobs in US/Canada. Use the `location` parameter
 
 
 ### **Indeed**
-For Indeed, you `location` along with `country` param
+For Indeed, use `location` along with `country` param
 
 You can specify the following countries when searching on Indeed (use the exact name): 
 
