@@ -1,6 +1,7 @@
 import math
 import json
 import re
+import traceback
 from datetime import datetime
 from typing import Optional, Tuple
 from urllib.parse import urlparse, parse_qs
@@ -18,6 +19,7 @@ from ...jobs import (
     Location,
     JobResponse,
     JobType,
+    Country,
 )
 
 
@@ -27,8 +29,8 @@ class ZipRecruiterScraper(Scraper):
         Initializes LinkedInScraper with the ZipRecruiter job search url
         """
         site = Site(Site.ZIP_RECRUITER)
-        url = "https://www.ziprecruiter.com"
-        super().__init__(site, url)
+        self.url = "https://www.ziprecruiter.com"
+        super().__init__(site)
 
         self.jobs_per_page = 20
         self.seen_urls = set()
@@ -80,8 +82,10 @@ class ZipRecruiterScraper(Scraper):
             self.url + "/jobs-search",
             headers=ZipRecruiterScraper.headers(),
             params=params,
+            allow_redirects=True,
         )
 
+        # print(response.status_code)
         if response.status_code != 200:
             raise StatusException(response.status_code)
 
@@ -144,6 +148,7 @@ class ZipRecruiterScraper(Scraper):
                 error=f"ZipRecruiter returned status code {e.status_code}",
             )
         except Exception as e:
+            print(f"ZipRecruiter failed to scrape: {e}\n{traceback.format_exc()}")
             return JobResponse(
                 success=False,
                 error=f"ZipRecruiter failed to scrape: {e}",
@@ -181,15 +186,12 @@ class ZipRecruiterScraper(Scraper):
             description = job.find("p", {"class": "job_snippet"}).text.strip()
 
         job_type_element = job.find("li", {"class": "perk_item perk_type"})
+        job_type = None
         if job_type_element:
             job_type_text = (
                 job_type_element.text.strip().lower().replace("-", "").replace(" ", "")
             )
-            if job_type_text == "contractor":
-                job_type_text = "contract"
-            job_type = JobType(job_type_text)
-        else:
-            job_type = None
+            job_type = ZipRecruiterScraper.get_job_type_enum(job_type_text)
 
         date_posted = ZipRecruiterScraper.get_date_posted(job)
 
@@ -206,16 +208,17 @@ class ZipRecruiterScraper(Scraper):
         return job_post
 
     def process_job_js(self, job: dict) -> JobPost:
-        # Map the job data to the expected fields by the Pydantic model
         title = job.get("Title")
         description = BeautifulSoup(
             job.get("Snippet", "").strip(), "html.parser"
         ).get_text()
 
         company = job.get("OrgName")
-        location = Location(city=job.get("City"), state=job.get("State"))
+        location = Location(
+            city=job.get("City"), state=job.get("State"), country=Country.US_CANADA
+        )
         try:
-            job_type = ZipRecruiterScraper.job_type_from_string(
+            job_type = ZipRecruiterScraper.get_job_type_enum(
                 job.get("EmploymentType", "").replace("-", "_").lower()
             )
         except ValueError:
@@ -244,6 +247,7 @@ class ZipRecruiterScraper(Scraper):
             interval=CompensationInterval.YEARLY,
             min_amount=min_amount,
             max_amount=max_amount,
+            currency="USD/CAD",
         )
         save_job_url = job.get("SaveJobURL", "")
         posted_time_match = re.search(
@@ -270,17 +274,18 @@ class ZipRecruiterScraper(Scraper):
         return job_post
 
     @staticmethod
-    def job_type_from_string(value: str) -> Optional[JobType]:
-        if not value:
-            return None
+    def get_enum_from_value(value_str):
+        for job_type in JobType:
+            if value_str in job_type.value:
+                return job_type
+        return None
 
-        if value.lower() == "contractor":
-            value = "contract"
-        normalized_value = value.replace("_", "")
-        for item in JobType:
-            if item.value == normalized_value:
-                return item
-        raise ValueError(f"Invalid value for JobType: {value}")
+    @staticmethod
+    def get_job_type_enum(job_type_str: str) -> Optional[JobType]:
+        for job_type in JobType:
+            if job_type_str in job_type.value:
+                return job_type
+        return None
 
     def get_description(self, job_page_url: str) -> Tuple[Optional[str], Optional[str]]:
         """
@@ -289,11 +294,16 @@ class ZipRecruiterScraper(Scraper):
         :param session:
         :return: description or None, response url
         """
-        response = self.session.get(
-            job_page_url, headers=ZipRecruiterScraper.headers(), allow_redirects=True
-        )
-        if response.status_code not in range(200, 400):
-            return None, None
+        try:
+            response = self.session.get(
+                job_page_url,
+                headers=ZipRecruiterScraper.headers(),
+                allow_redirects=True,
+                timeout_seconds=5,
+            )
+        except requests.exceptions.Timeout:
+            print("The request timed out.")
+            return None
 
         html_string = response.content
         soup_job = BeautifulSoup(html_string, "html.parser")
@@ -375,7 +385,10 @@ class ZipRecruiterScraper(Scraper):
                 amounts.append(amount)
 
             compensation = Compensation(
-                interval=interval, min_amount=min(amounts), max_amount=max(amounts)
+                interval=interval,
+                min_amount=min(amounts),
+                max_amount=max(amounts),
+                currency="USD/CAD",
             )
 
             return compensation
@@ -399,10 +412,7 @@ class ZipRecruiterScraper(Scraper):
                 city, state = None, None
         else:
             city, state = None, None
-        return Location(
-            city=city,
-            state=state,
-        )
+        return Location(city=city, state=state, country=Country.US_CANADA)
 
     @staticmethod
     def headers() -> dict:

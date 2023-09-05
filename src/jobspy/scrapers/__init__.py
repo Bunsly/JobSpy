@@ -1,4 +1,4 @@
-from ..jobs import Enum, BaseModel, JobType, JobResponse
+from ..jobs import Enum, BaseModel, JobType, JobResponse, Country
 from typing import List, Optional, Any
 
 
@@ -18,6 +18,7 @@ class ScraperInput(BaseModel):
     search_term: str
 
     location: str = None
+    country: Optional[Country] = Country.USA
     distance: Optional[int] = None
     is_remote: bool = False
     job_type: Optional[JobType] = None
@@ -35,9 +36,8 @@ class CommonResponse(BaseModel):
 
 
 class Scraper:
-    def __init__(self, site: Site, url: str):
+    def __init__(self, site: Site):
         self.site = site
-        self.url = url
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         ...

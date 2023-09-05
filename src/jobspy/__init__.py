@@ -1,15 +1,11 @@
 import pandas as pd
 from typing import List, Tuple
 
-from .jobs import JobType
+from .jobs import JobType, Location
 from .scrapers.indeed import IndeedScraper
 from .scrapers.ziprecruiter import ZipRecruiterScraper
 from .scrapers.linkedin import LinkedInScraper
-from .scrapers import (
-    ScraperInput,
-    Site,
-    JobResponse,
-)
+from .scrapers import ScraperInput, Site, JobResponse, Country
 
 
 SCRAPER_MAPPING = {
@@ -32,6 +28,7 @@ def scrape_jobs(
     job_type: JobType = None,
     easy_apply: bool = False,  # linkedin
     results_wanted: int = 15,
+    country: str = "usa",
 ) -> pd.DataFrame:
     """
     Asynchronously scrapes job data from multiple job sites.
@@ -41,9 +38,12 @@ def scrape_jobs(
     if type(site_name) == str:
         site_name = _map_str_to_site(site_name)
 
+    country_enum = Country.from_string(country)
+
     site_type = [site_name] if type(site_name) == Site else site_name
     scraper_input = ScraperInput(
         site_type=site_type,
+        country=country_enum,
         search_term=search_term,
         location=location,
         distance=distance,
@@ -71,22 +71,15 @@ def scrape_jobs(
         for job in job_response.jobs:
             data = job.dict()
             data["site"] = site
-
-            # Formatting JobType
-            data["job_type"] = data["job_type"].value if data["job_type"] else None
-
-            # Formatting Location
-            location_obj = data.get("location")
-            if location_obj and isinstance(location_obj, dict):
-                data["city"] = location_obj.get("city", "")
-                data["state"] = location_obj.get("state", "")
-                data["country"] = location_obj.get("country", "USA")
+            data["company"] = data["company_name"]
+            if data["job_type"]:
+                # Take the first value from the job type tuple
+                data["job_type"] = data["job_type"].value[0]
             else:
-                data["city"] = None
-                data["state"] = None
-                data["country"] = None
+                data["job_type"] = None
 
-            # Formatting Compensation
+            data["location"] = Location(**data["location"]).display_location()
+
             compensation_obj = data.get("compensation")
             if compensation_obj and isinstance(compensation_obj, dict):
                 data["interval"] = (
@@ -111,13 +104,13 @@ def scrape_jobs(
         desired_order = [
             "site",
             "title",
-            "company_name",
-            "city",
-            "state",
+            "company",
+            "location",
             "job_type",
             "interval",
             "min_amount",
             "max_amount",
+            "currency",
             "job_url",
             "description",
         ]

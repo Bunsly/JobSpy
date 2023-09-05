@@ -22,8 +22,8 @@ class LinkedInScraper(Scraper):
         Initializes LinkedInScraper with the LinkedIn job search url
         """
         site = Site(Site.LINKEDIN)
-        url = "https://www.linkedin.com"
-        super().__init__(site, url)
+        self.url = "https://www.linkedin.com"
+        super().__init__(site)
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -31,6 +31,7 @@ class LinkedInScraper(Scraper):
         :param scraper_input:
         :return: job_response
         """
+        self.country = "worldwide"
         job_list: list[JobPost] = []
         seen_urls = set()
         page, processed_jobs, job_count = 0, 0, 0
@@ -104,7 +105,7 @@ class LinkedInScraper(Scraper):
                     metadata_card = job_info.find(
                         "div", class_="base-search-card__metadata"
                     )
-                    location: Location = LinkedInScraper.get_location(metadata_card)
+                    location: Location = self.get_location(metadata_card)
 
                     datetime_tag = metadata_card.find(
                         "time", class_="job-search-card__listdate"
@@ -125,7 +126,7 @@ class LinkedInScraper(Scraper):
                         job_url=job_url,
                         job_type=job_type,
                         compensation=Compensation(
-                            interval=CompensationInterval.YEARLY, currency="USD"
+                            interval=CompensationInterval.YEARLY, currency=None
                         ),
                     )
                     job_list.append(job_post)
@@ -195,17 +196,24 @@ class LinkedInScraper(Scraper):
                     employment_type = employment_type.lower()
                     employment_type = employment_type.replace("-", "")
 
-            return JobType(employment_type)
+            return LinkedInScraper.get_enum_from_value(employment_type)
 
         return text_content, get_job_type(soup)
 
     @staticmethod
-    def get_location(metadata_card: Optional[Tag]) -> Location:
+    def get_enum_from_value(value_str):
+        for job_type in JobType:
+            if value_str in job_type.value:
+                return job_type
+        return None
+
+    def get_location(self, metadata_card: Optional[Tag]) -> Location:
         """
         Extracts the location data from the job metadata card.
         :param metadata_card
         :return: location
         """
+        location = Location(country=self.country)
         if metadata_card is not None:
             location_tag = metadata_card.find(
                 "span", class_="job-search-card__location"
@@ -217,6 +225,7 @@ class LinkedInScraper(Scraper):
                 location = Location(
                     city=city,
                     state=state,
+                    country=self.country,
                 )
 
         return location

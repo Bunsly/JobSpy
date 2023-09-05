@@ -23,7 +23,11 @@ import pandas as pd
 jobs: pd.DataFrame = scrape_jobs(
     site_name=["indeed", "linkedin", "zip_recruiter"],
     search_term="software engineer",
-    results_wanted=10
+    location="Dallas, TX",
+    results_wanted=10,
+    
+    # country: only needed for indeed
+    country='USA'
 )
 
 if jobs.empty:
@@ -65,8 +69,10 @@ Optional
 ├── is_remote (bool)
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
 ├── easy_apply (bool): filters for jobs on LinkedIn that have the 'Easy Apply' option
+├── country (enum): uses the corresponding subdomain on Indeed (e.g. Canada on Indeed is ca.indeed.com
 ```
 
+ 
 ### JobPost Schema
 ```plaintext
 JobPost
@@ -81,12 +87,91 @@ JobPost
 ├── job_type (enum)
 ├── compensation (object)
 │   ├── interval (CompensationInterval): yearly, monthly, weekly, daily, hourly
-│   ├── min_amount (float)
-│   ├── max_amount (float)
+│   ├── min_amount (int)
+│   ├── max_amount (int)
 │   └── currency (str)
 └── date_posted (datetime)
 ```
 
+## Supported Countries for Job Searching
+
+
+### **LinkedIn**
+
+LinkedIn searches globally. Use the `location` parameter
+
+### **ZipRecruiter**
+
+ZipRecruiter searches for jobs in US/Canada. Use the `location` parameter
+
+
+### **Indeed**
+For Indeed, you `location` along with `country` param
+
+You can specify the following countries when searching on Indeed (use the exact name): 
+
+- Argentina
+- Australia
+- Austria
+- Bahrain
+- Belgium
+- Brazil
+- Canada
+- Chile
+- China
+- Colombia
+- Costa Rica
+- Czech Republic
+- Denmark
+- Ecuador
+- Egypt
+- Finland
+- France
+- Germany
+- Greece
+- Hong Kong
+- Hungary
+- India
+- Indonesia
+- Ireland
+- Israel
+- Italy
+- Japan
+- Kuwait
+- Luxembourg
+- Malaysia
+- Mexico
+- Morocco
+- Netherlands
+- New Zealand
+- Nigeria
+- Norway
+- Oman
+- Pakistan
+- Panama
+- Peru
+- Philippines
+- Poland
+- Portugal
+- Qatar
+- Romania
+- Saudi Arabia
+- Singapore
+- South Africa
+- South Korea
+- Spain
+- Sweden
+- Switzerland
+- Taiwan
+- Thailand
+- Turkey
+- Ukraine
+- United Arab Emirates
+- UK
+- USA
+- Uruguay
+- Venezuela
+- Vietnam
 
 ## Frequently Asked Questions
 
