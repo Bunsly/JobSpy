@@ -19,7 +19,7 @@ from ...jobs import (
     Location,
     JobResponse,
     JobType,
-    Country
+    Country,
 )
 
 
@@ -82,7 +82,7 @@ class ZipRecruiterScraper(Scraper):
             self.url + "/jobs-search",
             headers=ZipRecruiterScraper.headers(),
             params=params,
-            allow_redirects=True
+            allow_redirects=True,
         )
 
         # print(response.status_code)
@@ -214,7 +214,9 @@ class ZipRecruiterScraper(Scraper):
         ).get_text()
 
         company = job.get("OrgName")
-        location = Location(city=job.get("City"), state=job.get("State"), country=Country.US_CANADA)
+        location = Location(
+            city=job.get("City"), state=job.get("State"), country=Country.US_CANADA
+        )
         try:
             job_type = ZipRecruiterScraper.get_job_type_enum(
                 job.get("EmploymentType", "").replace("-", "_").lower()
@@ -245,7 +247,7 @@ class ZipRecruiterScraper(Scraper):
             interval=CompensationInterval.YEARLY,
             min_amount=min_amount,
             max_amount=max_amount,
-            currency = "USD/CAD"
+            currency="USD/CAD",
         )
         save_job_url = job.get("SaveJobURL", "")
         posted_time_match = re.search(
@@ -294,7 +296,10 @@ class ZipRecruiterScraper(Scraper):
         """
         try:
             response = self.session.get(
-                job_page_url, headers=ZipRecruiterScraper.headers(), allow_redirects=True, timeout_seconds=5
+                job_page_url,
+                headers=ZipRecruiterScraper.headers(),
+                allow_redirects=True,
+                timeout_seconds=5,
             )
         except requests.exceptions.Timeout:
             print("The request timed out.")
@@ -380,7 +385,10 @@ class ZipRecruiterScraper(Scraper):
                 amounts.append(amount)
 
             compensation = Compensation(
-                interval=interval, min_amount=min(amounts), max_amount=max(amounts), currency="USD/CAD"
+                interval=interval,
+                min_amount=min(amounts),
+                max_amount=max(amounts),
+                currency="USD/CAD",
             )
 
             return compensation
@@ -404,11 +412,7 @@ class ZipRecruiterScraper(Scraper):
                 city, state = None, None
         else:
             city, state = None, None
-        return Location(
-            city=city,
-            state=state,
-            country=Country.US_CANADA
-        )
+        return Location(city=city, state=state, country=Country.US_CANADA)
 
     @staticmethod
     def headers() -> dict:

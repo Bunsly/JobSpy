@@ -38,8 +38,6 @@ class IndeedScraper(Scraper):
         self.jobs_per_page = 15
         self.seen_urls = set()
 
-
-
     def scrape_page(
         self, scraper_input: ScraperInput, page: int, session: tls_client.Session
     ) -> tuple[list[JobPost], int]:
@@ -80,7 +78,7 @@ class IndeedScraper(Scraper):
             raise StatusException(response.status_code)
 
         soup = BeautifulSoup(response.content, "html.parser")
-        with open('text2.html', 'w', encoding='utf-8') as f:
+        with open("text2.html", "w", encoding="utf-8") as f:
             f.write(str(soup))
         if "did not match any jobs" in str(soup):
             raise ParsingException("Search did not match any jobs")
@@ -102,7 +100,6 @@ class IndeedScraper(Scraper):
             job_url_client = f'{self.url}/viewjob?jk={job["jobkey"]}'
             if job_url in self.seen_urls:
                 return None
-
 
             extracted_salary = job.get("extractedSalary")
             compensation = None
@@ -141,7 +138,7 @@ class IndeedScraper(Scraper):
                 location=Location(
                     city=job.get("jobLocationCity"),
                     state=job.get("jobLocationState"),
-                    country=self.country
+                    country=self.country,
                 ),
                 job_type=job_type,
                 compensation=compensation,
@@ -229,13 +226,15 @@ class IndeedScraper(Scraper):
         formatted_url = f"{self.url}/viewjob?jk={jk_value}&spa=1"
 
         try:
-            response = session.get(formatted_url, allow_redirects=True, timeout_seconds=5)
+            response = session.get(
+                formatted_url, allow_redirects=True, timeout_seconds=5
+            )
         except requests.exceptions.Timeout:
             print("The request timed out.")
             return None
 
         if response.status_code not in range(200, 400):
-            print('status code not in range')
+            print("status code not in range")
             return None
 
         raw_description = response.json()["body"]["jobInfoWrapperModel"][

@@ -31,7 +31,7 @@ class LinkedInScraper(Scraper):
         :param scraper_input:
         :return: job_response
         """
-        self.country = 'worldwide'
+        self.country = "worldwide"
         job_list: list[JobPost] = []
         seen_urls = set()
         page, processed_jobs, job_count = 0, 0, 0

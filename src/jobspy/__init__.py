@@ -5,12 +5,7 @@ from .jobs import JobType, Location
 from .scrapers.indeed import IndeedScraper
 from .scrapers.ziprecruiter import ZipRecruiterScraper
 from .scrapers.linkedin import LinkedInScraper
-from .scrapers import (
-    ScraperInput,
-    Site,
-    JobResponse,
-    Country
-)
+from .scrapers import ScraperInput, Site, JobResponse, Country
 
 
 SCRAPER_MAPPING = {
@@ -33,7 +28,7 @@ def scrape_jobs(
     job_type: JobType = None,
     easy_apply: bool = False,  # linkedin
     results_wanted: int = 15,
-    country: str = 'usa'
+    country: str = "usa",
 ) -> pd.DataFrame:
     """
     Asynchronously scrapes job data from multiple job sites.
@@ -76,14 +71,14 @@ def scrape_jobs(
         for job in job_response.jobs:
             data = job.dict()
             data["site"] = site
-            data['company'] = data['company_name']
+            data["company"] = data["company_name"]
             if data["job_type"]:
                 # Take the first value from the job type tuple
                 data["job_type"] = data["job_type"].value[0]
             else:
                 data["job_type"] = None
 
-            data['location'] = Location(**data['location']).display_location()
+            data["location"] = Location(**data["location"]).display_location()
 
             compensation_obj = data.get("compensation")
             if compensation_obj and isinstance(compensation_obj, dict):
@@ -110,7 +105,7 @@ def scrape_jobs(
             "site",
             "title",
             "company",
-            'location',
+            "location",
             "job_type",
             "interval",
             "min_amount",
