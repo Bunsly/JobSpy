@@ -10,7 +10,9 @@
 ![jobspy](https://github.com/cullenwatson/JobSpy/assets/78247585/ec7ef355-05f6-4fd3-8161-a817e31c5c57)
   
 ### Installation
-`pip install python-jobspy`  
+```
+pip install python-jobspy
+```
   
   _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_ 
 
@@ -26,18 +28,18 @@ jobs: pd.DataFrame = scrape_jobs(
     location="Dallas, TX",
     results_wanted=10,
     
-    # country: only needed for indeed
-    country='USA'
+    country='USA' # only needed for indeed
 )
 
 if jobs.empty:
     print("No jobs found.")
 else:
-    #1 print
     pd.set_option('display.max_columns', None)
     pd.set_option('display.max_rows', None)
     pd.set_option('display.width', None)
     pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
+
+    #1 output
     print(jobs)
 
     #2 display in Jupyter Notebook
@@ -68,8 +70,8 @@ Optional
 ├── job_type (enum): fulltime, parttime, internship, contract
 ├── is_remote (bool)
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
-├── easy_apply (bool): filters for jobs on LinkedIn that have the 'Easy Apply' option
-├── country (enum): uses the corresponding subdomain on Indeed (e.g. Canada on Indeed is ca.indeed.com
+├── easy_apply (bool): filters for jobs that are hosted on LinkedIn
+├── country (enum): filters the country on Indeed
 ```
 
  
@@ -77,20 +79,20 @@ Optional
 ```plaintext
 JobPost
 ├── title (str)
-├── company_name (str)
+├── company (str)
 ├── job_url (str)
 ├── location (object)
 │   ├── country (str)
 │   ├── city (str)
 │   ├── state (str)
 ├── description (str)
-├── job_type (enum)
+├── job_type (enum): fulltime, parttime, internship, contract
 ├── compensation (object)
-│   ├── interval (CompensationInterval): yearly, monthly, weekly, daily, hourly
+│   ├── interval (enum): yearly, monthly, weekly, daily, hourly
 │   ├── min_amount (int)
 │   ├── max_amount (int)
-│   └── currency (str)
-└── date_posted (datetime)
+│   └── currency (enum)
+└── date_posted (date)
 ```
 
 ## Supported Countries for Job Searching
@@ -98,80 +100,37 @@ JobPost
 
 ### **LinkedIn**
 
-LinkedIn searches globally. Use the `location` parameter
+LinkedIn searches globally & uses only the `location` parameter
 
 ### **ZipRecruiter**
 
-ZipRecruiter searches for jobs in US/Canada. Use the `location` parameter
+ZipRecruiter searches for jobs in US/Canada & uses only the `location` parameter
 
 
 ### **Indeed**
-For Indeed, use `location` along with `country` param
+For Indeed, the `country` parameter is required. Additionally, use the `location` parameter and include the city or state if necessary.
 
 You can specify the following countries when searching on Indeed (use the exact name): 
 
-- Argentina
-- Australia
-- Austria
-- Bahrain
-- Belgium
-- Brazil
-- Canada
-- Chile
-- China
-- Colombia
-- Costa Rica
-- Czech Republic
-- Denmark
-- Ecuador
-- Egypt
-- Finland
-- France
-- Germany
-- Greece
-- Hong Kong
-- Hungary
-- India
-- Indonesia
-- Ireland
-- Israel
-- Italy
-- Japan
-- Kuwait
-- Luxembourg
-- Malaysia
-- Mexico
-- Morocco
-- Netherlands
-- New Zealand
-- Nigeria
-- Norway
-- Oman
-- Pakistan
-- Panama
-- Peru
-- Philippines
-- Poland
-- Portugal
-- Qatar
-- Romania
-- Saudi Arabia
-- Singapore
-- South Africa
-- South Korea
-- Spain
-- Sweden
-- Switzerland
-- Taiwan
-- Thailand
-- Turkey
-- Ukraine
-- United Arab Emirates
-- UK
-- USA
-- Uruguay
-- Venezuela
-- Vietnam
+
+|      |      |      |      |
+|------|------|------|------|
+| Argentina | Australia | Austria | Bahrain |
+| Belgium | Brazil | Canada | Chile |
+| China | Colombia | Costa Rica | Czech Republic |
+| Denmark | Ecuador | Egypt | Finland |
+| France | Germany | Greece | Hong Kong |
+| Hungary | India | Indonesia | Ireland |
+| Israel | Italy | Japan | Kuwait |
+| Luxembourg | Malaysia | Mexico | Morocco |
+| Netherlands | New Zealand | Nigeria | Norway |
+| Oman | Pakistan | Panama | Peru |
+| Philippines | Poland | Portugal | Qatar |
+| Romania | Saudi Arabia | Singapore | South Africa |
+| South Korea | Spain | Sweden | Switzerland |
+| Taiwan | Thailand | Turkey | Ukraine |
+| United Arab Emirates | UK | USA | Uruguay |
+| Venezuela | Vietnam |  |  |
 
 ## Frequently Asked Questions
 
