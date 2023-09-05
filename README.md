@@ -1,7 +1,8 @@
-# <img src="https://github.com/cullenwatson/JobSpy/assets/78247585/2f61a059-9647-4a9c-bfb9-e3a9448bdc6a" style="vertical-align: sub; margin-right: 5px;"> JobSpy
+<img src="https://github.com/cullenwatson/JobSpy/assets/78247585/9941030a-0e73-4a71-afd1-87aa588722eb" width="400">
 
 **JobSpy** is a simple, yet comprehensive, job scraping library.
 ## Features
+
 
 - Scrapes job postings from **LinkedIn**, **Indeed** & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
