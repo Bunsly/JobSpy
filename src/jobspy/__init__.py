@@ -1,8 +1,6 @@
 import pandas as pd
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
-
-import traceback
 from typing import List, Tuple, NamedTuple, Dict
 
 from .jobs import JobType, Location
