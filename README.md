@@ -7,6 +7,10 @@
 - Scrapes job postings from **LinkedIn**, **Indeed** & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
   
+[Video Guide for JobSpy](https://www.youtube.com/watch?v=-yS3mgI5H-4)
+
+
+
 ![jobspy](https://github.com/cullenwatson/JobSpy/assets/78247585/ec7ef355-05f6-4fd3-8161-a817e31c5c57)
   
 ### Installation
@@ -22,31 +26,30 @@ pip install python-jobspy
 from jobspy import scrape_jobs
 import pandas as pd
 
-jobs: pd.DataFrame = scrape_jobs(
+result: pd.DataFrame = scrape_jobs(
     site_name=["indeed", "linkedin", "zip_recruiter"],
     search_term="software engineer",
     location="Dallas, TX",
     results_wanted=10,
     
-    country='USA' # only needed for indeed
+    country_indeed='USA' # only needed for indeed
 )
 
-if jobs.empty:
-    print("No jobs found.")
-else:
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.width', None)
-    pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+pd.set_option('display.width', None)
+pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
 
-    #1 output
-    print(jobs)
+#1 output
+print(result.jobs)
+print(result.errors)
 
-    #2 display in Jupyter Notebook
-    #display(jobs)
+#2 display in Jupyter Notebook
+#display(result.jobs)
+#display(result.errors)
 
-    #3 output to .csv
-    #jobs.to_csv('jobs.csv', index=False)
+#3 output to .csv
+#result.jobs.to_csv('result.jobs.csv', index=False)
 ```
 
 ### Output
@@ -71,7 +74,7 @@ Optional
 ├── is_remote (bool)
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
 ├── easy_apply (bool): filters for jobs that are hosted on LinkedIn
-├── country (enum): filters the country on Indeed
+├── country_indeed (enum): filters the country on Indeed
 ```
 
  
@@ -108,7 +111,7 @@ ZipRecruiter searches for jobs in US/Canada & uses only the `location` parameter
 
 
 ### **Indeed**
-For Indeed, the `country` parameter is required. Additionally, use the `location` parameter and include the city or state if necessary.
+For Indeed, the `country_indeed` parameter is required. Additionally, use the `location` parameter and include the city or state if necessary.
 
 You can specify the following countries when searching on Indeed (use the exact name): 
 
