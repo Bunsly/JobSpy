@@ -78,9 +78,7 @@ class IndeedScraper(Scraper):
             raise StatusException(response.status_code)
 
         soup = BeautifulSoup(response.content, "html.parser")
-        with open("text2.html", "w", encoding="utf-8") as f:
-            f.write(str(soup))
-        if "did not match any jobs" in str(soup):
+        if "did not match any jobs" in response.text:
             raise ParsingException("Search did not match any jobs")
 
         jobs = IndeedScraper.parse_jobs(

@@ -6,4 +6,4 @@ def test_indeed():
         site_name="indeed",
         search_term="software engineer",
     )
-    assert result is not None
+    assert result is not None and result.errors.empty is True

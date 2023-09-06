@@ -26,7 +26,7 @@ def _map_str_to_site(site_name: str) -> Site:
 
 
 def scrape_jobs(
-    site_name: str | Site | List[Site],
+    site_name: str | List[str] | Site | List[Site],
     search_term: str,
     location: str = "",
     distance: int = None,
@@ -43,11 +43,12 @@ def scrape_jobs(
     """
 
     if type(site_name) == str:
-        site_name = _map_str_to_site(site_name)
+        site_type = [_map_str_to_site(site_name)]
+    else:  #: if type(site_name) == list
+        site_type = [_map_str_to_site(site) if type(site) == str else site_name for site in site_name]
 
     country_enum = Country.from_string(country_indeed)
 
-    site_type = [site_name] if type(site_name) == Site else site_name
     scraper_input = ScraperInput(
         site_type=site_type,
         country=country_enum,
@@ -121,7 +122,6 @@ def scrape_jobs(
 
     errors_list = [(key, value) for key, value in errors.items()]
     errors_df = pd.DataFrame(errors_list, columns=["Site", "Error"])
-
 
     if dfs:
         df = pd.concat(dfs, ignore_index=True)
