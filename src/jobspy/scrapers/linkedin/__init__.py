@@ -1,7 +1,9 @@
 from typing import Optional, Tuple
 from datetime import datetime
+import traceback
 
 import requests
+from requests.exceptions import Timeout
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
@@ -67,9 +69,12 @@ class LinkedInScraper(Scraper):
                 )
 
                 if response.status_code != 200:
+                    reason = ' (too many requests)' if response.status_code == 429 else ''
                     return JobResponse(
                         success=False,
-                        error=f"Response returned {response.status_code}",
+                        error=f"LinkedIn returned {response.status_code} {reason}",
+                        jobs=job_list,
+                        total_results=job_count,
                     )
 
                 soup = BeautifulSoup(response.text, "html.parser")
@@ -113,7 +118,10 @@ class LinkedInScraper(Scraper):
                     description, job_type = LinkedInScraper.get_description(job_url)
                     if datetime_tag:
                         datetime_str = datetime_tag["datetime"]
-                        date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
+                        try:
+                            date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
+                        except Exception as e:
+                            date_posted = None
                     else:
                         date_posted = None
 
@@ -130,15 +138,13 @@ class LinkedInScraper(Scraper):
                         ),
                     )
                     job_list.append(job_post)
-                    if (
-                        len(job_list) >= scraper_input.results_wanted
-                        or processed_jobs >= job_count
-                    ):
+                    if processed_jobs >= job_count:
                         break
-                if (
-                    len(job_list) >= scraper_input.results_wanted
-                    or processed_jobs >= job_count
-                ):
+                    if len(job_list) >= scraper_input.results_wanted:
+                        break
+                if processed_jobs >= job_count:
+                    break
+                if len(job_list) >= scraper_input.results_wanted:
                     break
 
                 page += 1
@@ -158,7 +164,11 @@ class LinkedInScraper(Scraper):
         :param job_page_url:
         :return: description or None
         """
-        response = requests.get(job_page_url, allow_redirects=True)
+        try:
+            response = requests.get(job_page_url, timeout=5)
+        except Timeout:
+            return None, None
+
         if response.status_code not in range(200, 400):
             return None, None
 
