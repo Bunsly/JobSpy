@@ -27,14 +27,6 @@ class ScraperInput(BaseModel):
     results_wanted: int = 15
 
 
-class CommonResponse(BaseModel):
-    status: Optional[str]
-    error: Optional[str]
-    linkedin: Optional[Any] = None
-    indeed: Optional[Any] = None
-    zip_recruiter: Optional[Any] = None
-
-
 class Scraper:
     def __init__(self, site: Site):
         self.site = site

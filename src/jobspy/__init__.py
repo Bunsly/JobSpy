@@ -1,5 +1,7 @@
 import pandas as pd
-from typing import List, Tuple
+import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
+from typing import List, Tuple, NamedTuple, Dict
 
 from .jobs import JobType, Location
 from .scrapers.indeed import IndeedScraper
@@ -7,12 +9,16 @@ from .scrapers.ziprecruiter import ZipRecruiterScraper
 from .scrapers.linkedin import LinkedInScraper
 from .scrapers import ScraperInput, Site, JobResponse, Country
 
-
 SCRAPER_MAPPING = {
     Site.LINKEDIN: LinkedInScraper,
     Site.INDEED: IndeedScraper,
     Site.ZIP_RECRUITER: ZipRecruiterScraper,
 }
+
+
+class ScrapeResults(NamedTuple):
+    jobs: pd.DataFrame
+    errors: pd.DataFrame
 
 
 def _map_str_to_site(site_name: str) -> Site:
@@ -28,8 +34,9 @@ def scrape_jobs(
     job_type: JobType = None,
     easy_apply: bool = False,  # linkedin
     results_wanted: int = 15,
-    country: str = "usa",
-) -> pd.DataFrame:
+    country_indeed: str = "usa",
+    hyperlinks: bool = False
+) -> ScrapeResults:
     """
     Asynchronously scrapes job data from multiple job sites.
     :return: results_wanted: pandas dataframe containing job data
@@ -38,7 +45,7 @@ def scrape_jobs(
     if type(site_name) == str:
         site_name = _map_str_to_site(site_name)
 
-    country_enum = Country.from_string(country)
+    country_enum = Country.from_string(country_indeed)
 
     site_type = [site_name] if type(site_name) == Site else site_name
     scraper_input = ScraperInput(
@@ -54,22 +61,35 @@ def scrape_jobs(
     )
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
-        scraper_class = SCRAPER_MAPPING[site]
-        scraper = scraper_class()
-        scraped_data: JobResponse = scraper.scrape(scraper_input)
-
+        try:
+            scraper_class = SCRAPER_MAPPING[site]
+            scraper = scraper_class()
+            scraped_data: JobResponse = scraper.scrape(scraper_input)
+        except Exception as e:
+            scraped_data = JobResponse(jobs=[], error=str(e), success=False)
         return site.value, scraped_data
 
-    results = {}
-    for site in scraper_input.site_type:
+    results, errors = {}, {}
+
+    def worker(site):
         site_value, scraped_data = scrape_site(site)
-        results[site_value] = scraped_data
+        return site_value, scraped_data
+
+    with ThreadPoolExecutor() as executor:
+        future_to_site = {executor.submit(worker, site): site for site in scraper_input.site_type}
+
+        for future in concurrent.futures.as_completed(future_to_site):
+            site_value, scraped_data = future.result()
+            results[site_value] = scraped_data
+            if scraped_data.error:
+                errors[site_value] = scraped_data.error
 
     dfs = []
 
     for site, job_response in results.items():
         for job in job_response.jobs:
             data = job.dict()
+            data["job_url_hyper"] = f'<a href="{data["job_url"]}">{data["job_url"]}</a>'
             data["site"] = site
             data["company"] = data["company_name"]
             if data["job_type"]:
@@ -99,23 +119,42 @@ def scrape_jobs(
             job_df = pd.DataFrame([data])
             dfs.append(job_df)
 
+    errors_list = [(key, value) for key, value in errors.items()]
+    errors_df = pd.DataFrame(errors_list, columns=["Site", "Error"])
+
+
     if dfs:
         df = pd.concat(dfs, ignore_index=True)
-        desired_order = [
-            "site",
-            "title",
-            "company",
-            "location",
-            "job_type",
-            "interval",
-            "min_amount",
-            "max_amount",
-            "currency",
-            "job_url",
-            "description",
-        ]
+        if hyperlinks:
+            desired_order = [
+                "site",
+                "title",
+                "company",
+                "location",
+                "job_type",
+                "interval",
+                "min_amount",
+                "max_amount",
+                "currency",
+                "job_url_hyper",
+                "description",
+            ]
+        else:
+            desired_order = [
+                "site",
+                "title",
+                "company",
+                "location",
+                "job_type",
+                "interval",
+                "min_amount",
+                "max_amount",
+                "currency",
+                "job_url",
+                "description",
+            ]
         df = df[desired_order]
     else:
         df = pd.DataFrame()
 
-    return df
+    return ScrapeResults(jobs=df, errors=errors_df)

@@ -197,7 +197,6 @@ class IndeedScraper(Scraper):
                 error=f"Indeed failed to parse response: {e}",
             )
         except Exception as e:
-            print(f"LinkedIn failed to scrape: {e}\n{traceback.format_exc()}")
             return JobResponse(
                 success=False,
                 error=f"Indeed failed to scrape: {e}",
@@ -230,11 +229,9 @@ class IndeedScraper(Scraper):
                 formatted_url, allow_redirects=True, timeout_seconds=5
             )
         except requests.exceptions.Timeout:
-            print("The request timed out.")
             return None
 
         if response.status_code not in range(200, 400):
-            print("status code not in range")
             return None
 
         raw_description = response.json()["body"]["jobInfoWrapperModel"][

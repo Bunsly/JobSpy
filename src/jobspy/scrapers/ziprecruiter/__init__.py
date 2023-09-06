@@ -148,7 +148,6 @@ class ZipRecruiterScraper(Scraper):
                 error=f"ZipRecruiter returned status code {e.status_code}",
             )
         except Exception as e:
-            print(f"ZipRecruiter failed to scrape: {e}\n{traceback.format_exc()}")
             return JobResponse(
                 success=False,
                 error=f"ZipRecruiter failed to scrape: {e}",
@@ -302,7 +301,6 @@ class ZipRecruiterScraper(Scraper):
                 timeout_seconds=5,
             )
         except requests.exceptions.Timeout:
-            print("The request timed out.")
             return None
 
         html_string = response.content
