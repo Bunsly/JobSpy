@@ -49,7 +49,7 @@ pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
 display(jobs)
 
 #2 output to console
-print(jobs)
+#print(jobs)
 
 #3 output to .csv
 #jobs.jobs.to_csv('result.jobs.csv', index=False)
