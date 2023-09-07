@@ -26,13 +26,18 @@ pip install python-jobspy
 from jobspy import scrape_jobs
 import pandas as pd
 
-result: pd.DataFrame = scrape_jobs(
+jobs: pd.DataFrame = scrape_jobs(
     site_name=["indeed", "linkedin", "zip_recruiter"],
     search_term="software engineer",
     location="Dallas, TX",
     results_wanted=10,
     
     country_indeed='USA' # only needed for indeed
+    
+    # use if you want to use a proxy
+    # proxy="socks5://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
+    # proxy="http://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
+    # proxy="https://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
 )
 
 pd.set_option('display.max_columns', None)
@@ -41,12 +46,12 @@ pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
 
 #1 output
-print(result.jobs)
-print(result.errors)
+print(jobs)
+print(errors)
 
 #2 display in Jupyter Notebook
-#display(result.jobs)
-#display(result.errors)
+#display(jobs)
+#display(errors)
 
 #3 output to .csv
 #result.jobs.to_csv('result.jobs.csv', index=False)

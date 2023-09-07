@@ -189,22 +189,4 @@ class JobPost(BaseModel):
 
 
 class JobResponse(BaseModel):
-    success: bool
-    error: str = None
-
-    total_results: Optional[int] = None
-
     jobs: list[JobPost] = []
-
-    returned_results: int = None
-
-    @validator("returned_results", pre=True, always=True)
-    def set_returned_results(cls, v, values):
-        jobs_list = values.get("jobs")
-
-        if v is None:
-            if jobs_list is not None:
-                return len(jobs_list)
-            else:
-                return 0
-        return v

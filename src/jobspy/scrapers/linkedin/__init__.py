@@ -1,13 +1,20 @@
+"""
+jobspy.scrapers.linkedin
+~~~~~~~~~~~~~~~~~~~
+
+This module contains routines to scrape LinkedIn.
+"""
 from typing import Optional, Tuple
 from datetime import datetime
 import traceback
 
 import requests
-from requests.exceptions import Timeout
+from requests.exceptions import Timeout, ProxyError
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
 from .. import Scraper, ScraperInput, Site
+from ..exceptions import LinkedInException
 from ...jobs import (
     JobPost,
     Location,
@@ -19,13 +26,13 @@ from ...jobs import (
 
 
 class LinkedInScraper(Scraper):
-    def __init__(self):
+    def __init__(self, proxy: Optional[str] = None):
         """
         Initializes LinkedInScraper with the LinkedIn job search url
         """
         site = Site(Site.LINKEDIN)
         self.url = "https://www.linkedin.com"
-        super().__init__(site)
+        super().__init__(site, proxy=proxy)
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -64,18 +71,23 @@ class LinkedInScraper(Scraper):
                 }
 
                 params = {k: v for k, v in params.items() if v is not None}
-                response = session.get(
-                    f"{self.url}/jobs/search", params=params, allow_redirects=True
-                )
-
-                if response.status_code != 200:
-                    reason = ' (too many requests)' if response.status_code == 429 else ''
-                    return JobResponse(
-                        success=False,
-                        error=f"LinkedIn returned {response.status_code} {reason}",
-                        jobs=job_list,
-                        total_results=job_count,
+                try:
+                    response = session.get(
+                        f"{self.url}/jobs/search",
+                        params=params,
+                        allow_redirects=True,
+                        proxies=self.proxy,
+                        timeout=10,
                     )
+                    response.raise_for_status()
+                except requests.HTTPError as e:
+                    raise LinkedInException(
+                        f"bad response status code: {response.status_code}"
+                    )
+                except ProxyError as e:
+                    raise LinkedInException("bad proxy")
+                except (ProxyError, Exception) as e:
+                    raise LinkedInException(str(e))
 
                 soup = BeautifulSoup(response.text, "html.parser")
 
@@ -115,7 +127,7 @@ class LinkedInScraper(Scraper):
                     datetime_tag = metadata_card.find(
                         "time", class_="job-search-card__listdate"
                     )
-                    description, job_type = LinkedInScraper.get_description(job_url)
+                    description, job_type = self.get_description(job_url)
                     if datetime_tag:
                         datetime_str = datetime_tag["datetime"]
                         try:
@@ -150,26 +162,18 @@ class LinkedInScraper(Scraper):
                 page += 1
 
         job_list = job_list[: scraper_input.results_wanted]
-        job_response = JobResponse(
-            success=True,
-            jobs=job_list,
-            total_results=job_count,
-        )
-        return job_response
+        return JobResponse(jobs=job_list)
 
-    @staticmethod
-    def get_description(job_page_url: str) -> Optional[str]:
+    def get_description(self, job_page_url: str) -> Optional[str]:
         """
         Retrieves job description by going to the job page url
         :param job_page_url:
         :return: description or None
         """
         try:
-            response = requests.get(job_page_url, timeout=5)
-        except Timeout:
-            return None, None
-
-        if response.status_code not in range(200, 400):
+            response = requests.get(job_page_url, timeout=5, proxies=self.proxy)
+            response.raise_for_status()
+        except Exception as e:
             return None, None
 
         soup = BeautifulSoup(response.text, "html.parser")
