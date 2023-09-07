@@ -7,7 +7,7 @@
 - Scrapes job postings from **LinkedIn**, **Indeed** & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
   
-[Video Guide for JobSpy](https://www.youtube.com/watch?v=-yS3mgI5H-4)
+[Video Guide for JobSpy](https://www.youtube.com/watch?v=-yS3mgI5H-4) (outdated, updating within couple hours)
 
 
 
@@ -27,9 +27,9 @@ from jobspy import scrape_jobs
 import pandas as pd
 
 jobs: pd.DataFrame = scrape_jobs(
-    site_name=["indeed", "linkedin", "zip_recruiter"],
-    search_term="software engineer",
-    location="Dallas, TX",
+    site_name=['indeed', 'linkedin', 'zip_recruiter'],
+    search_term='software engineer',
+    location='Dallas, TX',
     results_wanted=10,
     
     country_indeed='USA' # only needed for indeed
@@ -47,7 +47,6 @@ pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
 
 #1 output
 print(jobs)
-print(errors)
 
 #2 display in Jupyter Notebook
 #display(jobs)
