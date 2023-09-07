@@ -50,8 +50,8 @@ print(jobs)
 print(errors)
 
 #2 display in Jupyter Notebook
-#display(result.jobs)
-#display(result.errors)
+#display(jobs)
+#display(errors)
 
 #3 output to .csv
 #result.jobs.to_csv('result.jobs.csv', index=False)
