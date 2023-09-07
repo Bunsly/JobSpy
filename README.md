@@ -6,6 +6,7 @@
 
 - Scrapes job postings from **LinkedIn**, **Indeed** & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
+- Proxy support (HTTP/S, SOCKS)
   
 [Video Guide for JobSpy](https://www.youtube.com/watch?v=-yS3mgI5H-4) (outdated, updating within couple hours)
 
