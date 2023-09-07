@@ -113,15 +113,15 @@ The following exceptions may be raised when using JobSpy:
 
 ### **LinkedIn**
 
-LinkedIn searches globally & uses only the `location` parameter
+LinkedIn searches globally & uses only the `location` parameter.
 
 ### **ZipRecruiter**
 
-ZipRecruiter searches for jobs in US/Canada & uses only the `location` parameter
+ZipRecruiter searches for jobs in **US/Canada** & uses only the `location` parameter.
 
 
 ### **Indeed**
-For Indeed, the `country_indeed` parameter is required. Additionally, use the `location` parameter and include the city or state if necessary.
+Indeed supporst most countries, but the `country_indeed` parameter is required. Additionally, use the `location` parameter to narrow down the location, e.g. city & state if necessary.
 
 You can specify the following countries when searching on Indeed (use the exact name): 
 
