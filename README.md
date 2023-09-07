@@ -8,15 +8,13 @@
 - Aggregates the job postings in a Pandas DataFrame
 - Proxy support (HTTP/S, SOCKS)
   
-[Video Guide for JobSpy](https://www.youtube.com/watch?v=-yS3mgI5H-4) (outdated, updating within couple hours)
-
-
+[Video Guide for JobSpy](https://www.youtube.com/watch?v=RuP1HrAZnxs&pp=ygUgam9icyBzY3JhcGVyIGJvdCBsaW5rZWRpbiBpbmRlZWQ%3D) - Updated for release v1.1.3
 
 ![jobspy](https://github.com/cullenwatson/JobSpy/assets/78247585/ec7ef355-05f6-4fd3-8161-a817e31c5c57)
   
 ### Installation
 ```
-pip install python-jobspy
+pip install --upgrade python-jobspy
 ```
   
   _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_ 
@@ -28,33 +26,33 @@ from jobspy import scrape_jobs
 import pandas as pd
 
 jobs: pd.DataFrame = scrape_jobs(
-    site_name=['indeed', 'linkedin', 'zip_recruiter'],
-    search_term='software engineer',
-    location='Dallas, TX',
+    site_name=["indeed", "linkedin", "zip_recruiter"],
+    search_term="software engineer",
+    location="Dallas, TX",
     results_wanted=10,
     
     country_indeed='USA' # only needed for indeed
     
-    # use if you want to use a proxy
+    # use if you want to use a proxy (3 types)
     # proxy="socks5://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
     # proxy="http://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
     # proxy="https://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
 )
 
+# formatting for pandas
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
 
-#1 output
+#1 display in Jupyter Notebook (1. pip install jupyter 2. jupyter notebook)
+display(jobs)
+
+#2 output to console
 print(jobs)
 
-#2 display in Jupyter Notebook
-#display(jobs)
-#display(errors)
-
 #3 output to .csv
-#result.jobs.to_csv('result.jobs.csv', index=False)
+#jobs.jobs.to_csv('result.jobs.csv', index=False)
 ```
 
 ### Output
@@ -76,10 +74,11 @@ Optional
 ├── location (int)
 ├── distance (int): in miles
 ├── job_type (enum): fulltime, parttime, internship, contract
+├── proxy (str): in format 'http://user:pass@host:port' or [https, socks]
 ├── is_remote (bool)
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
 ├── easy_apply (bool): filters for jobs that are hosted on LinkedIn
-├── country_indeed (enum): filters the country on Indeed
+├── country_indeed (enum): filters the country on Indeed (see below for correct spelling)
 ```
 
  
@@ -102,6 +101,12 @@ JobPost
 │   └── currency (enum)
 └── date_posted (date)
 ```
+
+### Exceptions
+The following exceptions may be raised when using JobSpy:
+* `LinkedInException`
+* `IndeedException`
+* `ZipRecruiterException`
 
 ## Supported Countries for Job Searching
 
@@ -145,7 +150,7 @@ You can specify the following countries when searching on Indeed (use the exact 
 ---
 
 **Q: Encountering issues with your queries?**  
-**A:** Try reducing the number of `results_wanted` and/or broadening the filters. If problems persist, [submit an issue](#).
+**A:** Try reducing the number of `results_wanted` and/or broadening the filters. If problems persist, [submit an issue](https://github.com/cullenwatson/JobSpy/issues).
 
 ---
 
