@@ -1,3 +1,9 @@
+"""
+jobspy.scrapers.indeed
+~~~~~~~~~~~~~~~~~~~
+
+This module contains routines to scrape Indeed.
+"""
 import re
 import math
 import io
@@ -12,6 +18,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
+from ..exceptions import IndeedException
 from ...jobs import (
     JobPost,
     Compensation,
@@ -20,20 +27,16 @@ from ...jobs import (
     JobResponse,
     JobType,
 )
-from .. import Scraper, ScraperInput, Site, Country, StatusException
-
-
-class ParsingException(Exception):
-    pass
+from .. import Scraper, ScraperInput, Site, Country
 
 
 class IndeedScraper(Scraper):
-    def __init__(self):
+    def __init__(self, proxy: Optional[str] = None):
         """
         Initializes IndeedScraper with the Indeed job search url
         """
         site = Site(Site.INDEED)
-        super().__init__(site)
+        super().__init__(site, proxy=proxy)
 
         self.jobs_per_page = 15
         self.seen_urls = set()
@@ -52,7 +55,7 @@ class IndeedScraper(Scraper):
         domain = self.country.domain_value
         self.url = f"https://{domain}.indeed.com"
 
-        job_list = []
+        job_list: list[JobPost] = []
 
         params = {
             "q": scraper_input.search_term,
@@ -71,15 +74,26 @@ class IndeedScraper(Scraper):
 
         if sc_values:
             params["sc"] = "0kf:" + "".join(sc_values) + ";"
-        response = session.get(self.url + "/jobs", params=params, allow_redirects=True)
-        # print(response.status_code)
-
-        if response.status_code not in range(200, 400):
-            raise StatusException(response.status_code)
+        try:
+            response = session.get(
+                self.url + "/jobs",
+                params=params,
+                allow_redirects=True,
+                proxy=self.proxy,
+                timeout_seconds=10,
+            )
+            if response.status_code not in range(200, 400):
+                raise IndeedException(
+                    f"bad response with status code: {response.status_code}"
+                )
+        except Exception as e:
+            if "Proxy responded with" in str(e):
+                raise IndeedException("bad proxy")
+            raise IndeedException(str(e))
 
         soup = BeautifulSoup(response.content, "html.parser")
         if "did not match any jobs" in response.text:
-            raise ParsingException("Search did not match any jobs")
+            raise IndeedException("Parsing exception: Search did not match any jobs")
 
         jobs = IndeedScraper.parse_jobs(
             soup
@@ -91,7 +105,7 @@ class IndeedScraper(Scraper):
             .get("mosaicProviderJobCardsModel", {})
             .get("results")
         ):
-            raise Exception("No jobs found.")
+            raise IndeedException("No jobs found.")
 
         def process_job(job) -> Optional[JobPost]:
             job_url = f'{self.url}/jobs/viewjob?jk={job["jobkey"]}'
@@ -169,42 +183,24 @@ class IndeedScraper(Scraper):
             math.ceil(scraper_input.results_wanted / self.jobs_per_page) - 1
         )
 
-        try:
-            #: get first page to initialize session
-            job_list, total_results = self.scrape_page(scraper_input, 0, session)
+        #: get first page to initialize session
+        job_list, total_results = self.scrape_page(scraper_input, 0, session)
 
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                futures: list[Future] = [
-                    executor.submit(self.scrape_page, scraper_input, page, session)
-                    for page in range(1, pages_to_process + 1)
-                ]
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            futures: list[Future] = [
+                executor.submit(self.scrape_page, scraper_input, page, session)
+                for page in range(1, pages_to_process + 1)
+            ]
 
-                for future in futures:
-                    jobs, _ = future.result()
+            for future in futures:
+                jobs, _ = future.result()
 
-                    job_list += jobs
-        except StatusException as e:
-            return JobResponse(
-                success=False,
-                error=f"Indeed returned status code {e.status_code}",
-            )
-
-        except ParsingException as e:
-            return JobResponse(
-                success=False,
-                error=f"Indeed failed to parse response: {e}",
-            )
-        except Exception as e:
-            return JobResponse(
-                success=False,
-                error=f"Indeed failed to scrape: {e}",
-            )
+                job_list += jobs
 
         if len(job_list) > scraper_input.results_wanted:
             job_list = job_list[: scraper_input.results_wanted]
 
         job_response = JobResponse(
-            success=True,
             jobs=job_list,
             total_results=total_results,
         )
@@ -224,9 +220,9 @@ class IndeedScraper(Scraper):
 
         try:
             response = session.get(
-                formatted_url, allow_redirects=True, timeout_seconds=5
+                formatted_url, allow_redirects=True, timeout_seconds=5, proxy=self.proxy
             )
-        except requests.exceptions.Timeout:
+        except Exception as e:
             return None
 
         if response.status_code not in range(200, 400):
@@ -253,7 +249,6 @@ class IndeedScraper(Scraper):
                     label = taxonomy["attributes"][0].get("label")
                     if label:
                         job_type_str = label.replace("-", "").replace(" ", "").lower()
-                        # print(f"Debug: job_type_str = {job_type_str}")
                         return IndeedScraper.get_enum_from_value(job_type_str)
         return None
 
@@ -299,9 +294,9 @@ class IndeedScraper(Scraper):
                 jobs = json.loads(m.group(1).strip())
                 return jobs
             else:
-                raise ParsingException("Could not find mosaic provider job cards data")
+                raise IndeedException("Could not find mosaic provider job cards data")
         else:
-            raise ParsingException(
+            raise IndeedException(
                 "Could not find a script tag containing mosaic provider data"
             )
 
