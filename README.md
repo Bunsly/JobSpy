@@ -121,7 +121,7 @@ ZipRecruiter searches for jobs in **US/Canada** & uses only the `location` param
 
 
 ### **Indeed**
-Indeed supporst most countries, but the `country_indeed` parameter is required. Additionally, use the `location` parameter to narrow down the location, e.g. city & state if necessary.
+Indeed supports most countries, but the `country_indeed` parameter is required. Additionally, use the `location` parameter to narrow down the location, e.g. city & state if necessary.
 
 You can specify the following countries when searching on Indeed (use the exact name): 
 
