@@ -155,12 +155,10 @@ You can specify the following countries when searching on Indeed (use the exact 
 ---
 
 **Q: Received a response code 429?**  
-**A:** This indicates that you have been blocked by the job board site for sending too many requests. Currently, **ZipRecruiter** is particularly aggressive with blocking. We recommend:
+**A:** This indicates that you have been blocked by the job board site for sending too many requests. Currently, **LinkedIn** is particularly aggressive with blocking. We recommend:
 
 - Waiting a few seconds between requests.
-- Trying a VPN to change your IP address.
-
-**Note:** Proxy support is in development and coming soon!
+- Trying a VPN or proxy to change your IP address.
 
 ---
 
