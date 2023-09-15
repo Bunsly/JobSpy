@@ -52,7 +52,7 @@ display(jobs)
 #print(jobs)
 
 #3 output to .csv
-#jobs.jobs.to_csv('result.jobs.csv', index=False)
+#jobs.to_csv('jobs.csv', index=False)
 ```
 
 ### Output
