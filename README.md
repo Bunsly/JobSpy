@@ -2,7 +2,7 @@
 
 **JobSpy** is a simple, yet comprehensive, job scraping library.
 
-*Looking to build a data-focused software product?* **[Book a call](https://calendly.com/zachary-products/15min)** *to learn more.*
+*Looking to build a data-focused software product?* **[Book a call](https://calendly.com/zachary-products/15min)** *to work with us.*
 ## Features
 
 
