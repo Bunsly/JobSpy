@@ -164,4 +164,10 @@ You can specify the following countries when searching on Indeed (use the exact 
 
 ---
 
+**Q: Experiencing a "Segmentation fault: 11" on macOS Catalina?**  
+**A:** This is due to `tls_client` dependency not supporting your architecture. Solutions and workarounds include:
+- Upgrade to a newer version of MacOS
+- Reach out to the maintainers of [tls_client](https://github.com/bogdanfinn/tls-client) for fixes
+
+
   
