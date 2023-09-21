@@ -32,7 +32,7 @@ def scrape_jobs(
     location: str = "",
     distance: int = None,
     is_remote: bool = False,
-    job_type: JobType = None,
+    job_type: str = None,
     easy_apply: bool = False,  # linkedin
     results_wanted: int = 15,
     country_indeed: str = "usa",
@@ -43,6 +43,14 @@ def scrape_jobs(
     Simultaneously scrapes job data from multiple job sites.
     :return: results_wanted: pandas dataframe containing job data
     """
+
+    def get_enum_from_value(value_str):
+        for job_type in JobType:
+            if value_str in job_type.value:
+                return job_type
+        raise Exception(f"Invalid job type: {value_str}")
+    job_type = get_enum_from_value(job_type) if job_type else None
+
 
     if type(site_name) == str:
         site_type = [_map_str_to_site(site_name)]
