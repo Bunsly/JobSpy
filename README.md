@@ -2,6 +2,8 @@
 
 **JobSpy** is a simple, yet comprehensive, job scraping library.
 
+**Not technical?** Try out the web scraping tool on our site at [usejobspy.com](https://usejobspy.com).
+
 *Looking to build a data-focused software product?* **[Book a call](https://calendly.com/zachary-products/15min)** *to work with us.*  
 \
 Check out another project we wrote: ***[HomeHarvest](https://github.com/ZacharyHampton/HomeHarvest)** – a Python package for real estate scraping*
