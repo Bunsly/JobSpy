@@ -95,7 +95,7 @@ Optional
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
 ├── easy_apply (bool): filters for jobs that are hosted on LinkedIn
 ├── country_indeed (enum): filters the country on Indeed (see below for correct spelling)
-├── offset (enum): starts the search from an offset (e.g. 25 will start the search from the 25th result)
+├── offset (num): starts the search from an offset (e.g. 25 will start the search from the 25th result)
 ```
 
 ### JobPost Schema
