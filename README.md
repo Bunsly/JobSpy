@@ -36,13 +36,12 @@ jobs: pd.DataFrame = scrape_jobs(
     search_term="software engineer",
     location="Dallas, TX",
     results_wanted=10,
-    
-    country_indeed='USA' # only needed for indeed
-    
-    # use if you want to use a proxy (3 types)
-    # proxy="socks5://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
+
+    country_indeed='USA'  # only needed for indeed
+
+    # use if you want to use a proxy
     # proxy="http://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
-    # proxy="https://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
+    # offset=25 # use if you want to start at a specific offset
 )
 
 # formatting for pandas
@@ -51,14 +50,18 @@ pd.set_option('display.max_rows', None)
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
 
-#1 display in Jupyter Notebook (1. pip install jupyter 2. jupyter notebook)
-display(jobs)
+# 1 output to console
+print(jobs)
 
-#2 output to console
-#print(jobs)
+# 2 display in Jupyter Notebook (1. pip install jupyter 2. jupyter notebook)
+# display(jobs)
 
-#3 output to .csv
-#jobs.to_csv('jobs.csv', index=False)
+# 3 output to .csv
+# jobs.to_csv('jobs.csv', index=False)
+
+# 4 output to .xlsx
+# jobs.to_xlsx('jobs.xlsx', index=False)
+
 ```
 
 ### Output
@@ -85,6 +88,7 @@ Optional
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
 ├── easy_apply (bool): filters for jobs that are hosted on LinkedIn
 ├── country_indeed (enum): filters the country on Indeed (see below for correct spelling)
+├── offset (enum): starts the search from an offset (e.g. 25 will start the search from the 25th result)
 ```
 
  

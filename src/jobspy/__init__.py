@@ -1,8 +1,7 @@
 import pandas as pd
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple, NamedTuple, Dict, Optional
-import traceback
+from typing import List, Tuple, Optional
 
 from .jobs import JobType, Location
 from .scrapers.indeed import IndeedScraper
@@ -38,6 +37,7 @@ def scrape_jobs(
     country_indeed: str = "usa",
     hyperlinks: bool = False,
     proxy: Optional[str] = None,
+    offset: Optional[int] = 0
 ) -> pd.DataFrame:
     """
     Simultaneously scrapes job data from multiple job sites.
@@ -72,6 +72,7 @@ def scrape_jobs(
         job_type=job_type,
         easy_apply=easy_apply,
         results_wanted=results_wanted,
+        offset=offset
     )
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
@@ -149,17 +150,18 @@ def scrape_jobs(
     if jobs_dfs:
         jobs_df = pd.concat(jobs_dfs, ignore_index=True)
         desired_order: List[str] = [
+            "job_url_hyper" if hyperlinks else "job_url",
             "site",
             "title",
             "company",
             "location",
-            "date_posted",
             "job_type",
+            "date_posted",
             "interval",
+            "benefits",
             "min_amount",
             "max_amount",
             "currency",
-            "job_url_hyper" if hyperlinks else "job_url",
             "description",
         ]
         jobs_formatted_df = jobs_df[desired_order]

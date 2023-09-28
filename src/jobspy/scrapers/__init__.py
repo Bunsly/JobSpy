@@ -18,6 +18,7 @@ class ScraperInput(BaseModel):
     is_remote: bool = False
     job_type: Optional[JobType] = None
     easy_apply: bool = None  # linkedin
+    offset: int = 0
 
     results_wanted: int = 15
 
