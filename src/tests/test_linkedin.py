@@ -1,4 +1,5 @@
 from ..jobspy import scrape_jobs
+import pandas as pd
 
 
 def test_linkedin():
@@ -6,4 +7,4 @@ def test_linkedin():
         site_name="linkedin",
         search_term="software engineer",
     )
-    assert result is not None and result.errors.empty is True
+    assert isinstance(result, pd.DataFrame) and not result.empty, "Result should be a non-empty DataFrame"

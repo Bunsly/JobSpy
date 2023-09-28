@@ -170,7 +170,7 @@ class CompensationInterval(Enum):
 
 
 class Compensation(BaseModel):
-    interval: CompensationInterval
+    interval: Optional[CompensationInterval] = None
     min_amount: int = None
     max_amount: int = None
     currency: Optional[str] = "USD"
@@ -186,6 +186,8 @@ class JobPost(BaseModel):
     job_type: Optional[JobType] = None
     compensation: Optional[Compensation] = None
     date_posted: Optional[date] = None
+    benefits: Optional[str] = None
+    emails: Optional[list[str]] = None
 
 
 class JobResponse(BaseModel):

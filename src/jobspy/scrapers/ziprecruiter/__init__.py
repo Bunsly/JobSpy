@@ -7,10 +7,9 @@ This module contains routines to scrape ZipRecruiter.
 import math
 import json
 import re
-import traceback
-from datetime import datetime
-from typing import Optional, Tuple
-from urllib.parse import urlparse, parse_qs
+from datetime import datetime, date
+from typing import Optional, Tuple, Any
+from urllib.parse import urlparse, parse_qs, urlunparse
 
 import tls_client
 import requests
@@ -29,6 +28,7 @@ from ...jobs import (
     JobType,
     Country,
 )
+from ...utils import extract_emails_from_text
 
 
 class ZipRecruiterScraper(Scraper):
@@ -47,19 +47,18 @@ class ZipRecruiterScraper(Scraper):
         )
 
     def find_jobs_in_page(
-        self, scraper_input: ScraperInput, page: int
-    ) -> tuple[list[JobPost], int | None]:
+            self, scraper_input: ScraperInput, page: int
+    ) -> list[JobPost]:
         """
         Scrapes a page of ZipRecruiter for jobs with scraper_input criteria
         :param scraper_input:
         :param page:
-        :param session:
-        :return: jobs found on page, total number of jobs found for search
+        :return: jobs found on page
         """
         job_list: list[JobPost] = []
         try:
             response = self.session.get(
-                self.url + "/jobs-search",
+                f"{self.url}/jobs-search",
                 headers=ZipRecruiterScraper.headers(),
                 params=ZipRecruiterScraper.add_params(scraper_input, page),
                 allow_redirects=True,
@@ -92,8 +91,6 @@ class ZipRecruiterScraper(Scraper):
             page_variant = "html_1"
             jobs_list = soup.find_all("li", {"class": "job-listing"})
             # print('type 1 html', len(jobs_list))
-            # with open("zip_method_8.html", "w") as f:
-            #     f.write(soup.prettify())
 
         with ThreadPoolExecutor(max_workers=10) as executor:
             if page_variant == "javascript":
@@ -119,8 +116,9 @@ class ZipRecruiterScraper(Scraper):
         :param scraper_input:
         :return: job_response
         """
+        start_page = (scraper_input.offset // self.jobs_per_page) + 1 if scraper_input.offset else 1
         #: get first page to initialize session
-        job_list: list[JobPost] = self.find_jobs_in_page(scraper_input, 1)
+        job_list: list[JobPost] = self.find_jobs_in_page(scraper_input, start_page)
         pages_to_process = max(
             3, math.ceil(scraper_input.results_wanted / self.jobs_per_page)
         )
@@ -128,7 +126,7 @@ class ZipRecruiterScraper(Scraper):
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures: list[Future] = [
                 executor.submit(self.find_jobs_in_page, scraper_input, page)
-                for page in range(2, pages_to_process + 1)
+                for page in range(start_page + 1, start_page + pages_to_process + 2)
             ]
 
             for future in futures:
@@ -144,8 +142,9 @@ class ZipRecruiterScraper(Scraper):
         Parses a job from the job content tag
         :param job: BeautifulSoup Tag for one job post
         :return JobPost
+        TODO this method isnt finished due to not encountering this type of html often
         """
-        job_url = job.find("a", {"class": "job_link"})["href"]
+        job_url = self.cleanurl(job.find("a", {"class": "job_link"})["href"])
         if job_url in self.seen_urls:
             return None
 
@@ -153,7 +152,7 @@ class ZipRecruiterScraper(Scraper):
         company = job.find("a", {"class": "company_name"}).text.strip()
 
         description, updated_job_url = self.get_description(job_url)
-        job_url = updated_job_url if updated_job_url else job_url
+        # job_url = updated_job_url if updated_job_url else job_url
         if description is None:
             description = job.find("p", {"class": "job_snippet"}).text.strip()
 
@@ -176,6 +175,7 @@ class ZipRecruiterScraper(Scraper):
             compensation=ZipRecruiterScraper.get_compensation(job),
             date_posted=date_posted,
             job_url=job_url,
+            emails=extract_emails_from_text(description),
         )
         return job_post
 
@@ -185,12 +185,12 @@ class ZipRecruiterScraper(Scraper):
         :param job: BeautifulSoup Tag for one job post
         :return JobPost
         """
-        job_url = job.find("a", class_="job_link")["href"]
+        job_url = self.cleanurl(job.find("a", class_="job_link")["href"])
         title = job.find("h2", class_="title").text
         company = job.find("a", class_="company_name").text.strip()
 
         description, updated_job_url = self.get_description(job_url)
-        job_url = updated_job_url if updated_job_url else job_url
+        # job_url = updated_job_url if updated_job_url else job_url
         if description is None:
             description = job.find("p", class_="job_snippet").get_text().strip()
 
@@ -221,10 +221,10 @@ class ZipRecruiterScraper(Scraper):
 
     def process_job_javascript(self, job: dict) -> JobPost:
         title = job.get("Title")
-        job_url = job.get("JobURL")
+        job_url = self.cleanurl(job.get("JobURL"))
 
         description, updated_job_url = self.get_description(job_url)
-        job_url = updated_job_url if updated_job_url else job_url
+        # job_url = updated_job_url if updated_job_url else job_url
         if description is None:
             description = BeautifulSoup(
                 job.get("Snippet", "").strip(), "html.parser"
@@ -272,7 +272,6 @@ class ZipRecruiterScraper(Scraper):
             date_posted = date_posted_obj.date()
         else:
             date_posted = date.today()
-        job_url = job.get("JobURL")
 
         return JobPost(
             title=title,
@@ -323,7 +322,7 @@ class ZipRecruiterScraper(Scraper):
         return None, response.url
 
     @staticmethod
-    def add_params(scraper_input, page) -> Optional[str]:
+    def add_params(scraper_input, page) -> dict[str, str | Any]:
         params = {
             "search": scraper_input.search_term,
             "location": scraper_input.location,
@@ -368,7 +367,7 @@ class ZipRecruiterScraper(Scraper):
         return CompensationInterval(interval_str)
 
     @staticmethod
-    def get_date_posted(job: BeautifulSoup) -> Optional[datetime.date]:
+    def get_date_posted(job: Tag) -> Optional[datetime.date]:
         """
         Extracts the date a job was posted
         :param job
@@ -394,7 +393,7 @@ class ZipRecruiterScraper(Scraper):
         return None
 
     @staticmethod
-    def get_compensation(job: BeautifulSoup) -> Optional[Compensation]:
+    def get_compensation(job: Tag) -> Optional[Compensation]:
         """
         Parses the compensation tag from the job BeautifulSoup object
         :param job
@@ -435,7 +434,7 @@ class ZipRecruiterScraper(Scraper):
         return create_compensation_object(pay)
 
     @staticmethod
-    def get_location(job: BeautifulSoup) -> Location:
+    def get_location(job: Tag) -> Location:
         """
         Extracts the job location from BeatifulSoup object
         :param job:
@@ -462,3 +461,9 @@ class ZipRecruiterScraper(Scraper):
         return {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36"
         }
+
+    @staticmethod
+    def cleanurl(url):
+        parsed_url = urlparse(url)
+
+        return urlunparse((parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, '', ''))

@@ -4,26 +4,30 @@
 
 **Not technical?** Try out the web scraping tool on our site at [usejobspy.com](https://usejobspy.com).
 
-*Looking to build a data-focused software product?* **[Book a call](https://calendly.com/zachary-products/15min)** *to work with us.*  
+*Looking to build a data-focused software product?* **[Book a call](https://calendly.com/zachary-products/15min)** *to
+work with us.*  
 \
-Check out another project we wrote: ***[HomeHarvest](https://github.com/ZacharyHampton/HomeHarvest)** – a Python package for real estate scraping*
-## Features
+Check out another project we wrote: ***[HomeHarvest](https://github.com/ZacharyHampton/HomeHarvest)** – a Python package
+for real estate scraping*
 
+## Features
 
 - Scrapes job postings from **LinkedIn**, **Indeed** & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
 - Proxy support (HTTP/S, SOCKS)
-  
-[Video Guide for JobSpy](https://www.youtube.com/watch?v=RuP1HrAZnxs&pp=ygUgam9icyBzY3JhcGVyIGJvdCBsaW5rZWRpbiBpbmRlZWQ%3D) - Updated for release v1.1.3
+
+[Video Guide for JobSpy](https://www.youtube.com/watch?v=RuP1HrAZnxs&pp=ygUgam9icyBzY3JhcGVyIGJvdCBsaW5rZWRpbiBpbmRlZWQ%3D) -
+Updated for release v1.1.3
 
 ![jobspy](https://github.com/cullenwatson/JobSpy/assets/78247585/ec7ef355-05f6-4fd3-8161-a817e31c5c57)
-  
+
 ### Installation
+
 ```
 pip install --upgrade python-jobspy
 ```
-  
-  _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_ 
+
+_Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_
 
 ### Usage
 
@@ -36,13 +40,12 @@ jobs: pd.DataFrame = scrape_jobs(
     search_term="software engineer",
     location="Dallas, TX",
     results_wanted=10,
-    
-    country_indeed='USA' # only needed for indeed
-    
-    # use if you want to use a proxy (3 types)
-    # proxy="socks5://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
+
+    country_indeed='USA'  # only needed for indeed
+
+    # use if you want to use a proxy
     # proxy="http://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
-    # proxy="https://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
+    # offset=25 # use if you want to start at a specific offset
 )
 
 # formatting for pandas
@@ -51,17 +54,22 @@ pd.set_option('display.max_rows', None)
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
 
-#1 display in Jupyter Notebook (1. pip install jupyter 2. jupyter notebook)
-display(jobs)
+# 1 output to console
+print(jobs)
 
-#2 output to console
-#print(jobs)
+# 2 display in Jupyter Notebook (1. pip install jupyter 2. jupyter notebook)
+# display(jobs)
 
-#3 output to .csv
-#jobs.to_csv('jobs.csv', index=False)
+# 3 output to .csv
+# jobs.to_csv('jobs.csv', index=False)
+
+# 4 output to .xlsx
+# jobs.to_xlsx('jobs.xlsx', index=False)
+
 ```
 
 ### Output
+
 ```
 SITE           TITLE                             COMPANY_NAME      CITY          STATE  JOB_TYPE  INTERVAL  MIN_AMOUNT  MAX_AMOUNT  JOB_URL                                            DESCRIPTION
 indeed         Software Engineer                 AMERICAN SYSTEMS  Arlington     VA     None      yearly    200000      150000      https://www.indeed.com/viewjob?jk=5e409e577046...  THIS POSITION COMES WITH A 10K SIGNING BONUS!...
@@ -71,7 +79,9 @@ linkedin       Full-Stack Software Engineer      Rain              New York     
 zip_recruiter Software Engineer - New Grad       ZipRecruiter      Santa Monica  CA     fulltime  yearly    130000      150000      https://www.ziprecruiter.com/jobs/ziprecruiter...  We offer a hybrid work environment. Most US-ba...
 zip_recruiter Software Developer                 TEKsystems        Phoenix       AZ     fulltime  hourly    65          75          https://www.ziprecruiter.com/jobs/teksystems-0...  Top Skills' Details• 6 years of Java developme...
 ```
+
 ### Parameters for `scrape_jobs()`
+
 ```plaintext
 Required
 ├── site_type (List[enum]): linkedin, zip_recruiter, indeed
@@ -85,10 +95,11 @@ Optional
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
 ├── easy_apply (bool): filters for jobs that are hosted on LinkedIn
 ├── country_indeed (enum): filters the country on Indeed (see below for correct spelling)
+├── offset (enum): starts the search from an offset (e.g. 25 will start the search from the 25th result)
 ```
 
- 
 ### JobPost Schema
+
 ```plaintext
 JobPost
 ├── title (str)
@@ -109,13 +120,14 @@ JobPost
 ```
 
 ### Exceptions
+
 The following exceptions may be raised when using JobSpy:
+
 * `LinkedInException`
 * `IndeedException`
 * `ZipRecruiterException`
 
 ## Supported Countries for Job Searching
-
 
 ### **LinkedIn**
 
@@ -125,43 +137,45 @@ LinkedIn searches globally & uses only the `location` parameter.
 
 ZipRecruiter searches for jobs in **US/Canada** & uses only the `location` parameter.
 
-
 ### **Indeed**
-Indeed supports most countries, but the `country_indeed` parameter is required. Additionally, use the `location` parameter to narrow down the location, e.g. city & state if necessary.
 
-You can specify the following countries when searching on Indeed (use the exact name): 
+Indeed supports most countries, but the `country_indeed` parameter is required. Additionally, use the `location`
+parameter to narrow down the location, e.g. city & state if necessary.
 
+You can specify the following countries when searching on Indeed (use the exact name):
 
-|      |      |      |      |
-|------|------|------|------|
-| Argentina | Australia | Austria | Bahrain |
-| Belgium | Brazil | Canada | Chile |
-| China | Colombia | Costa Rica | Czech Republic |
-| Denmark | Ecuador | Egypt | Finland |
-| France | Germany | Greece | Hong Kong |
-| Hungary | India | Indonesia | Ireland |
-| Israel | Italy | Japan | Kuwait |
-| Luxembourg | Malaysia | Mexico | Morocco |
-| Netherlands | New Zealand | Nigeria | Norway |
-| Oman | Pakistan | Panama | Peru |
-| Philippines | Poland | Portugal | Qatar |
-| Romania | Saudi Arabia | Singapore | South Africa |
-| South Korea | Spain | Sweden | Switzerland |
-| Taiwan | Thailand | Turkey | Ukraine |
-| United Arab Emirates | UK | USA | Uruguay |
-| Venezuela | Vietnam |  |  |
+|                      |              |            |                |
+|----------------------|--------------|------------|----------------|
+| Argentina            | Australia    | Austria    | Bahrain        |
+| Belgium              | Brazil       | Canada     | Chile          |
+| China                | Colombia     | Costa Rica | Czech Republic |
+| Denmark              | Ecuador      | Egypt      | Finland        |
+| France               | Germany      | Greece     | Hong Kong      |
+| Hungary              | India        | Indonesia  | Ireland        |
+| Israel               | Italy        | Japan      | Kuwait         |
+| Luxembourg           | Malaysia     | Mexico     | Morocco        |
+| Netherlands          | New Zealand  | Nigeria    | Norway         |
+| Oman                 | Pakistan     | Panama     | Peru           |
+| Philippines          | Poland       | Portugal   | Qatar          |
+| Romania              | Saudi Arabia | Singapore  | South Africa   |
+| South Korea          | Spain        | Sweden     | Switzerland    |
+| Taiwan               | Thailand     | Turkey     | Ukraine        |
+| United Arab Emirates | UK           | USA        | Uruguay        |
+| Venezuela            | Vietnam      |            |                |
 
 ## Frequently Asked Questions
 
 ---
 
 **Q: Encountering issues with your queries?**  
-**A:** Try reducing the number of `results_wanted` and/or broadening the filters. If problems persist, [submit an issue](https://github.com/cullenwatson/JobSpy/issues).
+**A:** Try reducing the number of `results_wanted` and/or broadening the filters. If problems
+persist, [submit an issue](https://github.com/cullenwatson/JobSpy/issues).
 
 ---
 
 **Q: Received a response code 429?**  
-**A:** This indicates that you have been blocked by the job board site for sending too many requests. Currently, **LinkedIn** is particularly aggressive with blocking. We recommend:
+**A:** This indicates that you have been blocked by the job board site for sending too many requests. Currently, *
+*LinkedIn** is particularly aggressive with blocking. We recommend:
 
 - Waiting a few seconds between requests.
 - Trying a VPN or proxy to change your IP address.
@@ -170,6 +184,7 @@ You can specify the following countries when searching on Indeed (use the exact 
 
 **Q: Experiencing a "Segmentation fault: 11" on macOS Catalina?**  
 **A:** This is due to `tls_client` dependency not supporting your architecture. Solutions and workarounds include:
+
 - Upgrade to a newer version of MacOS
 - Reach out to the maintainers of [tls_client](https://github.com/bogdanfinn/tls-client) for fixes
 

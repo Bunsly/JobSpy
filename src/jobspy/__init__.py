@@ -1,8 +1,7 @@
 import pandas as pd
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple, NamedTuple, Dict, Optional
-import traceback
+from typing import List, Tuple, Optional
 
 from .jobs import JobType, Location
 from .scrapers.indeed import IndeedScraper
@@ -27,17 +26,18 @@ def _map_str_to_site(site_name: str) -> Site:
 
 
 def scrape_jobs(
-    site_name: str | List[str] | Site | List[Site],
-    search_term: str,
-    location: str = "",
-    distance: int = None,
-    is_remote: bool = False,
-    job_type: str = None,
-    easy_apply: bool = False,  # linkedin
-    results_wanted: int = 15,
-    country_indeed: str = "usa",
-    hyperlinks: bool = False,
-    proxy: Optional[str] = None,
+        site_name: str | List[str] | Site | List[Site],
+        search_term: str,
+        location: str = "",
+        distance: int = None,
+        is_remote: bool = False,
+        job_type: str = None,
+        easy_apply: bool = False,  # linkedin
+        results_wanted: int = 15,
+        country_indeed: str = "usa",
+        hyperlinks: bool = False,
+        proxy: Optional[str] = None,
+        offset: Optional[int] = 0
 ) -> pd.DataFrame:
     """
     Simultaneously scrapes job data from multiple job sites.
@@ -49,8 +49,8 @@ def scrape_jobs(
             if value_str in job_type.value:
                 return job_type
         raise Exception(f"Invalid job type: {value_str}")
-    job_type = get_enum_from_value(job_type) if job_type else None
 
+    job_type = get_enum_from_value(job_type) if job_type else None
 
     if type(site_name) == str:
         site_type = [_map_str_to_site(site_name)]
@@ -72,6 +72,7 @@ def scrape_jobs(
         job_type=job_type,
         easy_apply=easy_apply,
         results_wanted=results_wanted,
+        offset=offset
     )
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
@@ -149,17 +150,19 @@ def scrape_jobs(
     if jobs_dfs:
         jobs_df = pd.concat(jobs_dfs, ignore_index=True)
         desired_order: List[str] = [
+            "job_url_hyper" if hyperlinks else "job_url",
             "site",
             "title",
             "company",
             "location",
-            "date_posted",
             "job_type",
+            "date_posted",
             "interval",
+            "benefits",
             "min_amount",
             "max_amount",
             "currency",
-            "job_url_hyper" if hyperlinks else "job_url",
+            "emails",
             "description",
         ]
         jobs_formatted_df = jobs_df[desired_order]

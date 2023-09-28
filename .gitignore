@@ -1,10 +1,10 @@
-/.idea
-**/.DS_Store
 /venv/
-/ven/
+/.idea
 **/__pycache__/
 **/.pytest_cache/
+/.ipynb_checkpoints/
+**/output/
+**/.DS_Store
 *.pyc
 .env
 dist
-/.ipynb_checkpoints/
