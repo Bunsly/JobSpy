@@ -163,6 +163,7 @@ def scrape_jobs(
             "max_amount",
             "currency",
             "emails",
+            "job_url_hyper" if hyperlinks else "job_url",
             "description",
         ]
         jobs_formatted_df = jobs_df[desired_order]
