@@ -27,6 +27,7 @@ from ...jobs import (
     JobType,
 )
 from .. import Scraper, ScraperInput, Site
+from ...utils import extract_emails_from_text
 
 
 class IndeedScraper(Scraper):
@@ -138,6 +139,7 @@ class IndeedScraper(Scraper):
             date_posted = date_posted.strftime("%Y-%m-%d")
 
             description = self.get_description(job_url, session)
+            emails = extract_emails_from_text(description)
             with io.StringIO(job["snippet"]) as f:
                 soup_io = BeautifulSoup(f, "html.parser")
                 li_elements = soup_io.find_all("li")
@@ -153,6 +155,7 @@ class IndeedScraper(Scraper):
                     state=job.get("jobLocationState"),
                     country=self.country,
                 ),
+                emails=extract_emails_from_text(description),
                 job_type=job_type,
                 compensation=compensation,
                 date_posted=date_posted,

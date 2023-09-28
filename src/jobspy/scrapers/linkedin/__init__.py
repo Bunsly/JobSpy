@@ -17,13 +17,13 @@ from threading import Lock
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import LinkedInException
-from ... import JobType
 from ...jobs import (
     JobPost,
     Location,
     JobResponse,
     JobType,
 )
+from ...utils import extract_emails_from_text
 
 
 class LinkedInScraper(Scraper):
@@ -162,7 +162,7 @@ class LinkedInScraper(Scraper):
         benefits_tag = job_card.find("span", class_="result-benefits__text")
         benefits = " ".join(benefits_tag.get_text().split()) if benefits_tag else None
 
-        description, job_type = self.get_job_info_page(job_url)
+        description, job_type = self.get_job_description(job_url)
 
         return JobPost(
             title=title,
@@ -173,9 +173,10 @@ class LinkedInScraper(Scraper):
             job_url=job_url,
             job_type=job_type,
             benefits=benefits,
+            emails=extract_emails_from_text(description)
         )
 
-    def get_job_info_page(self, job_page_url: str) -> tuple[None, None] | tuple[
+    def get_job_description(self, job_page_url: str) -> tuple[None, None] | tuple[
         str | None, tuple[str | None, JobType | None]]:
         """
         Retrieves job description by going to the job page url
@@ -193,9 +194,9 @@ class LinkedInScraper(Scraper):
             "div", class_=lambda x: x and "show-more-less-html__markup" in x
         )
 
-        text_content = None
+        description = None
         if div_content:
-            text_content = " ".join(div_content.get_text().split()).strip()
+            description = " ".join(div_content.get_text().split()).strip()
 
         def get_job_type(
                 soup_job_type: BeautifulSoup,
@@ -224,7 +225,7 @@ class LinkedInScraper(Scraper):
 
             return LinkedInScraper.get_enum_from_value(employment_type)
 
-        return text_content, get_job_type(soup)
+        return description, get_job_type(soup)
 
     @staticmethod
     def get_enum_from_value(value_str):

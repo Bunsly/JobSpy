@@ -28,6 +28,7 @@ from ...jobs import (
     JobType,
     Country,
 )
+from ...utils import extract_emails_from_text
 
 
 class ZipRecruiterScraper(Scraper):
@@ -174,6 +175,7 @@ class ZipRecruiterScraper(Scraper):
             compensation=ZipRecruiterScraper.get_compensation(job),
             date_posted=date_posted,
             job_url=job_url,
+            emails=extract_emails_from_text(description),
         )
         return job_post
 
@@ -465,4 +467,3 @@ class ZipRecruiterScraper(Scraper):
         parsed_url = urlparse(url)
 
         return urlunparse((parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, '', ''))
-

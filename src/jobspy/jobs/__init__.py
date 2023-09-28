@@ -187,6 +187,7 @@ class JobPost(BaseModel):
     compensation: Optional[Compensation] = None
     date_posted: Optional[date] = None
     benefits: Optional[str] = None
+    emails: Optional[list[str]] = None
 
 
 class JobResponse(BaseModel):

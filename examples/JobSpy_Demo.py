@@ -5,9 +5,9 @@ jobs: pd.DataFrame = scrape_jobs(
     site_name=["indeed", "linkedin", "zip_recruiter"],
     search_term="software engineer",
     location="Dallas, TX",
-    results_wanted=50, # be wary the higher it is, the more likey you'll get blocked (rotating proxy should work tho)
+    results_wanted=50,  # be wary the higher it is, the more likey you'll get blocked (rotating proxy should work tho)
     country_indeed='USA',
-    offset=25 # start jobs from an offset (use if search failed and want to continue)
+    offset=25  # start jobs from an offset (use if search failed and want to continue)
     # proxy="http://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
 )
 
@@ -29,5 +29,3 @@ print('outputted to jobs.csv')
 
 # 4: display in Jupyter Notebook (1. pip install jupyter 2. jupyter notebook)
 # display(jobs)
-
-
