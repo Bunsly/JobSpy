@@ -9,6 +9,7 @@ from datetime import datetime
 
 import requests
 import time
+import re
 from requests.exceptions import ProxyError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from bs4 import BeautifulSoup
@@ -23,7 +24,13 @@ from ...jobs import (
     JobResponse,
     JobType,
 )
-from ...utils import extract_emails_from_text
+
+
+def extract_emails_from_text(text: str) -> Optional[list[str]]:
+    if not text:
+        return None
+    email_regex = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+    return email_regex.findall(text)
 
 
 class LinkedInScraper(Scraper):
@@ -256,3 +263,9 @@ class LinkedInScraper(Scraper):
                 )
 
         return location
+
+def extract_emails_from_text(text: str) -> Optional[list[str]]:
+    if not text:
+        return None
+    email_regex = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+    return email_regex.findall(text)

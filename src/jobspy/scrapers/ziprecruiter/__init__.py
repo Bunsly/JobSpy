@@ -28,7 +28,12 @@ from ...jobs import (
     JobType,
     Country,
 )
-from ...utils import extract_emails_from_text
+
+def extract_emails_from_text(text: str) -> Optional[list[str]]:
+    if not text:
+        return None
+    email_regex = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+    return email_regex.findall(text)
 
 
 class ZipRecruiterScraper(Scraper):
