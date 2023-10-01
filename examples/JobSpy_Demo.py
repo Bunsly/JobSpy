@@ -19,7 +19,7 @@ pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
 
 # fetch jobs for each location
-locations = read_location_list('location.json')
+locations = read_location_list('location_seed.json')
 for location in locations:
     try:
         jobs: pd.DataFrame = scrape_jobs(
