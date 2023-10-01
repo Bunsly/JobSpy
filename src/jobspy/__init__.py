@@ -5,19 +5,11 @@ from typing import List, Tuple, Optional
 
 from .jobs import JobType, Location
 from .scrapers.indeed import IndeedScraper
-from .scrapers.ziprecruiter import ZipRecruiterScraper
-from .scrapers.linkedin import LinkedInScraper
 from .scrapers import ScraperInput, Site, JobResponse, Country
-from .scrapers.exceptions import (
-    LinkedInException,
-    IndeedException,
-    ZipRecruiterException,
-)
+from .scrapers.exceptions import IndeedException
 
 SCRAPER_MAPPING = {
-    Site.LINKEDIN: LinkedInScraper,
     Site.INDEED: IndeedScraper,
-    Site.ZIP_RECRUITER: ZipRecruiterScraper,
 }
 
 
@@ -81,16 +73,12 @@ def scrape_jobs(
 
         try:
             scraped_data: JobResponse = scraper.scrape(scraper_input)
-        except (LinkedInException, IndeedException, ZipRecruiterException) as lie:
+        except IndeedException as lie:
             raise lie
         except Exception as e:
             # unhandled exceptions
-            if site == Site.LINKEDIN:
-                raise LinkedInException()
             if site == Site.INDEED:
                 raise IndeedException()
-            if site == Site.ZIP_RECRUITER:
-                raise ZipRecruiterException()
             else:
                 raise e
         return site.value, scraped_data
