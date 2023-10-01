@@ -28,6 +28,7 @@ from ...jobs import (
 )
 from .. import Scraper, ScraperInput, Site
 
+
 def extract_emails_from_text(text: str) -> Optional[list[str]]:
     if not text:
         return None
