@@ -70,6 +70,7 @@ class IndeedScraper(Scraper):
             "l": scraper_input.location,
             "filter": 0,
             "start": scraper_input.offset + page * 10,
+            'fromage': 1  # only need jobs posted in recent 24h
         }
         if scraper_input.distance:
             params["radius"] = scraper_input.distance
