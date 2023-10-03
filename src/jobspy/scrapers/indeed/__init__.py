@@ -133,8 +133,8 @@ class IndeedScraper(Scraper):
                 if interval in CompensationInterval.__members__:
                     compensation = Compensation(
                         interval=CompensationInterval[interval],
-                        min_amount=int(extracted_salary.get("max")),
-                        max_amount=int(extracted_salary.get("min")),
+                        min_amount=int(extracted_salary.get("min")),
+                        max_amount=int(extracted_salary.get("max")),
                         currency=currency,
                     )
 
