@@ -26,12 +26,14 @@ for location in locations:
                 site_name=["indeed"],
                 search_term=title,
                 location=location,
-                results_wanted=30,
+                results_wanted=15,
                 country_indeed='USA',
                 # offset=25  # start jobs from an offset (use if search failed and want to continue)
                 proxy="http://34.120.172.140:8123"
                 # proxy="http://crawler-gost-proxy.jobright-internal.com:8080"
             )
+            jobs_list = jobs.to_dict(orient='records')
+            print(jobs_list)
         except Exception as e:
             print(f'Error when process: [{location}][{title}]')
             print(e)
