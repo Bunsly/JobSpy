@@ -17,6 +17,7 @@ from bs4.element import Tag
 from threading import Lock
 
 from .. import Scraper, ScraperInput, Site
+from ..utils import count_urgent_words, extract_emails_from_text
 from ..exceptions import LinkedInException
 from ...jobs import (
     JobPost,
@@ -24,13 +25,6 @@ from ...jobs import (
     JobResponse,
     JobType,
 )
-
-
-def extract_emails_from_text(text: str) -> Optional[list[str]]:
-    if not text:
-        return None
-    email_regex = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-    return email_regex.findall(text)
 
 
 class LinkedInScraper(Scraper):
@@ -99,13 +93,15 @@ class LinkedInScraper(Scraper):
 
                     break
                 except requests.HTTPError as e:
-                    if hasattr(e, 'response') and e.response is not None:
+                    if hasattr(e, "response") and e.response is not None:
                         if e.response.status_code == 429:
                             time.sleep(self.DELAY)
                             retries += 1
                             continue
                         else:
-                            raise LinkedInException(f"bad response status code: {e.response.status_code}")
+                            raise LinkedInException(
+                                f"bad response status code: {e.response.status_code}"
+                            )
                     else:
                         raise
                 except ProxyError as e:
@@ -114,7 +110,9 @@ class LinkedInScraper(Scraper):
                     raise LinkedInException(str(e))
             else:
                 # Raise an exception if the maximum number of retries is reached
-                raise LinkedInException("Max retries reached, failed to get a valid response")
+                raise LinkedInException(
+                    "Max retries reached, failed to get a valid response"
+                )
 
             soup = BeautifulSoup(response.text, "html.parser")
 
@@ -141,7 +139,9 @@ class LinkedInScraper(Scraper):
                         if job_post:
                             job_list.append(job_post)
                     except Exception as e:
-                        raise LinkedInException("Exception occurred while processing jobs")
+                        raise LinkedInException(
+                            "Exception occurred while processing jobs"
+                        )
             page += 25
 
         job_list = job_list[: scraper_input.results_wanted]
@@ -158,7 +158,11 @@ class LinkedInScraper(Scraper):
         metadata_card = job_card.find("div", class_="base-search-card__metadata")
         location = self.get_location(metadata_card)
 
-        datetime_tag = metadata_card.find("time", class_="job-search-card__listdate") if metadata_card else None
+        datetime_tag = (
+            metadata_card.find("time", class_="job-search-card__listdate")
+            if metadata_card
+            else None
+        )
         date_posted = None
         if datetime_tag and "datetime" in datetime_tag.attrs:
             datetime_str = datetime_tag["datetime"]
@@ -178,13 +182,16 @@ class LinkedInScraper(Scraper):
             location=location,
             date_posted=date_posted,
             job_url=job_url,
+            # job_type=[JobType.FULL_TIME],
             job_type=job_type,
             benefits=benefits,
-            emails=extract_emails_from_text(description)
+            emails=extract_emails_from_text(description) if description else None,
+            num_urgent_words=count_urgent_words(description) if description else None,
         )
 
-    def get_job_description(self, job_page_url: str) -> tuple[None, None] | tuple[
-        str | None, tuple[str | None, JobType | None]]:
+    def get_job_description(
+        self, job_page_url: str
+    ) -> tuple[None, None] | tuple[str | None, tuple[str | None, JobType | None]]:
         """
         Retrieves job description by going to the job page url
         :param job_page_url:
@@ -206,8 +213,8 @@ class LinkedInScraper(Scraper):
             description = " ".join(div_content.get_text().split()).strip()
 
         def get_job_type(
-                soup_job_type: BeautifulSoup,
-        ) -> JobType | None:
+            soup_job_type: BeautifulSoup,
+        ) -> list[JobType] | None:
             """
             Gets the job type from job page
             :param soup_job_type:
@@ -238,7 +245,7 @@ class LinkedInScraper(Scraper):
     def get_enum_from_value(value_str):
         for job_type in JobType:
             if value_str in job_type.value:
-                return job_type
+                return [job_type]
         return None
 
     def get_location(self, metadata_card: Optional[Tag]) -> Location:
@@ -263,9 +270,3 @@ class LinkedInScraper(Scraper):
                 )
 
         return location
-
-def extract_emails_from_text(text: str) -> Optional[list[str]]:
-    if not text:
-        return None
-    email_regex = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-    return email_regex.findall(text)

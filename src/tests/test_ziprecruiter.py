@@ -8,4 +8,6 @@ def test_ziprecruiter():
         search_term="software engineer",
     )
 
-    assert isinstance(result, pd.DataFrame) and not result.empty, "Result should be a non-empty DataFrame"
+    assert (
+        isinstance(result, pd.DataFrame) and not result.empty
+    ), "Result should be a non-empty DataFrame"

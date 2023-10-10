@@ -11,7 +11,6 @@ from datetime import datetime, date
 from typing import Optional, Tuple, Any
 from urllib.parse import urlparse, parse_qs, urlunparse
 
-import tls_client
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
@@ -19,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor, Future
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import ZipRecruiterException
+from ..utils import count_urgent_words, extract_emails_from_text, create_session
 from ...jobs import (
     JobPost,
     Compensation,
@@ -28,12 +28,6 @@ from ...jobs import (
     JobType,
     Country,
 )
-
-def extract_emails_from_text(text: str) -> Optional[list[str]]:
-    if not text:
-        return None
-    email_regex = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-    return email_regex.findall(text)
 
 
 class ZipRecruiterScraper(Scraper):
@@ -47,12 +41,9 @@ class ZipRecruiterScraper(Scraper):
 
         self.jobs_per_page = 20
         self.seen_urls = set()
-        self.session = tls_client.Session(
-            client_identifier="chrome112", random_tls_extension_order=True
-        )
 
     def find_jobs_in_page(
-            self, scraper_input: ScraperInput, page: int
+        self, scraper_input: ScraperInput, page: int
     ) -> list[JobPost]:
         """
         Scrapes a page of ZipRecruiter for jobs with scraper_input criteria
@@ -60,14 +51,13 @@ class ZipRecruiterScraper(Scraper):
         :param page:
         :return: jobs found on page
         """
-        job_list: list[JobPost] = []
+        session = create_session(self.proxy)
         try:
-            response = self.session.get(
+            response = session.get(
                 f"{self.url}/jobs-search",
-                headers=ZipRecruiterScraper.headers(),
-                params=ZipRecruiterScraper.add_params(scraper_input, page),
+                headers=self.headers(),
+                params=self.add_params(scraper_input, page),
                 allow_redirects=True,
-                proxy=self.proxy,
                 timeout_seconds=10,
             )
             if response.status_code != 200:
@@ -121,7 +111,11 @@ class ZipRecruiterScraper(Scraper):
         :param scraper_input:
         :return: job_response
         """
-        start_page = (scraper_input.offset // self.jobs_per_page) + 1 if scraper_input.offset else 1
+        start_page = (
+            (scraper_input.offset // self.jobs_per_page) + 1
+            if scraper_input.offset
+            else 1
+        )
         #: get first page to initialize session
         job_list: list[JobPost] = self.find_jobs_in_page(scraper_input, start_page)
         pages_to_process = max(
@@ -142,91 +136,10 @@ class ZipRecruiterScraper(Scraper):
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
 
-    def process_job_html_1(self, job: Tag) -> Optional[JobPost]:
-        """
-        Parses a job from the job content tag
-        :param job: BeautifulSoup Tag for one job post
-        :return JobPost
-        TODO this method isnt finished due to not encountering this type of html often
-        """
-        job_url = self.cleanurl(job.find("a", {"class": "job_link"})["href"])
-        if job_url in self.seen_urls:
-            return None
-
-        title = job.find("h2", {"class": "title"}).text
-        company = job.find("a", {"class": "company_name"}).text.strip()
-
-        description, updated_job_url = self.get_description(job_url)
-        # job_url = updated_job_url if updated_job_url else job_url
-        if description is None:
-            description = job.find("p", {"class": "job_snippet"}).text.strip()
-
-        job_type_element = job.find("li", {"class": "perk_item perk_type"})
-        job_type = None
-        if job_type_element:
-            job_type_text = (
-                job_type_element.text.strip().lower().replace("_", "").replace(" ", "")
-            )
-            job_type = ZipRecruiterScraper.get_job_type_enum(job_type_text)
-
-        date_posted = ZipRecruiterScraper.get_date_posted(job)
-
-        job_post = JobPost(
-            title=title,
-            description=description,
-            company_name=company,
-            location=ZipRecruiterScraper.get_location(job),
-            job_type=job_type,
-            compensation=ZipRecruiterScraper.get_compensation(job),
-            date_posted=date_posted,
-            job_url=job_url,
-            emails=extract_emails_from_text(description),
-        )
-        return job_post
-
-    def process_job_html_2(self, job: Tag) -> Optional[JobPost]:
-        """
-        Parses a job from the job content tag for a second variat of HTML that ZR uses
-        :param job: BeautifulSoup Tag for one job post
-        :return JobPost
-        """
-        job_url = self.cleanurl(job.find("a", class_="job_link")["href"])
-        title = job.find("h2", class_="title").text
-        company = job.find("a", class_="company_name").text.strip()
-
-        description, updated_job_url = self.get_description(job_url)
-        # job_url = updated_job_url if updated_job_url else job_url
-        if description is None:
-            description = job.find("p", class_="job_snippet").get_text().strip()
-
-        job_type_text = job.find("li", class_="perk_item perk_type")
-        job_type = None
-        if job_type_text:
-            job_type_text = (
-                job_type_text.get_text()
-                .strip()
-                .lower()
-                .replace("-", "")
-                .replace(" ", "")
-            )
-            job_type = ZipRecruiterScraper.get_job_type_enum(job_type_text)
-        date_posted = ZipRecruiterScraper.get_date_posted(job)
-
-        job_post = JobPost(
-            title=title,
-            description=description,
-            company_name=company,
-            location=ZipRecruiterScraper.get_location(job),
-            job_type=job_type,
-            compensation=ZipRecruiterScraper.get_compensation(job),
-            date_posted=date_posted,
-            job_url=job_url,
-        )
-        return job_post
-
     def process_job_javascript(self, job: dict) -> JobPost:
+        """the most common type of jobs page on ZR"""
         title = job.get("Title")
-        job_url = self.cleanurl(job.get("JobURL"))
+        job_url = job.get("JobURL")
 
         description, updated_job_url = self.get_description(job_url)
         # job_url = updated_job_url if updated_job_url else job_url
@@ -280,38 +193,126 @@ class ZipRecruiterScraper(Scraper):
 
         return JobPost(
             title=title,
-            description=description,
             company_name=company,
             location=location,
             job_type=job_type,
             compensation=compensation,
             date_posted=date_posted,
             job_url=job_url,
+            description=description,
+            emails=extract_emails_from_text(description) if description else None,
+            num_urgent_words=count_urgent_words(description) if description else None,
+        )
+
+    def process_job_html_2(self, job: Tag) -> Optional[JobPost]:
+        """
+        second most common type of jobs page on ZR after process_job_javascript()
+        Parses a job from the job content tag for a second variat of HTML that ZR uses
+        :param job: BeautifulSoup Tag for one job post
+        :return JobPost
+        """
+        job_url = job.find("a", class_="job_link")["href"]
+        title = job.find("h2", class_="title").text
+        company = job.find("a", class_="company_name").text.strip()
+
+        description, updated_job_url = self.get_description(job_url)
+        # job_url = updated_job_url if updated_job_url else job_url
+        if description is None:
+            description = job.find("p", class_="job_snippet").get_text().strip()
+
+        job_type_text = job.find("li", class_="perk_item perk_type")
+        job_type = None
+        if job_type_text:
+            job_type_text = (
+                job_type_text.get_text()
+                .strip()
+                .lower()
+                .replace("-", "")
+                .replace(" ", "")
+            )
+            job_type = ZipRecruiterScraper.get_job_type_enum(job_type_text)
+        date_posted = ZipRecruiterScraper.get_date_posted(job)
+
+        job_post = JobPost(
+            title=title,
+            company_name=company,
+            location=ZipRecruiterScraper.get_location(job),
+            job_type=job_type,
+            compensation=ZipRecruiterScraper.get_compensation(job),
+            date_posted=date_posted,
+            job_url=job_url,
+            description=description,
+            emails=extract_emails_from_text(description) if description else None,
+            num_urgent_words=count_urgent_words(description) if description else None,
+        )
+        return job_post
+
+    def process_job_html_1(self, job: Tag) -> Optional[JobPost]:
+        """
+        TODO this method isnt finished due to not encountering this type of html often
+        least common type of jobs page on ZR (rarely found)
+        Parses a job from the job content tag
+        :param job: BeautifulSoup Tag for one job post
+        :return JobPost
+        """
+        job_url = job.find("a", {"class": "job_link"})["href"]
+        # job_url = self.cleanurl(job.find("a", {"class": "job_link"})["href"])
+        if job_url in self.seen_urls:
+            return None
+
+        title = job.find("h2", {"class": "title"}).text
+        company = job.find("a", {"class": "company_name"}).text.strip()
+
+        description, _ = self.get_description(job_url)
+        # job_url = updated_job_url if updated_job_url else job_url
+        # get description from jobs listing page if get_description from the specific job page fails
+        if description is None:
+            description = job.find("p", {"class": "job_snippet"}).text.strip()
+
+        job_type_element = job.find("li", {"class": "perk_item perk_type"})
+        job_type = None
+        if job_type_element:
+            job_type_text = (
+                job_type_element.text.strip().lower().replace("_", "").replace(" ", "")
+            )
+            job_type = ZipRecruiterScraper.get_job_type_enum(job_type_text)
+
+        date_posted = ZipRecruiterScraper.get_date_posted(job)
+
+        job_post = JobPost(
+            title=title,
+            description=description,
+            company_name=company,
+            location=ZipRecruiterScraper.get_location(job),
+            job_type=job_type,
+            compensation=ZipRecruiterScraper.get_compensation(job),
+            date_posted=date_posted,
+            job_url=job_url,
+            emails=extract_emails_from_text(description),
+            num_urgent_words=count_urgent_words(description),
         )
         return job_post
 
     @staticmethod
-    def get_job_type_enum(job_type_str: str) -> Optional[JobType]:
+    def get_job_type_enum(job_type_str: str) -> list[JobType] | None:
         for job_type in JobType:
             if job_type_str in job_type.value:
-                a = True
-                return job_type
+                return [job_type]
         return None
 
-    def get_description(self, job_page_url: str) -> Tuple[Optional[str], Optional[str]]:
+    def get_description(self, job_page_url: str) -> Tuple[str | None, str | None]:
         """
         Retrieves job description by going to the job page url
         :param job_page_url:
-        :param session:
         :return: description or None, response url
         """
         try:
-            response = requests.get(
+            session = create_session(self.proxy)
+            response = session.get(
                 job_page_url,
-                headers=ZipRecruiterScraper.headers(),
+                headers=self.headers(),
                 allow_redirects=True,
-                timeout=5,
-                proxies=self.proxy,
+                timeout_seconds=5,
             )
             if response.status_code not in range(200, 400):
                 return None, None
@@ -467,8 +468,8 @@ class ZipRecruiterScraper(Scraper):
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36"
         }
 
-    @staticmethod
-    def cleanurl(url):
-        parsed_url = urlparse(url)
-
-        return urlunparse((parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, '', ''))
+    # @staticmethod
+    # def cleanurl(url) -> str:
+    #     parsed_url = urlparse(url)
+    #
+    #     return urlunparse((parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, '', ''))

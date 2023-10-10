@@ -1,7 +1,7 @@
 import pandas as pd
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple, Optional
+from typing import Tuple, Optional
 
 from .jobs import JobType, Location
 from .scrapers.indeed import IndeedScraper
@@ -26,18 +26,18 @@ def _map_str_to_site(site_name: str) -> Site:
 
 
 def scrape_jobs(
-        site_name: str | List[str] | Site | List[Site],
-        search_term: str,
-        location: str = "",
-        distance: int = None,
-        is_remote: bool = False,
-        job_type: str = None,
-        easy_apply: bool = False,  # linkedin
-        results_wanted: int = 15,
-        country_indeed: str = "usa",
-        hyperlinks: bool = False,
-        proxy: Optional[str] = None,
-        offset: Optional[int] = 0
+    site_name: str | list[str] | Site | list[Site],
+    search_term: str,
+    location: str = "",
+    distance: int = None,
+    is_remote: bool = False,
+    job_type: str = None,
+    easy_apply: bool = False,  # linkedin
+    results_wanted: int = 15,
+    country_indeed: str = "usa",
+    hyperlinks: bool = False,
+    proxy: Optional[str] = None,
+    offset: Optional[int] = 0,
 ) -> pd.DataFrame:
     """
     Simultaneously scrapes job data from multiple job sites.
@@ -72,7 +72,7 @@ def scrape_jobs(
         job_type=job_type,
         easy_apply=easy_apply,
         results_wanted=results_wanted,
-        offset=offset
+        offset=offset,
     )
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
@@ -98,8 +98,8 @@ def scrape_jobs(
     site_to_jobs_dict = {}
 
     def worker(site):
-        site_value, scraped_data = scrape_site(site)
-        return site_value, scraped_data
+        site_val, scraped_info = scrape_site(site)
+        return site_val, scraped_info
 
     with ThreadPoolExecutor() as executor:
         future_to_site = {
@@ -110,7 +110,7 @@ def scrape_jobs(
             site_value, scraped_data = future.result()
             site_to_jobs_dict[site_value] = scraped_data
 
-    jobs_dfs: List[pd.DataFrame] = []
+    jobs_dfs: list[pd.DataFrame] = []
 
     for site, job_response in site_to_jobs_dict.items():
         for job in job_response.jobs:
@@ -120,12 +120,14 @@ def scrape_jobs(
             ] = f'<a href="{job_data["job_url"]}">{job_data["job_url"]}</a>'
             job_data["site"] = site
             job_data["company"] = job_data["company_name"]
-            if job_data["job_type"]:
-                # Take the first value from the job type tuple
-                job_data["job_type"] = job_data["job_type"].value[0]
-            else:
-                job_data["job_type"] = None
-
+            job_data["job_type"] = (
+                ", ".join(job_type.value[0] for job_type in job_data["job_type"])
+                if job_data["job_type"]
+                else None
+            )
+            job_data["emails"] = (
+                ", ".join(job_data["emails"]) if job_data["emails"] else None
+            )
             job_data["location"] = Location(**job_data["location"]).display_location()
 
             compensation_obj = job_data.get("compensation")
@@ -149,7 +151,7 @@ def scrape_jobs(
 
     if jobs_dfs:
         jobs_df = pd.concat(jobs_dfs, ignore_index=True)
-        desired_order: List[str] = [
+        desired_order: list[str] = [
             "job_url_hyper" if hyperlinks else "job_url",
             "site",
             "title",
@@ -158,12 +160,13 @@ def scrape_jobs(
             "job_type",
             "date_posted",
             "interval",
-            "benefits",
             "min_amount",
             "max_amount",
             "currency",
+            "is_remote",
+            "num_urgent_words",
+            "benefits",
             "emails",
-            "job_url_hyper" if hyperlinks else "job_url",
             "description",
         ]
         jobs_formatted_df = jobs_df[desired_order]

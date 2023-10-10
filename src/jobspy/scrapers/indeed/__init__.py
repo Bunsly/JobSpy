@@ -9,15 +9,14 @@ import math
 import io
 import json
 from datetime import datetime
-from typing import Optional
 
-import tls_client
 import urllib.parse
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
 from ..exceptions import IndeedException
+from ..utils import count_urgent_words, extract_emails_from_text, create_session
 from ...jobs import (
     JobPost,
     Compensation,
@@ -28,15 +27,9 @@ from ...jobs import (
 )
 from .. import Scraper, ScraperInput, Site
 
-def extract_emails_from_text(text: str) -> Optional[list[str]]:
-    if not text:
-        return None
-    email_regex = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-    return email_regex.findall(text)
-
 
 class IndeedScraper(Scraper):
-    def __init__(self, proxy: Optional[str] = None):
+    def __init__(self, proxy: str | None = None):
         """
         Initializes IndeedScraper with the Indeed job search url
         """
@@ -49,20 +42,18 @@ class IndeedScraper(Scraper):
         self.seen_urls = set()
 
     def scrape_page(
-            self, scraper_input: ScraperInput, page: int, session: tls_client.Session
+        self, scraper_input: ScraperInput, page: int
     ) -> tuple[list[JobPost], int]:
         """
         Scrapes a page of Indeed for jobs with scraper_input criteria
         :param scraper_input:
         :param page:
-        :param session:
         :return: jobs found on page, total number of jobs found for search
         """
         self.country = scraper_input.country
         domain = self.country.domain_value
         self.url = f"https://{domain}.indeed.com"
-
-        job_list: list[JobPost] = []
+        session = create_session(self.proxy)
 
         params = {
             "q": scraper_input.search_term,
@@ -84,9 +75,9 @@ class IndeedScraper(Scraper):
         try:
             response = session.get(
                 f"{self.url}/jobs",
+                headers=self.get_headers(),
                 params=params,
                 allow_redirects=True,
-                proxy=self.proxy,
                 timeout_seconds=10,
             )
             if response.status_code not in range(200, 400):
@@ -108,13 +99,13 @@ class IndeedScraper(Scraper):
         total_num_jobs = IndeedScraper.total_jobs(soup)
 
         if (
-                not jobs.get("metaData", {})
-                        .get("mosaicProviderJobCardsModel", {})
-                        .get("results")
+            not jobs.get("metaData", {})
+            .get("mosaicProviderJobCardsModel", {})
+            .get("results")
         ):
             raise IndeedException("No jobs found.")
 
-        def process_job(job) -> Optional[JobPost]:
+        def process_job(job) -> JobPost | None:
             job_url = f'{self.url}/jobs/viewjob?jk={job["jobkey"]}'
             job_url_client = f'{self.url}/viewjob?jk={job["jobkey"]}'
             if job_url in self.seen_urls:
@@ -143,8 +134,7 @@ class IndeedScraper(Scraper):
             date_posted = datetime.fromtimestamp(timestamp_seconds)
             date_posted = date_posted.strftime("%Y-%m-%d")
 
-            description = self.get_description(job_url, session)
-            emails = extract_emails_from_text(description)
+            description = self.get_description(job_url)
             with io.StringIO(job["snippet"]) as f:
                 soup_io = BeautifulSoup(f, "html.parser")
                 li_elements = soup_io.find_all("li")
@@ -160,11 +150,15 @@ class IndeedScraper(Scraper):
                     state=job.get("jobLocationState"),
                     country=self.country,
                 ),
-                emails=extract_emails_from_text(description),
                 job_type=job_type,
                 compensation=compensation,
                 date_posted=date_posted,
                 job_url=job_url_client,
+                emails=extract_emails_from_text(description) if description else None,
+                num_urgent_words=count_urgent_words(description)
+                if description
+                else None,
+                is_remote=self.is_remote_job(job),
             )
             return job_post
 
@@ -184,20 +178,16 @@ class IndeedScraper(Scraper):
         :param scraper_input:
         :return: job_response
         """
-        session = tls_client.Session(
-            client_identifier="chrome112", random_tls_extension_order=True
-        )
-
         pages_to_process = (
-                math.ceil(scraper_input.results_wanted / self.jobs_per_page) - 1
+            math.ceil(scraper_input.results_wanted / self.jobs_per_page) - 1
         )
 
         #: get first page to initialize session
-        job_list, total_results = self.scrape_page(scraper_input, 0, session)
+        job_list, total_results = self.scrape_page(scraper_input, 0)
 
         with ThreadPoolExecutor(max_workers=1) as executor:
             futures: list[Future] = [
-                executor.submit(self.scrape_page, scraper_input, page, session)
+                executor.submit(self.scrape_page, scraper_input, page)
                 for page in range(1, pages_to_process + 1)
             ]
 
@@ -215,21 +205,24 @@ class IndeedScraper(Scraper):
         )
         return job_response
 
-    def get_description(self, job_page_url: str, session: tls_client.Session) -> Optional[str]:
+    def get_description(self, job_page_url: str) -> str | None:
         """
         Retrieves job description by going to the job page url
         :param job_page_url:
-        :param session:
         :return: description
         """
         parsed_url = urllib.parse.urlparse(job_page_url)
         params = urllib.parse.parse_qs(parsed_url.query)
         jk_value = params.get("jk", [None])[0]
         formatted_url = f"{self.url}/viewjob?jk={jk_value}&spa=1"
+        session = create_session(self.proxy)
 
         try:
             response = session.get(
-                formatted_url, allow_redirects=True, timeout_seconds=5, proxy=self.proxy
+                formatted_url,
+                headers=self.get_headers(),
+                allow_redirects=True,
+                timeout_seconds=5,
             )
         except Exception as e:
             return None
@@ -246,20 +239,23 @@ class IndeedScraper(Scraper):
             return text_content
 
     @staticmethod
-    def get_job_type(job: dict) -> Optional[JobType]:
+    def get_job_type(job: dict) -> list[JobType] | None:
         """
-        Parses the job to get JobTypeIndeed
+        Parses the job to get list of job types
         :param job:
         :return:
         """
+        job_types: list[JobType] = []
         for taxonomy in job["taxonomyAttributes"]:
             if taxonomy["label"] == "job-types":
-                if len(taxonomy["attributes"]) > 0:
-                    label = taxonomy["attributes"][0].get("label")
+                for i in range(len(taxonomy["attributes"])):
+                    label = taxonomy["attributes"][i].get("label")
                     if label:
                         job_type_str = label.replace("-", "").replace(" ", "").lower()
-                        return IndeedScraper.get_enum_from_job_type(job_type_str)
-        return None
+                        job_types.append(
+                            IndeedScraper.get_enum_from_job_type(job_type_str)
+                        )
+        return job_types
 
     @staticmethod
     def get_enum_from_job_type(job_type_str):
@@ -280,7 +276,7 @@ class IndeedScraper(Scraper):
         :return: jobs
         """
 
-        def find_mosaic_script() -> Optional[Tag]:
+        def find_mosaic_script() -> Tag | None:
             """
             Finds jobcards script tag
             :return: script_tag
@@ -289,9 +285,9 @@ class IndeedScraper(Scraper):
 
             for tag in script_tags:
                 if (
-                        tag.string
-                        and "mosaic.providerData" in tag.string
-                        and "mosaic-provider-jobcards" in tag.string
+                    tag.string
+                    and "mosaic.providerData" in tag.string
+                    and "mosaic-provider-jobcards" in tag.string
                 ):
                     return tag
             return None
@@ -330,3 +326,30 @@ class IndeedScraper(Scraper):
             data = json.loads(json_str)
             total_num_jobs = int(data["searchTitleBarModel"]["totalNumResults"])
         return total_num_jobs
+
+    @staticmethod
+    def get_headers():
+        return {
+            "authority": "www.indeed.com",
+            "accept": "*/*",
+            "accept-language": "en-US,en;q=0.9",
+            "referer": "https://www.indeed.com/viewjob?jk=fe6182337d72c7b1&tk=1hcbfcmd0k62t802&from=serp&vjs=3&advn=8132938064490989&adid=408692607&ad=-6NYlbfkN0A3Osc99MJFDKjquSk4WOGT28ALb_ad4QMtrHreCb9ICg6MiSVy9oDAp3evvOrI7Q-O9qOtQTg1EPbthP9xWtBN2cOuVeHQijxHjHpJC65TjDtftH3AXeINjBvAyDrE8DrRaAXl8LD3Fs1e_xuDHQIssdZ2Mlzcav8m5jHrA0fA64ZaqJV77myldaNlM7-qyQpy4AsJQfvg9iR2MY7qeC5_FnjIgjKIy_lNi9OPMOjGRWXA94CuvC7zC6WeiJmBQCHISl8IOBxf7EdJZlYdtzgae3593TFxbkd6LUwbijAfjax39aAuuCXy3s9C4YgcEP3TwEFGQoTpYu9Pmle-Ae1tHGPgsjxwXkgMm7Cz5mBBdJioglRCj9pssn-1u1blHZM4uL1nK9p1Y6HoFgPUU9xvKQTHjKGdH8d4y4ETyCMoNF4hAIyUaysCKdJKitC8PXoYaWhDqFtSMR4Jys8UPqUV&xkcb=SoDD-_M3JLQfWnQTDh0LbzkdCdPP&xpse=SoBa6_I3JLW9FlWZlB0PbzkdCdPP&sjdu=i6xVERweJM_pVUvgf-MzuaunBTY7G71J5eEX6t4DrDs5EMPQdODrX7Nn-WIPMezoqr5wA_l7Of-3CtoiUawcHw",
+            "sec-ch-ua": '"Google Chrome";v="119", "Chromium";v="119", "Not?A_Brand";v="24"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        }
+
+    @staticmethod
+    def is_remote_job(job: dict) -> bool:
+        """
+        :param job:
+        :return: bool
+        """
+        for taxonomy in job.get("taxonomyAttributes", []):
+            if taxonomy["label"] == "remote" and len(taxonomy["attributes"]) > 0:
+                return True
+        return False

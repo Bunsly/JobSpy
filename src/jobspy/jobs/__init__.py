@@ -182,12 +182,15 @@ class JobPost(BaseModel):
     job_url: str
     location: Optional[Location]
 
-    description: Optional[str] = None
-    job_type: Optional[JobType] = None
-    compensation: Optional[Compensation] = None
-    date_posted: Optional[date] = None
-    benefits: Optional[str] = None
-    emails: Optional[list[str]] = None
+    description: str | None = None
+    job_type: list[JobType] | None = None
+    compensation: Compensation | None = None
+    date_posted: date | None = None
+    benefits: str | None = None
+    emails: list[str] | None = None
+    num_urgent_words: int | None = None
+    is_remote: bool | None = None
+    # company_industry: str | None = None
 
 
 class JobResponse(BaseModel):
