@@ -246,20 +246,21 @@ class IndeedScraper(Scraper):
             return text_content
 
     @staticmethod
-    def get_job_type(job: dict) -> Optional[JobType]:
+    def get_job_type(job: dict) -> Optional[list[JobType]]:
         """
-        Parses the job to get JobTypeIndeed
+        Parses the job to get list of job types
         :param job:
         :return:
         """
+        job_types: list[JobType] = []
         for taxonomy in job["taxonomyAttributes"]:
             if taxonomy["label"] == "job-types":
-                if len(taxonomy["attributes"]) > 0:
-                    label = taxonomy["attributes"][0].get("label")
+                for i in range(len(taxonomy["attributes"])):
+                    label = taxonomy["attributes"][i].get("label")
                     if label:
                         job_type_str = label.replace("-", "").replace(" ", "").lower()
-                        return IndeedScraper.get_enum_from_job_type(job_type_str)
-        return None
+                        job_types.append(IndeedScraper.get_enum_from_job_type(job_type_str))
+        return job_types
 
     @staticmethod
     def get_enum_from_job_type(job_type_str):

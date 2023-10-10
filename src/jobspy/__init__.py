@@ -120,11 +120,8 @@ def scrape_jobs(
             ] = f'<a href="{job_data["job_url"]}">{job_data["job_url"]}</a>'
             job_data["site"] = site
             job_data["company"] = job_data["company_name"]
-            if job_data["job_type"]:
-                # Take the first value from the job type tuple
-                job_data["job_type"] = job_data["job_type"].value[0]
-            else:
-                job_data["job_type"] = None
+            job_data["job_type"] = ", ".join(job_type.value[0] for job_type in job_data["job_type"]) if job_data[
+                "job_type"] else None
 
             job_data["location"] = Location(**job_data["location"]).display_location()
 
@@ -163,7 +160,6 @@ def scrape_jobs(
             "max_amount",
             "currency",
             "emails",
-            "job_url_hyper" if hyperlinks else "job_url",
             "description",
         ]
         jobs_formatted_df = jobs_df[desired_order]
