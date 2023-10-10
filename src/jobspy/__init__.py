@@ -1,7 +1,7 @@
 import pandas as pd
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple, Optional
+from typing import Tuple, Optional
 
 from .jobs import JobType, Location
 from .scrapers.indeed import IndeedScraper
@@ -26,7 +26,7 @@ def _map_str_to_site(site_name: str) -> Site:
 
 
 def scrape_jobs(
-        site_name: str | List[str] | Site | List[Site],
+        site_name: str | list[str] | Site | list[Site],
         search_term: str,
         location: str = "",
         distance: int = None,
@@ -110,7 +110,7 @@ def scrape_jobs(
             site_value, scraped_data = future.result()
             site_to_jobs_dict[site_value] = scraped_data
 
-    jobs_dfs: List[pd.DataFrame] = []
+    jobs_dfs: list[pd.DataFrame] = []
 
     for site, job_response in site_to_jobs_dict.items():
         for job in job_response.jobs:
@@ -146,7 +146,7 @@ def scrape_jobs(
 
     if jobs_dfs:
         jobs_df = pd.concat(jobs_dfs, ignore_index=True)
-        desired_order: List[str] = [
+        desired_order: list[str] = [
             "job_url_hyper" if hyperlinks else "job_url",
             "site",
             "title",
@@ -155,10 +155,12 @@ def scrape_jobs(
             "job_type",
             "date_posted",
             "interval",
-            "benefits",
             "min_amount",
             "max_amount",
             "currency",
+            "is_remote",
+            "num_urgent_words",
+            "benefits",
             "emails",
             "description",
         ]
