@@ -24,7 +24,7 @@ Updated for release v1.1.3
 ### Installation
 
 ```
-pip install --upgrade python-jobspy
+pip install python-jobspy
 ```
 
 _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_
@@ -45,7 +45,7 @@ print(f"Found {len(jobs)} jobs")
 print(jobs.head())
 jobs.to_csv("jobs.csv", index=False)
 
-# output to .xlsx
+# output to Excel
 # jobs.to_xlsx('jobs.xlsx', index=False)
 
 ```
@@ -159,8 +159,7 @@ persist, [submit an issue](https://github.com/cullenwatson/JobSpy/issues).
 ---
 
 **Q: Received a response code 429?**  
-**A:** This indicates that you have been blocked by the job board site for sending too many requests. Currently, *
-*LinkedIn** is particularly aggressive with blocking. We recommend:
+**A:** This indicates that you have been blocked by the job board site for sending too many requests. All of the job board sites are aggressive with blocking. We recommend:
 
 - Waiting a few seconds between requests.
 - Trying a VPN or proxy to change your IP address.
