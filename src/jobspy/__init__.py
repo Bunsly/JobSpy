@@ -98,8 +98,8 @@ def scrape_jobs(
     site_to_jobs_dict = {}
 
     def worker(site):
-        site_value, scraped_data = scrape_site(site)
-        return site_value, scraped_data
+        site_val, scraped_info = scrape_site(site)
+        return site_val, scraped_info
 
     with ThreadPoolExecutor() as executor:
         future_to_site = {

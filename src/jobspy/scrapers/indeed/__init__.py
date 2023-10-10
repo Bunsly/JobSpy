@@ -18,6 +18,7 @@ from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
 from ..exceptions import IndeedException
+from ..utils import count_urgent_words, extract_emails_from_text
 from ...jobs import (
     JobPost,
     Compensation,
@@ -27,12 +28,6 @@ from ...jobs import (
     JobType,
 )
 from .. import Scraper, ScraperInput, Site
-
-def extract_emails_from_text(text: str) -> Optional[list[str]]:
-    if not text:
-        return None
-    email_regex = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-    return email_regex.findall(text)
 
 
 class IndeedScraper(Scraper):
@@ -144,7 +139,6 @@ class IndeedScraper(Scraper):
             date_posted = date_posted.strftime("%Y-%m-%d")
 
             description = self.get_description(job_url, session)
-            emails = extract_emails_from_text(description)
             with io.StringIO(job["snippet"]) as f:
                 soup_io = BeautifulSoup(f, "html.parser")
                 li_elements = soup_io.find_all("li")
@@ -160,11 +154,12 @@ class IndeedScraper(Scraper):
                     state=job.get("jobLocationState"),
                     country=self.country,
                 ),
-                emails=extract_emails_from_text(description),
                 job_type=job_type,
                 compensation=compensation,
                 date_posted=date_posted,
                 job_url=job_url_client,
+                emails=extract_emails_from_text(description),
+                num_urgent_words=count_urgent_words(description)
             )
             return job_post
 

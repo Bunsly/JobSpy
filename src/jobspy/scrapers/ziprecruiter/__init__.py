@@ -19,6 +19,7 @@ from concurrent.futures import ThreadPoolExecutor, Future
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import ZipRecruiterException
+from ..utils import count_urgent_words, extract_emails_from_text
 from ...jobs import (
     JobPost,
     Compensation,
@@ -28,12 +29,6 @@ from ...jobs import (
     JobType,
     Country,
 )
-
-def extract_emails_from_text(text: str) -> Optional[list[str]]:
-    if not text:
-        return None
-    email_regex = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-    return email_regex.findall(text)
 
 
 class ZipRecruiterScraper(Scraper):
@@ -181,6 +176,7 @@ class ZipRecruiterScraper(Scraper):
             date_posted=date_posted,
             job_url=job_url,
             emails=extract_emails_from_text(description),
+            num_urgent_words=count_urgent_words(description)
         )
         return job_post
 
@@ -291,11 +287,10 @@ class ZipRecruiterScraper(Scraper):
         return job_post
 
     @staticmethod
-    def get_job_type_enum(job_type_str: str) -> Optional[JobType]:
+    def get_job_type_enum(job_type_str: str) -> Optional[list[JobType]]:
         for job_type in JobType:
             if job_type_str in job_type.value:
-                a = True
-                return job_type
+                return [job_type]
         return None
 
     def get_description(self, job_page_url: str) -> Tuple[Optional[str], Optional[str]]:

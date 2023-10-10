@@ -17,6 +17,7 @@ from bs4.element import Tag
 from threading import Lock
 
 from .. import Scraper, ScraperInput, Site
+from ..utils import count_urgent_words, extract_emails_from_text
 from ..exceptions import LinkedInException
 from ...jobs import (
     JobPost,
@@ -24,13 +25,6 @@ from ...jobs import (
     JobResponse,
     JobType,
 )
-
-
-def extract_emails_from_text(text: str) -> Optional[list[str]]:
-    if not text:
-        return None
-    email_regex = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-    return email_regex.findall(text)
 
 
 class LinkedInScraper(Scraper):
@@ -180,7 +174,8 @@ class LinkedInScraper(Scraper):
             job_url=job_url,
             job_type=job_type,
             benefits=benefits,
-            emails=extract_emails_from_text(description)
+            emails=extract_emails_from_text(description),
+            num_urgent_words=count_urgent_words(description)
         )
 
     def get_job_description(self, job_page_url: str) -> tuple[None, None] | tuple[
@@ -207,7 +202,7 @@ class LinkedInScraper(Scraper):
 
         def get_job_type(
                 soup_job_type: BeautifulSoup,
-        ) -> JobType | None:
+        ) -> list[JobType] | None:
             """
             Gets the job type from job page
             :param soup_job_type:
@@ -238,7 +233,7 @@ class LinkedInScraper(Scraper):
     def get_enum_from_value(value_str):
         for job_type in JobType:
             if value_str in job_type.value:
-                return job_type
+                return list[job_type]
         return None
 
     def get_location(self, metadata_card: Optional[Tag]) -> Location:
@@ -263,9 +258,3 @@ class LinkedInScraper(Scraper):
                 )
 
         return location
-
-def extract_emails_from_text(text: str) -> Optional[list[str]]:
-    if not text:
-        return None
-    email_regex = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-    return email_regex.findall(text)
