@@ -189,7 +189,7 @@ class JobPost(BaseModel):
     benefits: str | None = None
     emails: list[str] | None = None
     num_urgent_words: int | None = None
-    # is_remote: bool | None = None
+    is_remote: bool | None = None
     # company_industry: str | None = None
 
 

@@ -26,18 +26,18 @@ def _map_str_to_site(site_name: str) -> Site:
 
 
 def scrape_jobs(
-        site_name: str | list[str] | Site | list[Site],
-        search_term: str,
-        location: str = "",
-        distance: int = None,
-        is_remote: bool = False,
-        job_type: str = None,
-        easy_apply: bool = False,  # linkedin
-        results_wanted: int = 15,
-        country_indeed: str = "usa",
-        hyperlinks: bool = False,
-        proxy: Optional[str] = None,
-        offset: Optional[int] = 0
+    site_name: str | list[str] | Site | list[Site],
+    search_term: str,
+    location: str = "",
+    distance: int = None,
+    is_remote: bool = False,
+    job_type: str = None,
+    easy_apply: bool = False,  # linkedin
+    results_wanted: int = 15,
+    country_indeed: str = "usa",
+    hyperlinks: bool = False,
+    proxy: Optional[str] = None,
+    offset: Optional[int] = 0,
 ) -> pd.DataFrame:
     """
     Simultaneously scrapes job data from multiple job sites.
@@ -72,7 +72,7 @@ def scrape_jobs(
         job_type=job_type,
         easy_apply=easy_apply,
         results_wanted=results_wanted,
-        offset=offset
+        offset=offset,
     )
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
@@ -120,9 +120,14 @@ def scrape_jobs(
             ] = f'<a href="{job_data["job_url"]}">{job_data["job_url"]}</a>'
             job_data["site"] = site
             job_data["company"] = job_data["company_name"]
-            job_data["job_type"] = ", ".join(job_type.value[0] for job_type in job_data["job_type"]) if job_data[
-                "job_type"] else None
-            job_data["emails"] = ", ".join(job_data["emails"]) if job_data["emails"] else None
+            job_data["job_type"] = (
+                ", ".join(job_type.value[0] for job_type in job_data["job_type"])
+                if job_data["job_type"]
+                else None
+            )
+            job_data["emails"] = (
+                ", ".join(job_data["emails"]) if job_data["emails"] else None
+            )
             job_data["location"] = Location(**job_data["location"]).display_location()
 
             compensation_obj = job_data.get("compensation")

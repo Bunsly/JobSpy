@@ -33,37 +33,19 @@ _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/)
 
 ```python
 from jobspy import scrape_jobs
-import pandas as pd
 
-jobs: pd.DataFrame = scrape_jobs(
+jobs = scrape_jobs(
     site_name=["indeed", "linkedin", "zip_recruiter"],
     search_term="software engineer",
     location="Dallas, TX",
     results_wanted=10,
-
     country_indeed='USA'  # only needed for indeed
-
-    # use if you want to use a proxy
-    # proxy="http://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
-    # offset=25 # use if you want to start at a specific offset
 )
+print(f"Found {len(jobs)} jobs")
+print(jobs.head())
+jobs.to_csv("jobs.csv", index=False)
 
-# formatting for pandas
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
-pd.set_option('display.width', None)
-pd.set_option('display.max_colwidth', 50)  # set to 0 to see full job url / desc
-
-# 1 output to console
-print(jobs)
-
-# 2 display in Jupyter Notebook (1. pip install jupyter 2. jupyter notebook)
-# display(jobs)
-
-# 3 output to .csv
-# jobs.to_csv('jobs.csv', index=False)
-
-# 4 output to .xlsx
+# output to .xlsx
 # jobs.to_xlsx('jobs.xlsx', index=False)
 
 ```
@@ -117,6 +99,9 @@ JobPost
 │   ├── max_amount (int)
 │   └── currency (enum)
 └── date_posted (date)
+└── emails (str)
+└── num_urgent_words (int)
+└── is_remote (bool) - just for Indeed at the momen
 ```
 
 ### Exceptions
