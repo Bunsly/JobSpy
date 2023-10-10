@@ -122,8 +122,7 @@ def scrape_jobs(
             job_data["company"] = job_data["company_name"]
             job_data["job_type"] = ", ".join(job_type.value[0] for job_type in job_data["job_type"]) if job_data[
                 "job_type"] else None
-            
-
+            job_data["emails"] = ", ".join(job_data["emails"]) if job_data["emails"] else None
             job_data["location"] = Location(**job_data["location"]).display_location()
 
             compensation_obj = job_data.get("compensation")
