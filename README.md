@@ -43,11 +43,7 @@ jobs = scrape_jobs(
 )
 print(f"Found {len(jobs)} jobs")
 print(jobs.head())
-jobs.to_csv("jobs.csv", index=False)
-
-# output to Excel
-# jobs.to_xlsx('jobs.xlsx', index=False)
-
+jobs.to_csv("jobs.csv", index=False) # / to_xlsx
 ```
 
 ### Output
@@ -101,7 +97,7 @@ JobPost
 └── date_posted (date)
 └── emails (str)
 └── num_urgent_words (int)
-└── is_remote (bool) - just for Indeed at the momen
+└── is_remote (bool)
 ```
 
 ### Exceptions
@@ -154,7 +150,7 @@ You can specify the following countries when searching on Indeed (use the exact 
 
 **Q: Encountering issues with your queries?**  
 **A:** Try reducing the number of `results_wanted` and/or broadening the filters. If problems
-persist, [submit an issue](https://github.com/cullenwatson/JobSpy/issues).
+persist, [submit an issue](https://github.com/Bunsly/JobSpy/issues).
 
 ---
 
