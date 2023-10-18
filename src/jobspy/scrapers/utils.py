@@ -1,5 +1,6 @@
 import re
 import tls_client
+from ..jobs import JobType
 
 
 def count_urgent_words(description: str) -> int:
@@ -42,3 +43,14 @@ def create_session(proxy: str | None = None):
     #     }
 
     return session
+
+
+def get_enum_from_job_type(job_type_str: str) -> JobType | None:
+    """
+    Given a string, returns the corresponding JobType enum member if a match is found.
+    """
+    res = None
+    for job_type in JobType:
+        if job_type_str in job_type.value:
+            res = job_type
+    return res

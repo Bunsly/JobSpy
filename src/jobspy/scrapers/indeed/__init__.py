@@ -16,7 +16,12 @@ from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
 from ..exceptions import IndeedException
-from ..utils import count_urgent_words, extract_emails_from_text, create_session
+from ..utils import (
+    count_urgent_words,
+    extract_emails_from_text,
+    create_session,
+    get_enum_from_job_type,
+)
 from ...jobs import (
     JobPost,
     Compensation,
@@ -162,10 +167,10 @@ class IndeedScraper(Scraper):
             )
             return job_post
 
+        jobs = jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]
         with ThreadPoolExecutor(max_workers=1) as executor:
             job_results: list[Future] = [
-                executor.submit(process_job, job)
-                for job in jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]
+                executor.submit(process_job, job) for job in jobs
             ]
 
         job_list = [result.result() for result in job_results if result.result()]
@@ -230,13 +235,37 @@ class IndeedScraper(Scraper):
         if response.status_code not in range(200, 400):
             return None
 
-        raw_description = response.json()["body"]["jobInfoWrapperModel"][
-            "jobInfoModel"
-        ]["sanitizedJobDescription"]
-        with io.StringIO(raw_description) as f:
-            soup = BeautifulSoup(f, "html.parser")
-            text_content = " ".join(soup.get_text().split()).strip()
-            return text_content
+        soup = BeautifulSoup(response.text, "html.parser")
+        script_tag = soup.find(
+            "script", text=lambda x: x and "window._initialData" in x
+        )
+
+        if not script_tag:
+            return None
+
+        script_code = script_tag.string
+        match = re.search(r"window\._initialData\s*=\s*({.*?})\s*;", script_code, re.S)
+
+        if not match:
+            return None
+
+        json_string = match.group(1)
+        data = json.loads(json_string)
+        try:
+            job_description = data["jobInfoWrapperModel"]["jobInfoModel"][
+                "sanitizedJobDescription"
+            ]
+        except (KeyError, TypeError, IndexError):
+            return None
+
+        soup = BeautifulSoup(
+            job_description, "html.parser"
+        )
+        text_content = " ".join(
+            soup.get_text(separator=" ").split()
+        ).strip()
+
+        return text_content
 
     @staticmethod
     def get_job_type(job: dict) -> list[JobType] | None:
@@ -252,21 +281,10 @@ class IndeedScraper(Scraper):
                     label = taxonomy["attributes"][i].get("label")
                     if label:
                         job_type_str = label.replace("-", "").replace(" ", "").lower()
-                        job_types.append(
-                            IndeedScraper.get_enum_from_job_type(job_type_str)
-                        )
+                        job_type = get_enum_from_job_type(job_type_str)
+                        if job_type:
+                            job_types.append(job_type)
         return job_types
-
-    @staticmethod
-    def get_enum_from_job_type(job_type_str):
-        """
-        Given a string, returns the corresponding JobType enum member if a match is found.
-        for job_type in JobType:
-        """
-        for job_type in JobType:
-            if job_type_str in job_type.value:
-                return job_type
-        return None
 
     @staticmethod
     def parse_jobs(soup: BeautifulSoup) -> dict:
