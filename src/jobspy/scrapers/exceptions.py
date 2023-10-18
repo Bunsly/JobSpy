@@ -7,12 +7,15 @@ This module contains the set of Scrapers' exceptions.
 
 
 class LinkedInException(Exception):
-    """Failed to scrape LinkedIn"""
+    def __init__(self, message=None):
+        super().__init__(message or "An error occurred with LinkedIn")
 
 
 class IndeedException(Exception):
-    """Failed to scrape Indeed"""
+    def __init__(self, message=None):
+        super().__init__(message or "An error occurred with Indeed")
 
 
 class ZipRecruiterException(Exception):
-    """Failed to scrape ZipRecruiter"""
+    def __init__(self, message=None):
+        super().__init__(message or "An error occurred with ZipRecruiter")

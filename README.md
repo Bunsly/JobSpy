@@ -92,9 +92,9 @@ JobPost
 │   ├── city (str)
 │   ├── state (str)
 ├── description (str)
-├── job_type (enum): fulltime, parttime, internship, contract
+├── job_type (str): fulltime, parttime, internship, contract
 ├── compensation (object)
-│   ├── interval (enum): yearly, monthly, weekly, daily, hourly
+│   ├── interval (str): yearly, monthly, weekly, daily, hourly
 │   ├── min_amount (int)
 │   ├── max_amount (int)
 │   └── currency (enum)

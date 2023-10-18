@@ -9,7 +9,6 @@ from datetime import datetime
 
 import requests
 import time
-import re
 from requests.exceptions import ProxyError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from bs4 import BeautifulSoup
@@ -17,7 +16,7 @@ from bs4.element import Tag
 from threading import Lock
 
 from .. import Scraper, ScraperInput, Site
-from ..utils import count_urgent_words, extract_emails_from_text
+from ..utils import count_urgent_words, extract_emails_from_text, get_enum_from_job_type
 from ..exceptions import LinkedInException
 from ...jobs import (
     JobPost,
@@ -237,16 +236,9 @@ class LinkedInScraper(Scraper):
                     employment_type = employment_type.lower()
                     employment_type = employment_type.replace("-", "")
 
-            return LinkedInScraper.get_enum_from_value(employment_type)
+            return [get_enum_from_job_type(employment_type)]
 
         return description, get_job_type(soup)
-
-    @staticmethod
-    def get_enum_from_value(value_str):
-        for job_type in JobType:
-            if value_str in job_type.value:
-                return [job_type]
-        return None
 
     def get_location(self, metadata_card: Optional[Tag]) -> Location:
         """

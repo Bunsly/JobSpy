@@ -84,13 +84,12 @@ def scrape_jobs(
         except (LinkedInException, IndeedException, ZipRecruiterException) as lie:
             raise lie
         except Exception as e:
-            # unhandled exceptions
             if site == Site.LINKEDIN:
-                raise LinkedInException()
+                raise LinkedInException(str(e))
             if site == Site.INDEED:
-                raise IndeedException()
+                raise IndeedException(str(e))
             if site == Site.ZIP_RECRUITER:
-                raise ZipRecruiterException()
+                raise ZipRecruiterException(str(e))
             else:
                 raise e
         return site.value, scraped_data

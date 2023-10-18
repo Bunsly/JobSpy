@@ -40,12 +40,12 @@ class JobType(Enum):
     PART_TIME = (
         "parttime",
         "teilzeit",
-        "Částečnýúvazek",
-        "Deltid"
+        "částečnýúvazek",
+        "deltid"
     )
     CONTRACT = ("contract", "contractor")
     TEMPORARY = ("temporary",)
-    INTERNSHIP = ("internship", "prácticas", "ojt(onthejobtraining)", "praktikum", "Praktik")
+    INTERNSHIP = ("internship", "prácticas", "ojt(onthejobtraining)", "praktikum", "praktik")
 
     PER_DIEM = ("perdiem",)
     NIGHTS = ("nights",)
