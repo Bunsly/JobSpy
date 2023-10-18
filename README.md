@@ -7,7 +7,7 @@
 *Looking to build a data-focused software product?* **[Book a call](https://calendly.com/bunsly/15min)** *to
 work with us.*  
 \
-Check out another project we wrote: ***[HomeHarvest](https://github.com/ZacharyHampton/HomeHarvest)** – a Python package
+Check out another project we wrote: ***[HomeHarvest](https://github.com/Bunsly/HomeHarvest)** – a Python package
 for real estate scraping*
 
 ## Features
