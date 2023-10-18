@@ -44,6 +44,7 @@ def create_session(proxy: str | None = None):
 
     return session
 
+
 def get_enum_from_job_type(job_type_str: str) -> JobType | None:
     """
     Given a string, returns the corresponding JobType enum member if a match is found.

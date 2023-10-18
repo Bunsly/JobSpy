@@ -16,7 +16,12 @@ from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
 from ..exceptions import IndeedException
-from ..utils import count_urgent_words, extract_emails_from_text, create_session, get_enum_from_job_type
+from ..utils import (
+    count_urgent_words,
+    extract_emails_from_text,
+    create_session,
+    get_enum_from_job_type,
+)
 from ...jobs import (
     JobPost,
     Compensation,
@@ -165,8 +170,7 @@ class IndeedScraper(Scraper):
         jobs = jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]
         with ThreadPoolExecutor(max_workers=1) as executor:
             job_results: list[Future] = [
-                executor.submit(process_job, job)
-                for job in jobs
+                executor.submit(process_job, job) for job in jobs
             ]
 
         job_list = [result.result() for result in job_results if result.result()]
@@ -231,14 +235,16 @@ class IndeedScraper(Scraper):
         if response.status_code not in range(200, 400):
             return None
 
-        soup = BeautifulSoup(response.text, 'html.parser')
-        script_tag = soup.find('script', text=lambda x: x and 'window._initialData' in x)
+        soup = BeautifulSoup(response.text, "html.parser")
+        script_tag = soup.find(
+            "script", text=lambda x: x and "window._initialData" in x
+        )
 
         if not script_tag:
             return None
 
         script_code = script_tag.string
-        match = re.search(r'window\._initialData\s*=\s*({.*?})\s*;', script_code, re.S)
+        match = re.search(r"window\._initialData\s*=\s*({.*?})\s*;", script_code, re.S)
 
         if not match:
             return None
@@ -246,12 +252,18 @@ class IndeedScraper(Scraper):
         json_string = match.group(1)
         data = json.loads(json_string)
         try:
-            job_description = data["jobInfoWrapperModel"]["jobInfoModel"]["sanitizedJobDescription"]
+            job_description = data["jobInfoWrapperModel"]["jobInfoModel"][
+                "sanitizedJobDescription"
+            ]
         except (KeyError, TypeError, IndexError):
             return None
 
-        soup = BeautifulSoup(job_description, "html.parser")  # No need for StringIO, pass the string directly
-        text_content = " ".join(soup.get_text(separator=" ").split()).strip()  # Clean and normalize whitespaces
+        soup = BeautifulSoup(
+            job_description, "html.parser"
+        )
+        text_content = " ".join(
+            soup.get_text(separator=" ").split()
+        ).strip()
 
         return text_content
 
@@ -297,6 +309,7 @@ class IndeedScraper(Scraper):
                 ):
                     return tag
             return None
+
         script_tag = find_mosaic_script()
 
         if script_tag:
