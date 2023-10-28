@@ -5,7 +5,7 @@ jobspy.scrapers.ziprecruiter
 This module contains routines to scrape ZipRecruiter.
 """
 import math
-import json
+import time
 import re
 from datetime import datetime, date
 from typing import Optional, Tuple, Any
@@ -68,9 +68,11 @@ class ZipRecruiterScraper(Scraper):
                 raise ZipRecruiterException("bad proxy")
             raise ZipRecruiterException(str(e))
 
+        time.sleep(5)
         response_data = response.json()
         jobs_list = response_data.get("jobs", [])
         next_continue_token = response_data.get('continue', None)
+        print(len(jobs_list))
 
         with ThreadPoolExecutor(max_workers=10) as executor:
             job_results = [
@@ -136,7 +138,6 @@ class ZipRecruiterScraper(Scraper):
             date_posted = date_posted_obj.date()
         else:
             date_posted = date.today()
-
 
         return JobPost(
             title=title,
