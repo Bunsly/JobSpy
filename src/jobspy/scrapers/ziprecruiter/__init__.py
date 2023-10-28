@@ -113,6 +113,7 @@ class ZipRecruiterScraper(Scraper):
         title = job.get("name")
         job_url = job.get("job_url")
 
+
         description = BeautifulSoup(
             job.get("job_description", "").strip(), "html.parser"
         ).get_text()
