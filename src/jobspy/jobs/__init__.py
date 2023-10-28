@@ -177,8 +177,8 @@ class CompensationInterval(Enum):
 
 class Compensation(BaseModel):
     interval: Optional[CompensationInterval] = None
-    min_amount: int = None
-    max_amount: int = None
+    min_amount: int | None = None
+    max_amount: int | None = None
     currency: Optional[str] = "USD"
 
 

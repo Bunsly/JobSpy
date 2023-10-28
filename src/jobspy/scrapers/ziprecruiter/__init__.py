@@ -113,12 +113,12 @@ class ZipRecruiterScraper(Scraper):
         title = job.get("name")
         job_url = job.get("job_url")
 
-        # job_url = updated_job_url if updated_job_url else job_url
+
         description = BeautifulSoup(
             job.get("job_description", "").strip(), "html.parser"
         ).get_text()
 
-        company = job.get("source")
+        company = job['hiring_company'].get("name") if "hiring_company" in job else None
         location = Location(
             city=job.get("job_city"), state=job.get("job_state"), country='usa' if job.get("job_country") == 'US' else 'canada'
         )
@@ -137,12 +137,18 @@ class ZipRecruiterScraper(Scraper):
         else:
             date_posted = date.today()
 
+
         return JobPost(
             title=title,
             company_name=company,
             location=location,
             job_type=job_type,
-            # compensation=compensation,
+            compensation=Compensation(
+                interval="yearly" if job.get("compensation_interval") == "annual" else job.get("compensation_interval") ,
+                min_amount=int(job["compensation_min"]) if "compensation_min" in job else None,
+                max_amount=int(job["compensation_max"]) if "compensation_max" in job else None,
+                currency=job.get("compensation_currency"),
+            ),
             date_posted=date_posted,
             job_url=job_url,
             description=description,
