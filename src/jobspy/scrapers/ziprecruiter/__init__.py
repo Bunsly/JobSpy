@@ -72,7 +72,6 @@ class ZipRecruiterScraper(Scraper):
         response_data = response.json()
         jobs_list = response_data.get("jobs", [])
         next_continue_token = response_data.get('continue', None)
-        print(len(jobs_list))
 
         with ThreadPoolExecutor(max_workers=10) as executor:
             job_results = [
