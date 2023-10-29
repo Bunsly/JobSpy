@@ -58,7 +58,6 @@ class IndeedScraper(Scraper):
         self.country = scraper_input.country
         domain = self.country.domain_value
         self.url = f"https://{domain}.indeed.com"
-        session = create_session(self.proxy)
 
         params = {
             "q": scraper_input.search_term,
@@ -78,6 +77,7 @@ class IndeedScraper(Scraper):
         if sc_values:
             params["sc"] = "0kf:" + "".join(sc_values) + ";"
         try:
+            session = create_session(self.proxy, is_tls=True)
             response = session.get(
                 f"{self.url}/jobs",
                 headers=self.get_headers(),

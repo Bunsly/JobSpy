@@ -1,4 +1,6 @@
 import re
+
+import requests
 import tls_client
 from ..jobs import JobType
 
@@ -24,23 +26,28 @@ def extract_emails_from_text(text: str) -> list[str] | None:
     return email_regex.findall(text)
 
 
-def create_session(proxy: str | None = None):
+def create_session(proxy: dict | None = None, is_tls: bool = True):
     """
     Creates a tls client session
 
     :return: A session object with or without proxies.
     """
-    session = tls_client.Session(
-        client_identifier="chrome112",
-        random_tls_extension_order=True,
-    )
-    session.proxies = proxy
-    # TODO multiple proxies
-    # if self.proxies:
-    #     session.proxies = {
-    #         "http": random.choice(self.proxies),
-    #         "https": random.choice(self.proxies),
-    #     }
+    if is_tls:
+        session = tls_client.Session(
+            client_identifier="chrome112",
+            random_tls_extension_order=True,
+        )
+        session.proxies = proxy
+        # TODO multiple proxies
+        # if self.proxies:
+        #     session.proxies = {
+        #         "http": random.choice(self.proxies),
+        #         "https": random.choice(self.proxies),
+        #     }
+    else:
+        session = requests.Session()
+        session.allow_redirects = True
+        session.proxies.update(proxy)
 
     return session
 
