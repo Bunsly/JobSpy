@@ -9,25 +9,14 @@ import time
 import re
 from datetime import datetime, date
 from typing import Optional, Tuple, Any
-from urllib.parse import urlparse, parse_qs, urlunparse
 
-import requests
 from bs4 import BeautifulSoup
-from bs4.element import Tag
-from concurrent.futures import ThreadPoolExecutor, Future
+from concurrent.futures import ThreadPoolExecutor
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import ZipRecruiterException
 from ..utils import count_urgent_words, extract_emails_from_text, create_session
-from ...jobs import (
-    JobPost,
-    Compensation,
-    CompensationInterval,
-    Location,
-    JobResponse,
-    JobType,
-    Country,
-)
+from ...jobs import JobPost, Compensation, Location, JobResponse, JobType
 
 
 class ZipRecruiterScraper(Scraper):
@@ -42,21 +31,22 @@ class ZipRecruiterScraper(Scraper):
         self.jobs_per_page = 20
         self.seen_urls = set()
 
-    def find_jobs_in_page(self, scraper_input: ScraperInput, continue_token: Optional[str] = None) -> Tuple[list[JobPost], Optional[str]]:
+    def find_jobs_in_page(self, scraper_input: ScraperInput, continue_token: str | None = None) -> Tuple[list[JobPost], Optional[str]]:
         """
         Scrapes a page of ZipRecruiter for jobs with scraper_input criteria
         :param scraper_input:
+        :param continue_token:
         :return: jobs found on page
         """
         params = self.add_params(scraper_input)
         if continue_token:
             params['continue'] = continue_token
         try:
-            response = requests.get(
+            session = create_session(self.proxy, is_tls=False)
+            response = session.get(
                 f"https://api.ziprecruiter.com/jobs-app/jobs",
                 headers=self.headers(),
                 params=self.add_params(scraper_input),
-                allow_redirects=True,
                 timeout=10,
             )
             if response.status_code != 200:
@@ -73,7 +63,7 @@ class ZipRecruiterScraper(Scraper):
         jobs_list = response_data.get("jobs", [])
         next_continue_token = response_data.get('continue', None)
 
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=self.jobs_per_page) as executor:
             job_results = [
                 executor.submit(self.process_job, job)
                 for job in jobs_list
@@ -109,11 +99,11 @@ class ZipRecruiterScraper(Scraper):
 
         return JobResponse(jobs=job_list)
 
-    def process_job(self, job: dict) -> JobPost:
-        """the most common type of jobs page on ZR"""
+    @staticmethod
+    def process_job(job: dict) -> JobPost:
+        """ Processes an individual job dict from the response """
         title = job.get("name")
         job_url = job.get("job_url")
-
 
         description = BeautifulSoup(
             job.get("job_description", "").strip(), "html.parser"
@@ -144,7 +134,7 @@ class ZipRecruiterScraper(Scraper):
             location=location,
             job_type=job_type,
             compensation=Compensation(
-                interval="yearly" if job.get("compensation_interval") == "annual" else job.get("compensation_interval") ,
+                interval="yearly" if job.get("compensation_interval") == "annual" else job.get("compensation_interval"),
                 min_amount=int(job["compensation_min"]) if "compensation_min" in job else None,
                 max_amount=int(job["compensation_max"]) if "compensation_max" in job else None,
                 currency=job.get("compensation_currency"),
@@ -191,107 +181,6 @@ class ZipRecruiterScraper(Scraper):
             params["radius"] = scraper_input.distance
 
         return params
-
-    @staticmethod
-    def get_interval(interval_str: str):
-        """
-         Maps the interval alias to its appropriate CompensationInterval.
-        :param interval_str
-        :return: CompensationInterval
-        """
-        interval_alias = {"annually": CompensationInterval.YEARLY}
-        interval_str = interval_str.lower()
-
-        if interval_str in interval_alias:
-            return interval_alias[interval_str]
-
-        return CompensationInterval(interval_str)
-
-    @staticmethod
-    def get_date_posted(job: Tag) -> Optional[datetime.date]:
-        """
-        Extracts the date a job was posted
-        :param job
-        :return: date the job was posted or None
-        """
-        button = job.find(
-            "button", {"class": "action_input save_job zrs_btn_secondary_200"}
-        )
-        if not button:
-            return None
-
-        url_time = button.get("data-href", "")
-        url_components = urlparse(url_time)
-        params = parse_qs(url_components.query)
-        posted_time_str = params.get("posted_time", [None])[0]
-
-        if posted_time_str:
-            posted_date = datetime.strptime(
-                posted_time_str, "%Y-%m-%dT%H:%M:%SZ"
-            ).date()
-            return posted_date
-
-        return None
-
-    @staticmethod
-    def get_compensation(job: Tag) -> Optional[Compensation]:
-        """
-        Parses the compensation tag from the job BeautifulSoup object
-        :param job
-        :return: Compensation object or None
-        """
-        pay_element = job.find("li", {"class": "perk_item perk_pay"})
-        if pay_element is None:
-            return None
-        pay = pay_element.find("div", {"class": "value"}).find("span").text.strip()
-
-        def create_compensation_object(pay_string: str) -> Compensation:
-            """
-            Creates a Compensation object from a pay_string
-            :param pay_string
-            :return: compensation
-            """
-            interval = ZipRecruiterScraper.get_interval(pay_string.split()[-1])
-
-            amounts = []
-            for amount in pay_string.split("to"):
-                amount = amount.replace(",", "").strip("$ ").split(" ")[0]
-                if "K" in amount:
-                    amount = amount.replace("K", "")
-                    amount = int(float(amount)) * 1000
-                else:
-                    amount = int(float(amount))
-                amounts.append(amount)
-
-            compensation = Compensation(
-                interval=interval,
-                min_amount=min(amounts),
-                max_amount=max(amounts),
-                currency="USD/CAD",
-            )
-
-            return compensation
-
-        return create_compensation_object(pay)
-
-    @staticmethod
-    def get_location(job: Tag) -> Location:
-        """
-        Extracts the job location from BeatifulSoup object
-        :param job:
-        :return: location
-        """
-        location_link = job.find("a", {"class": "company_location"})
-        if location_link is not None:
-            location_string = location_link.text.strip()
-            parts = location_string.split(", ")
-            if len(parts) == 2:
-                city, state = parts
-            else:
-                city, state = None, None
-        else:
-            city, state = None, None
-        return Location(city=city, state=state, country=Country.US_CANADA)
 
     @staticmethod
     def headers() -> dict:
