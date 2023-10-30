@@ -47,7 +47,8 @@ def create_session(proxy: dict | None = None, is_tls: bool = True):
     else:
         session = requests.Session()
         session.allow_redirects = True
-        session.proxies.update(proxy)
+        if proxy:
+            session.proxies.update(proxy)
 
     return session
 
