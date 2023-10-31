@@ -1,7 +1,6 @@
 from typing import Union, Optional
 from datetime import date
 from enum import Enum
-
 from pydantic import BaseModel, validator
 
 
@@ -56,13 +55,13 @@ class JobType(Enum):
 
 
 class Country(Enum):
-    ARGENTINA = ("argentina", "ar")
-    AUSTRALIA = ("australia", "au")
-    AUSTRIA = ("austria", "at")
+    ARGENTINA = ("argentina", "com.ar")
+    AUSTRALIA = ("australia", "au", "com.au")
+    AUSTRIA = ("austria", "at", "at")
     BAHRAIN = ("bahrain", "bh")
-    BELGIUM = ("belgium", "be")
-    BRAZIL = ("brazil", "br")
-    CANADA = ("canada", "ca")
+    BELGIUM = ("belgium", "be", "nl:be")
+    BRAZIL = ("brazil", "br", "com.br")
+    CANADA = ("canada", "ca", "ca")
     CHILE = ("chile", "cl")
     CHINA = ("china", "cn")
     COLOMBIA = ("colombia", "co")
@@ -72,24 +71,24 @@ class Country(Enum):
     ECUADOR = ("ecuador", "ec")
     EGYPT = ("egypt", "eg")
     FINLAND = ("finland", "fi")
-    FRANCE = ("france", "fr")
-    GERMANY = ("germany", "de")
+    FRANCE = ("france", "fr", "fr")
+    GERMANY = ("germany", "de", "de")
     GREECE = ("greece", "gr")
-    HONGKONG = ("hong kong", "hk")
+    HONGKONG = ("hong kong", "hk", "com.hk")
     HUNGARY = ("hungary", "hu")
-    INDIA = ("india", "in")
+    INDIA = ("india", "in", "co.in")
     INDONESIA = ("indonesia", "id")
-    IRELAND = ("ireland", "ie")
+    IRELAND = ("ireland", "ie", "ie")
     ISRAEL = ("israel", "il")
-    ITALY = ("italy", "it")
+    ITALY = ("italy", "it", "it")
     JAPAN = ("japan", "jp")
     KUWAIT = ("kuwait", "kw")
     LUXEMBOURG = ("luxembourg", "lu")
     MALAYSIA = ("malaysia", "malaysia")
-    MEXICO = ("mexico", "mx")
+    MEXICO = ("mexico", "mx", "com.mx")
     MOROCCO = ("morocco", "ma")
-    NETHERLANDS = ("netherlands", "nl")
-    NEWZEALAND = ("new zealand", "nz")
+    NETHERLANDS = ("netherlands", "nl", "nl")
+    NEWZEALAND = ("new zealand", "nz", "co.nz")
     NIGERIA = ("nigeria", "ng")
     NORWAY = ("norway", "no")
     OMAN = ("oman", "om")
@@ -102,19 +101,19 @@ class Country(Enum):
     QATAR = ("qatar", "qa")
     ROMANIA = ("romania", "ro")
     SAUDIARABIA = ("saudi arabia", "sa")
-    SINGAPORE = ("singapore", "sg")
+    SINGAPORE = ("singapore", "sg", "sg")
     SOUTHAFRICA = ("south africa", "za")
     SOUTHKOREA = ("south korea", "kr")
-    SPAIN = ("spain", "es")
+    SPAIN = ("spain", "es", "es")
     SWEDEN = ("sweden", "se")
-    SWITZERLAND = ("switzerland", "ch")
+    SWITZERLAND = ("switzerland", "ch", "de:ch")
     TAIWAN = ("taiwan", "tw")
     THAILAND = ("thailand", "th")
     TURKEY = ("turkey", "tr")
     UKRAINE = ("ukraine", "ua")
     UNITEDARABEMIRATES = ("united arab emirates", "ae")
-    UK = ("uk", "uk")
-    USA = ("usa", "www")
+    UK = ("uk", "uk", "co.uk")
+    USA = ("usa", "www", "com")
     URUGUAY = ("uruguay", "uy")
     VENEZUELA = ("venezuela", "ve")
     VIETNAM = ("vietnam", "vn")
@@ -125,31 +124,39 @@ class Country(Enum):
     # internal for linkeind
     WORLDWIDE = ("worldwide", "www")
 
-    def __new__(cls, country, domain):
-        obj = object.__new__(cls)
-        obj._value_ = country
-        obj.domain = domain
-        return obj
+    @property
+    def indeed_domain_value(self):
+        return self.value[1]
 
     @property
-    def domain_value(self):
-        return self.domain
+    def glassdoor_domain_value(self):
+        if len(self.value) == 3:
+            subdomain, _, domain = self.value[2].partition(":")
+            if subdomain and domain:
+                return f"{subdomain}.glassdoor.{domain}"
+            else:
+                return f"www.glassdoor.{self.value[2]}"
+        else:
+            raise Exception(f"Glassdoor is not available for {self.name}")
+
+    def get_url(self):
+        return f"https://{self.glassdoor_domain_value}/"
 
     @classmethod
     def from_string(cls, country_str: str):
         """Convert a string to the corresponding Country enum."""
         country_str = country_str.strip().lower()
         for country in cls:
-            if country.value == country_str:
+            if country.value[0] == country_str:
                 return country
         valid_countries = [country.value for country in cls]
         raise ValueError(
-            f"Invalid country string: '{country_str}'. Valid countries (only include this param for Indeed) are: {', '.join(valid_countries)}"
+            f"Invalid country string: '{country_str}'. Valid countries are: {', '.join([country[0] for country in valid_countries])}"
         )
 
 
 class Location(BaseModel):
-    country: Country = None
+    country: Country | None = None
     city: Optional[str] = None
     state: Optional[str] = None
 
@@ -160,10 +167,10 @@ class Location(BaseModel):
         if self.state:
             location_parts.append(self.state)
         if self.country and self.country not in (Country.US_CANADA, Country.WORLDWIDE):
-            if self.country.value in ("usa", "uk"):
-                location_parts.append(self.country.value.upper())
+            if self.country.value[0] in ("usa", "uk"):
+                location_parts.append(self.country.value[0].upper())
             else:
-                location_parts.append(self.country.value.title())
+                location_parts.append(self.country.value[0].title())
         return ", ".join(location_parts)
 
 

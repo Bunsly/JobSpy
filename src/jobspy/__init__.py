@@ -6,18 +6,21 @@ from typing import Tuple, Optional
 from .jobs import JobType, Location
 from .scrapers.indeed import IndeedScraper
 from .scrapers.ziprecruiter import ZipRecruiterScraper
+from .scrapers.glassdoor import GlassdoorScraper
 from .scrapers.linkedin import LinkedInScraper
 from .scrapers import ScraperInput, Site, JobResponse, Country
 from .scrapers.exceptions import (
     LinkedInException,
     IndeedException,
     ZipRecruiterException,
+    GlassdoorException,
 )
 
 SCRAPER_MAPPING = {
     Site.LINKEDIN: LinkedInScraper,
     Site.INDEED: IndeedScraper,
     Site.ZIP_RECRUITER: ZipRecruiterScraper,
+    Site.GLASSDOOR: GlassdoorScraper,
 }
 
 
@@ -90,6 +93,8 @@ def scrape_jobs(
                 raise IndeedException(str(e))
             if site == Site.ZIP_RECRUITER:
                 raise ZipRecruiterException(str(e))
+            if site == Site.GLASSDOOR:
+                raise GlassdoorException(str(e))
             else:
                 raise e
         return site.value, scraped_data
@@ -127,7 +132,10 @@ def scrape_jobs(
             job_data["emails"] = (
                 ", ".join(job_data["emails"]) if job_data["emails"] else None
             )
-            job_data["location"] = Location(**job_data["location"]).display_location()
+            if job_data["location"]:
+                job_data["location"] = Location(
+                    **job_data["location"]
+                ).display_location()
 
             compensation_obj = job_data.get("compensation")
             if compensation_obj and isinstance(compensation_obj, dict):
