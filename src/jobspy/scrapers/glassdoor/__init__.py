@@ -78,6 +78,9 @@ class GlassdoorScraper(Scraper):
             job_url = res_json["data"]["jobListings"]["jobListingSeoLinks"][
                 "linkItems"
             ][i]["url"]
+            if job_url in self.seen_urls:
+                continue
+            self.seen_urls.add(job_url)
             job = job["jobview"]
             title = job["job"]["jobTitleText"]
             company_name = job["header"]["employerNameFromSearch"]
