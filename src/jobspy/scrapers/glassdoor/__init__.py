@@ -140,9 +140,9 @@ class GlassdoorScraper(Scraper):
                         all_jobs = all_jobs[: scraper_input.results_wanted]
                         break
                 except Exception as e:
-                    print(f"Page {page} generated an exception: {e}")
+                    raise GlassdoorException(str(e))
         except Exception as e:
-            print(f"An exception occurred: {e}")
+            raise GlassdoorException(str(e))
 
         return JobResponse(jobs=all_jobs)
 
@@ -185,7 +185,7 @@ class GlassdoorScraper(Scraper):
 
     def get_location(self, location: str, is_remote: bool) -> (int, str):
         if not location or is_remote:
-            return "11047", "S"  # remote options
+            return "11047", "STATE"  # remote options
         url = f"{self.url}/findPopularLocationAjax.htm?maxLocationsToReturn=10&term={location}"
         session = create_session(self.proxy)
         response = session.get(url)
@@ -196,7 +196,12 @@ class GlassdoorScraper(Scraper):
         items = response.json()
         if not items:
             raise ValueError(f"Location '{location}' not found on Glassdoor")
-        return int(items[0]["locationId"]), items[0]["locationType"]
+        location_type = items[0]["locationType"]
+        if location_type == "C":
+            location_type = "CITY"
+        elif location_type == "S":
+            location_type = "STATE"
+        return int(items[0]["locationId"]), location_type
 
     @staticmethod
     def add_payload(
@@ -213,6 +218,8 @@ class GlassdoorScraper(Scraper):
                 "filterParams": [],
                 "keyword": scraper_input.search_term,
                 "numJobsToShow": 30,
+                "locationType": location_type,
+                "locationId": int(location_id),
                 "parameterUrlInput": f"IL.0,12_I{location_type}{location_id}",
                 "pageNumber": page_num,
                 "pageCursor": cursor,
