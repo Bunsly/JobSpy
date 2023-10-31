@@ -18,12 +18,7 @@ from threading import Lock
 from .. import Scraper, ScraperInput, Site
 from ..utils import count_urgent_words, extract_emails_from_text, get_enum_from_job_type
 from ..exceptions import LinkedInException
-from ...jobs import (
-    JobPost,
-    Location,
-    JobResponse,
-    JobType,
-)
+from ...jobs import JobPost, Location, JobResponse, JobType, Country
 
 
 class LinkedInScraper(Scraper):
@@ -181,7 +176,6 @@ class LinkedInScraper(Scraper):
             location=location,
             date_posted=date_posted,
             job_url=job_url,
-            # job_type=[JobType.FULL_TIME],
             job_type=job_type,
             benefits=benefits,
             emails=extract_emails_from_text(description) if description else None,
@@ -246,7 +240,7 @@ class LinkedInScraper(Scraper):
         :param metadata_card
         :return: location
         """
-        location = Location(country=self.country)
+        location = Location(country=Country.from_string(self.country))
         if metadata_card is not None:
             location_tag = metadata_card.find(
                 "span", class_="job-search-card__location"
@@ -258,7 +252,7 @@ class LinkedInScraper(Scraper):
                 location = Location(
                     city=city,
                     state=state,
-                    country=self.country,
+                    country=Country.from_string(self.country),
                 )
 
         return location

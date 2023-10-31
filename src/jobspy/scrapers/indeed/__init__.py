@@ -56,7 +56,7 @@ class IndeedScraper(Scraper):
         :return: jobs found on page, total number of jobs found for search
         """
         self.country = scraper_input.country
-        domain = self.country.domain_value
+        domain = self.country.indeed_domain_value
         self.url = f"https://{domain}.indeed.com"
 
         params = {
@@ -258,12 +258,8 @@ class IndeedScraper(Scraper):
         except (KeyError, TypeError, IndexError):
             return None
 
-        soup = BeautifulSoup(
-            job_description, "html.parser"
-        )
-        text_content = " ".join(
-            soup.get_text(separator=" ").split()
-        ).strip()
+        soup = BeautifulSoup(job_description, "html.parser")
+        text_content = " ".join(soup.get_text(separator=" ").split()).strip()
 
         return text_content
 

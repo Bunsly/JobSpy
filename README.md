@@ -6,13 +6,13 @@
 
 *Looking to build a data-focused software product?* **[Book a call](https://calendly.com/bunsly/15min)** *to
 work with us.*  
-\
+
 Check out another project we wrote: ***[HomeHarvest](https://github.com/Bunsly/HomeHarvest)** – a Python package
 for real estate scraping*
 
 ## Features
 
-- Scrapes job postings from **LinkedIn**, **Indeed** & **ZipRecruiter** simultaneously
+- Scrapes job postings from **LinkedIn**, **Indeed**, **Glassdoor**, & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
 - Proxy support (HTTP/S, SOCKS)
 
@@ -35,15 +35,15 @@ _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/)
 from jobspy import scrape_jobs
 
 jobs = scrape_jobs(
-    site_name=["indeed", "linkedin", "zip_recruiter"],
+    site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor"],
     search_term="software engineer",
     location="Dallas, TX",
     results_wanted=10,
-    country_indeed='USA'  # only needed for indeed
+    country_indeed='USA'  # only needed for indeed / glassdoor
 )
 print(f"Found {len(jobs)} jobs")
 print(jobs.head())
-jobs.to_csv("jobs.csv", index=False) # / to_xlsx
+jobs.to_csv("jobs.csv", index=False) # to_xlsx
 ```
 
 ### Output
@@ -120,29 +120,30 @@ ZipRecruiter searches for jobs in **US/Canada** & uses only the `location` param
 
 ### **Indeed**
 
-Indeed supports most countries, but the `country_indeed` parameter is required. Additionally, use the `location`
+Indeed & Glassdoor supports most countries, but the `country_indeed` parameter is required. Additionally, use the `location`
 parameter to narrow down the location, e.g. city & state if necessary.
 
-You can specify the following countries when searching on Indeed (use the exact name):
+You can specify the following countries when searching on Indeed (use the exact name, * indicates support for Glassdoor):
 
 |                      |              |            |                |
 |----------------------|--------------|------------|----------------|
-| Argentina            | Australia    | Austria    | Bahrain        |
-| Belgium              | Brazil       | Canada     | Chile          |
+| Argentina            | Australia*   | Austria*   | Bahrain        |
+| Belgium*             | Brazil*      | Canada*    | Chile          |
 | China                | Colombia     | Costa Rica | Czech Republic |
 | Denmark              | Ecuador      | Egypt      | Finland        |
-| France               | Germany      | Greece     | Hong Kong      |
-| Hungary              | India        | Indonesia  | Ireland        |
-| Israel               | Italy        | Japan      | Kuwait         |
-| Luxembourg           | Malaysia     | Mexico     | Morocco        |
-| Netherlands          | New Zealand  | Nigeria    | Norway         |
+| France*              | Germany*     | Greece     | Hong Kong*     |
+| Hungary              | India*       | Indonesia  | Ireland*       |
+| Israel               | Italy*       | Japan      | Kuwait         |
+| Luxembourg           | Malaysia     | Mexico*    | Morocco        |
+| Netherlands*         | New Zealand* | Nigeria    | Norway         |
 | Oman                 | Pakistan     | Panama     | Peru           |
 | Philippines          | Poland       | Portugal   | Qatar          |
-| Romania              | Saudi Arabia | Singapore  | South Africa   |
-| South Korea          | Spain        | Sweden     | Switzerland    |
+| Romania              | Saudi Arabia | Singapore* | South Africa   |
+| South Korea          | Spain*       | Sweden     | Switzerland*   |
 | Taiwan               | Thailand     | Turkey     | Ukraine        |
-| United Arab Emirates | UK           | USA        | Uruguay        |
+| United Arab Emirates | UK*          | USA*       | Uruguay        |
 | Venezuela            | Vietnam      |            |                |
+
 
 ## Frequently Asked Questions
 

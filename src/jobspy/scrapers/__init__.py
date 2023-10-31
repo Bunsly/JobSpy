@@ -6,6 +6,7 @@ class Site(Enum):
     LINKEDIN = "linkedin"
     INDEED = "indeed"
     ZIP_RECRUITER = "zip_recruiter"
+    GLASSDOOR = "glassdoor"
 
 
 class ScraperInput(BaseModel):
