@@ -9,6 +9,7 @@ import math
 import io
 import json
 from datetime import datetime
+import html
 
 import urllib.parse
 from bs4 import BeautifulSoup
@@ -147,7 +148,7 @@ class IndeedScraper(Scraper):
                     description = " ".join(li.text for li in li_elements)
 
             job_post = JobPost(
-                title=job["normTitle"],
+                title=job["displayTitle"],
                 description=description,
                 company_name=job["company"],
                 location=Location(
@@ -210,6 +211,7 @@ class IndeedScraper(Scraper):
         )
         return job_response
 
+
     def get_description(self, job_page_url: str) -> str | None:
         """
         Retrieves job description by going to the job page url
@@ -235,33 +237,28 @@ class IndeedScraper(Scraper):
         if response.status_code not in range(200, 400):
             return None
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        script_tag = soup.find(
-            "script", text=lambda x: x and "window._initialData" in x
-        )
+        # Search for job description in the response content
+        job_desc_pattern = re.compile(r'"sanitizedJobDescription":"(.*?)"\s*,', re.DOTALL)
+        job_desc_match = job_desc_pattern.search(response.text)
 
-        if not script_tag:
+        # If a match is found, parse the HTML to extract the text
+        if job_desc_match:
+            # Extracting the job description HTML content
+            job_desc_html = job_desc_match.group(1)
+            # Unescape HTML entities
+            job_desc_html = html.unescape(job_desc_html)
+            # Replace escaped forward slashes and remove line breaks
+            job_desc_html = job_desc_html.replace('\\/', '/').replace('\\n', ' ')
+            # Parse the HTML content with BeautifulSoup
+            soup = BeautifulSoup(job_desc_html, "html.parser")
+            # Extract text content from the HTML, with whitespace normalized
+            text_content = ' '.join(soup.get_text(separator=" ").split())
+            # Further clean up to remove any tags that might have been missed
+            clean_text = re.sub(r'<[^>]+>', '', text_content)
+            return clean_text.strip()
+        else:
             return None
 
-        script_code = script_tag.string
-        match = re.search(r"window\._initialData\s*=\s*({.*?})\s*;", script_code, re.S)
-
-        if not match:
-            return None
-
-        json_string = match.group(1)
-        data = json.loads(json_string)
-        try:
-            job_description = data["jobInfoWrapperModel"]["jobInfoModel"][
-                "sanitizedJobDescription"
-            ]
-        except (KeyError, TypeError, IndexError):
-            return None
-
-        soup = BeautifulSoup(job_description, "html.parser")
-        text_content = " ".join(soup.get_text(separator=" ").split()).strip()
-
-        return text_content
 
     @staticmethod
     def get_job_type(job: dict) -> list[JobType] | None:
