@@ -4,7 +4,7 @@
 
 **Not technical?** Try out the web scraping tool on our site at [usejobspy.com](https://usejobspy.com).
 
-*Looking to build a data-focused software product?* **[Book a call](https://calendly.com/bunsly/15min)** *to
+*Looking to build a data-focused software product?* **[Book a call](https://bunsly.com/)** *to
 work with us.*  
 
 Check out another project we wrote: ***[HomeHarvest](https://github.com/Bunsly/HomeHarvest)** – a Python package
