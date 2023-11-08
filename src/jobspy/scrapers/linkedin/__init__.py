@@ -10,10 +10,10 @@ from datetime import datetime
 import requests
 import time
 from requests.exceptions import ProxyError
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from threading import Lock
+from urllib.parse import urlparse, urlunparse
 
 from .. import Scraper, ScraperInput, Site
 from ..utils import count_urgent_words, extract_emails_from_text, get_enum_from_job_type
@@ -66,11 +66,9 @@ class LinkedInScraper(Scraper):
                 if scraper_input.job_type
                 else None,
                 "pageNum": 0,
-                page: page + scraper_input.offset,
+                "start": page + scraper_input.offset,
                 "f_AL": "true" if scraper_input.easy_apply else None,
             }
-
-            params = {k: v for k, v in params.items() if v is not None}
 
             params = {k: v for k, v in params.items() if v is not None}
             retries = 0
@@ -88,7 +86,7 @@ class LinkedInScraper(Scraper):
                     break
                 except requests.HTTPError as e:
                     if hasattr(e, "response") and e.response is not None:
-                        if e.response.status_code == 429:
+                        if e.response.status_code in (429, 502):
                             time.sleep(self.DELAY)
                             retries += 1
                             continue
@@ -110,32 +108,27 @@ class LinkedInScraper(Scraper):
 
             soup = BeautifulSoup(response.text, "html.parser")
 
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                futures = []
-                for job_card in soup.find_all("div", class_="base-search-card"):
-                    job_url = None
-                    href_tag = job_card.find("a", class_="base-card__full-link")
-                    if href_tag and "href" in href_tag.attrs:
-                        href = href_tag.attrs["href"].split("?")[0]
-                        job_id = href.split("-")[-1]
-                        job_url = f"{self.url}/jobs/view/{job_id}"
+            for job_card in soup.find_all("div", class_="base-search-card"):
+                job_url = None
+                href_tag = job_card.find("a", class_="base-card__full-link")
+                if href_tag and "href" in href_tag.attrs:
+                    href = href_tag.attrs["href"].split("?")[0]
+                    job_id = href.split("-")[-1]
+                    job_url = f"{self.url}/jobs/view/{job_id}"
 
-                    with url_lock:
-                        if job_url in seen_urls:
-                            continue
-                        seen_urls.add(job_url)
+                with url_lock:
+                    if job_url in seen_urls:
+                        continue
+                    seen_urls.add(job_url)
 
-                    futures.append(executor.submit(self.process_job, job_card, job_url))
+                # Call process_job directly without threading
+                try:
+                    job_post = self.process_job(job_card, job_url)
+                    if job_post:
+                        job_list.append(job_post)
+                except Exception as e:
+                    raise LinkedInException("Exception occurred while processing jobs")
 
-                for future in as_completed(futures):
-                    try:
-                        job_post = future.result()
-                        if job_post:
-                            job_list.append(job_post)
-                    except Exception as e:
-                        raise LinkedInException(
-                            "Exception occurred while processing jobs"
-                        )
             page += 25
 
         job_list = job_list[: scraper_input.results_wanted]
@@ -147,6 +140,11 @@ class LinkedInScraper(Scraper):
 
         company_tag = job_card.find("h4", class_="base-search-card__subtitle")
         company_a_tag = company_tag.find("a") if company_tag else None
+        company_url = (
+            urlunparse(urlparse(company_a_tag.get("href"))._replace(query=""))
+            if company_a_tag and company_a_tag.has_attr("href")
+            else ""
+        )
         company = company_a_tag.get_text(strip=True) if company_a_tag else "N/A"
 
         metadata_card = job_card.find("div", class_="base-search-card__metadata")
@@ -168,11 +166,13 @@ class LinkedInScraper(Scraper):
         benefits = " ".join(benefits_tag.get_text().split()) if benefits_tag else None
 
         description, job_type = self.get_job_description(job_url)
+        # description, job_type = None, []
 
         return JobPost(
             title=title,
             description=description,
             company_name=company,
+            company_url=company_url,
             location=location,
             date_posted=date_posted,
             job_url=job_url,
@@ -193,7 +193,14 @@ class LinkedInScraper(Scraper):
         try:
             response = requests.get(job_page_url, timeout=5, proxies=self.proxy)
             response.raise_for_status()
+        except requests.HTTPError as e:
+            if hasattr(e, "response") and e.response is not None:
+                if e.response.status_code in (429, 502):
+                    time.sleep(self.DELAY)
+            return None, None
         except Exception as e:
+            return None, None
+        if response.url == "https://www.linkedin.com/signup":
             return None, None
 
         soup = BeautifulSoup(response.text, "html.parser")
@@ -230,7 +237,7 @@ class LinkedInScraper(Scraper):
                     employment_type = employment_type.lower()
                     employment_type = employment_type.replace("-", "")
 
-            return [get_enum_from_job_type(employment_type)]
+            return [get_enum_from_job_type(employment_type)] if employment_type else []
 
         return description, get_job_type(soup)
 

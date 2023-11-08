@@ -163,6 +163,7 @@ def scrape_jobs(
             "site",
             "title",
             "company",
+            "company_url",
             "location",
             "job_type",
             "date_posted",
