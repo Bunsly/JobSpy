@@ -16,9 +16,9 @@ from threading import Lock
 from urllib.parse import urlparse, urlunparse
 
 from .. import Scraper, ScraperInput, Site
-from ..utils import count_urgent_words, extract_emails_from_text, get_enum_from_job_type
+from ..utils import count_urgent_words, extract_emails_from_text, get_enum_from_job_type, currency_parser
 from ..exceptions import LinkedInException
-from ...jobs import JobPost, Location, JobResponse, JobType, Country
+from ...jobs import JobPost, Location, JobResponse, JobType, Country, Compensation
 
 
 class LinkedInScraper(Scraper):
@@ -135,6 +135,22 @@ class LinkedInScraper(Scraper):
         return JobResponse(jobs=job_list)
 
     def process_job(self, job_card: Tag, job_url: str) -> Optional[JobPost]:
+        salary_tag = job_card.find('span', class_='job-search-card__salary-info')
+
+        compensation = None
+        if salary_tag:
+            salary_text = salary_tag.get_text(separator=' ').strip()
+            salary_values = [currency_parser(value) for value in salary_text.split('-')]
+            salary_min = salary_values[0]
+            salary_max = salary_values[1]
+            currency = salary_text[0] if salary_text[0] != '$' else 'USD'
+
+            compensation = Compensation(
+                min_amount=int(salary_min),
+                max_amount=int(salary_max),
+                currency=currency,
+            )
+
         title_tag = job_card.find("span", class_="sr-only")
         title = title_tag.get_text(strip=True) if title_tag else "N/A"
 
@@ -177,6 +193,7 @@ class LinkedInScraper(Scraper):
             date_posted=date_posted,
             job_url=job_url,
             job_type=job_type,
+            compensation=compensation,
             benefits=benefits,
             emails=extract_emails_from_text(description) if description else None,
             num_urgent_words=count_urgent_words(description) if description else None,
