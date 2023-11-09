@@ -143,7 +143,7 @@ class LinkedInScraper(Scraper):
             salary_values = [currency_parser(value) for value in salary_text.split('-')]
             salary_min = salary_values[0]
             salary_max = salary_values[1]
-            currency = salary_text[0]
+            currency = salary_text[0] if salary_text[0] != '$' else 'USD'
 
             compensation = Compensation(
                 min_amount=int(salary_min),
