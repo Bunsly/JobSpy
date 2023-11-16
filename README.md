@@ -4,7 +4,7 @@
 
 **Not technical?** Try out the web scraping tool on our site at [usejobspy.com](https://usejobspy.com).
 
-*Looking to build a data-focused software product?* **[Book a call](https://calendly.com/bunsly/15min)** *to
+*Looking to build a data-focused software product?* **[Book a call](https://bunsly.com/)** *to
 work with us.*  
 
 Check out another project we wrote: ***[HomeHarvest](https://github.com/Bunsly/HomeHarvest)** – a Python package
@@ -62,7 +62,7 @@ zip_recruiter Software Developer                 TEKsystems        Phoenix      
 
 ```plaintext
 Required
-├── site_type (List[enum]): linkedin, zip_recruiter, indeed
+├── site_type (List[enum]): linkedin, zip_recruiter, indeed, glassdoor
 └── search_term (str)
 Optional
 ├── location (int)
@@ -107,21 +107,22 @@ The following exceptions may be raised when using JobSpy:
 * `LinkedInException`
 * `IndeedException`
 * `ZipRecruiterException`
+* `GlassdoorException`
 
 ## Supported Countries for Job Searching
 
 ### **LinkedIn**
 
-LinkedIn searches globally & uses only the `location` parameter.
+LinkedIn searches globally & uses only the `location` parameter. You can only fetch 1000 jobs max from the LinkedIn endpoint we're using
 
 ### **ZipRecruiter**
 
 ZipRecruiter searches for jobs in **US/Canada** & uses only the `location` parameter.
 
-### **Indeed**
+### **Indeed / Glassdoor**
 
 Indeed & Glassdoor supports most countries, but the `country_indeed` parameter is required. Additionally, use the `location`
-parameter to narrow down the location, e.g. city & state if necessary.
+parameter to narrow down the location, e.g. city & state if necessary. 
 
 You can specify the following countries when searching on Indeed (use the exact name, * indicates support for Glassdoor):
 
@@ -145,6 +146,7 @@ You can specify the following countries when searching on Indeed (use the exact 
 | Venezuela            | Vietnam      |            |                |
 
 
+Glassdoor can only fetch 900 jobs from the endpoint we're using on a given search.
 ## Frequently Asked Questions
 
 ---

@@ -196,6 +196,8 @@ class JobPost(BaseModel):
     location: Optional[Location]
 
     description: str | None = None
+    company_url: str | None = None
+
     job_type: list[JobType] | None = None
     compensation: Compensation | None = None
     date_posted: date | None = None
