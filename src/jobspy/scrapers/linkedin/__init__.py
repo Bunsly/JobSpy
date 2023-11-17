@@ -280,10 +280,15 @@ class LinkedInScraper(Scraper):
                 )
             elif len(parts) == 3:
                 city, state, country = parts
+                try:
+                    country_enum = Country.from_string(country)
+                except ValueError:
+                    country_enum = Country.from_string(self.country)
                 location = Location(
                     city=city,
                     state=state,
-                    country=Country.from_string(country),
+                    country=country_enum,
                 )
 
         return location
+
