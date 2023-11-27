@@ -121,7 +121,7 @@ class Country(Enum):
     # internal for ziprecruiter
     US_CANADA = ("usa/ca", "www")
 
-    # internal for linkeind
+    # internal for linkein
     WORLDWIDE = ("worldwide", "www")
 
     @property
