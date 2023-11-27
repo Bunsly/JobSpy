@@ -235,24 +235,9 @@ class IndeedScraper(Scraper):
         if response.status_code not in range(200, 400):
             return None
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        script_tag = soup.find(
-            "script", text=lambda x: x and "window._initialData" in x
-        )
-
-        if not script_tag:
-            return None
-
-        script_code = script_tag.string
-        match = re.search(r"window\._initialData\s*=\s*({.*?})\s*;", script_code, re.S)
-
-        if not match:
-            return None
-
-        json_string = match.group(1)
-        data = json.loads(json_string)
         try:
-            job_description = data["jobInfoWrapperModel"]["jobInfoModel"][
+            data = json.loads(response.text)
+            job_description = data["body"]["jobInfoWrapperModel"]["jobInfoModel"][
                 "sanitizedJobDescription"
             ]
         except (KeyError, TypeError, IndexError):
