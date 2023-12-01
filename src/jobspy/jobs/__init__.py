@@ -61,15 +61,18 @@ class Country(Enum):
     BAHRAIN = ("bahrain", "bh")
     BELGIUM = ("belgium", "be", "nl:be")
     BRAZIL = ("brazil", "br", "com.br")
+    BULGARIA = ("bulgaria", "bg")
     CANADA = ("canada", "ca", "ca")
     CHILE = ("chile", "cl")
     CHINA = ("china", "cn")
     COLOMBIA = ("colombia", "co")
     COSTARICA = ("costa rica", "cr")
-    CZECHREPUBLIC = ("czech republic", "cz")
+    CROATIA = ("croatia", "hr")
+    CZECHREPUBLIC = ("czech republic,czechia", "cz")
     DENMARK = ("denmark", "dk")
     ECUADOR = ("ecuador", "ec")
     EGYPT = ("egypt", "eg")
+    ESTONIA = ("estonia", "ee")
     FINLAND = ("finland", "fi")
     FRANCE = ("france", "fr", "fr")
     GERMANY = ("germany", "de", "de")
@@ -83,6 +86,8 @@ class Country(Enum):
     ITALY = ("italy", "it", "it")
     JAPAN = ("japan", "jp")
     KUWAIT = ("kuwait", "kw")
+    LATVIA = ("latvia", "lv")
+    LITHUANIA = ("lithuania", "lt")
     LUXEMBOURG = ("luxembourg", "lu")
     MALAYSIA = ("malaysia", "malaysia")
     MEXICO = ("mexico", "mx", "com.mx")
@@ -102,6 +107,8 @@ class Country(Enum):
     ROMANIA = ("romania", "ro")
     SAUDIARABIA = ("saudi arabia", "sa")
     SINGAPORE = ("singapore", "sg", "sg")
+    SLOVAKIA = ("slovakia", "sk")
+    SLOVENIA = ("slovenia", "sl")
     SOUTHAFRICA = ("south africa", "za")
     SOUTHKOREA = ("south korea", "kr")
     SPAIN = ("spain", "es", "es")
@@ -147,8 +154,9 @@ class Country(Enum):
         """Convert a string to the corresponding Country enum."""
         country_str = country_str.strip().lower()
         for country in cls:
-            if country.value[0] == country_str:
-                return country
+            country_names = country.value[0].split(',')
+            if country_str in country_names:
+                return (country_names[0],) + country.value[1:]
         valid_countries = [country.value for country in cls]
         raise ValueError(
             f"Invalid country string: '{country_str}'. Valid countries are: {', '.join([country[0] for country in valid_countries])}"
