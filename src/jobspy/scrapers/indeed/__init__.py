@@ -64,6 +64,7 @@ class IndeedScraper(Scraper):
             "l": scraper_input.location,
             "filter": 0,
             "start": scraper_input.offset + page * 10,
+            "sort": "date"
         }
         if scraper_input.distance:
             params["radius"] = scraper_input.distance
@@ -150,6 +151,7 @@ class IndeedScraper(Scraper):
                 title=job["normTitle"],
                 description=description,
                 company_name=job["company"],
+                company_url=self.url + job["companyOverviewLink"] if "companyOverviewLink" in job else None,
                 location=Location(
                     city=job.get("jobLocationCity"),
                     state=job.get("jobLocationState"),
@@ -305,7 +307,7 @@ class IndeedScraper(Scraper):
                 raise IndeedException("Could not find mosaic provider job cards data")
         else:
             raise IndeedException(
-                "Could not find a script tag containing mosaic provider data"
+                "Could not find any results for the search"
             )
 
     @staticmethod

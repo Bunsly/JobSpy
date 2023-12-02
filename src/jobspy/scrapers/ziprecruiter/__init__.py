@@ -44,12 +44,12 @@ class ZipRecruiterScraper(Scraper):
         if continue_token:
             params["continue"] = continue_token
         try:
-            session = create_session(self.proxy, is_tls=False)
+            session = create_session(self.proxy, is_tls=True)
             response = session.get(
                 f"https://api.ziprecruiter.com/jobs-app/jobs",
                 headers=self.headers(),
                 params=self.add_params(scraper_input),
-                timeout=10,
+                timeout_seconds=10,
             )
             if response.status_code != 200:
                 raise ZipRecruiterException(
@@ -195,17 +195,12 @@ class ZipRecruiterScraper(Scraper):
     @staticmethod
     def headers() -> dict:
         """
-        Returns headers needed for requests
+        Returns headers needed for ZipRecruiter API requests
         :return: dict - Dictionary containing headers
         """
         return {
-            "Host": "api.ziprecruiter.com",
-            "Cookie": "ziprecruiter_browser=018188e0-045b-4ad7-aa50-627a6c3d43aa; ziprecruiter_session=5259b2219bf95b6d2299a1417424bc2edc9f4b38; SplitSV=2016-10-19%3AU2FsdGVkX19f9%2Bx70knxc%2FeR3xXR8lWoTcYfq5QjmLU%3D%0A; __cf_bm=qXim3DtLPbOL83GIp.ddQEOFVFTc1OBGPckiHYxcz3o-1698521532-0-AfUOCkgCZyVbiW1ziUwyefCfzNrJJTTKPYnif1FZGQkT60dMowmSU/Y/lP+WiygkFPW/KbYJmyc+MQSkkad5YygYaARflaRj51abnD+SyF9V; zglobalid=68d49bd5-0326-428e-aba8-8a04b64bc67c.af2d99ff7c03.653d61bb; ziprecruiter_browser=018188e0-045b-4ad7-aa50-627a6c3d43aa; ziprecruiter_session=5259b2219bf95b6d2299a1417424bc2edc9f4b38",
-            "accept": "*/*",
-            "x-zr-zva-override": "100000000;vid:ZT1huzm_EQlDTVEc",
-            "x-pushnotificationid": "0ff4983d38d7fc5b3370297f2bcffcf4b3321c418f5c22dd152a0264707602a0",
-            "x-deviceid": "D77B3A92-E589-46A4-8A39-6EF6F1D86006",
-            "user-agent": "Job Search/87.0 (iPhone; CPU iOS 16_6_1 like Mac OS X)",
-            "authorization": "Basic YTBlZjMyZDYtN2I0Yy00MWVkLWEyODMtYTI1NDAzMzI0YTcyOg==",
-            "accept-language": "en-US,en;q=0.9",
+            'Host': 'api.ziprecruiter.com',
+            'accept': '*/*',
+            'authorization': 'Basic YTBlZjMyZDYtN2I0Yy00MWVkLWEyODMtYTI1NDAzMzI0YTcyOg==',
+            'Cookie': '__cf_bm=DZ7eJOw6lka.Bwy5jLeDqWanaZ8BJlVAwaXrmcbYnxM-1701505132-0-AfGaVIfTA2kJlmleK14o722vbVwpZ+4UxFznsWv+guvzXSpD9KVEy/+pNzvEZUx88yaEShJwGt3/EVjhHirX/ASustKxg47V/aXRd2XIO2QN; zglobalid=61f94830-1990-4130-b222-d9d0e09c7825.57da9ea9581c.656ae86b; ziprecruiter_browser=018188e0-045b-4ad7-aa50-627a6c3d43aa; ziprecruiter_session=5259b2219bf95b6d2299a1417424bc2edc9f4b38; zva=100000000%3Bvid%3AZWroa0x_F1KEeGeU'
         }
