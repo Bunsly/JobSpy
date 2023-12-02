@@ -58,7 +58,7 @@ class Country(Enum):
     """
     Gets the subdomain for Indeed and Glassdoor.
     The second item in the tuple is the subdomain for Indeed
-    The second item in the tuple is the subdomain (and tld if there's a ':' separator) for Glassdoor
+    The third item in the tuple is the subdomain (and tld if there's a ':' separator) for Glassdoor
     """
 
     ARGENTINA = ("argentina", "ar", "com.ar")
