@@ -55,11 +55,17 @@ class JobType(Enum):
 
 
 class Country(Enum):
-    ARGENTINA = ("argentina", "com.ar")
+    """
+    Gets the subdomain for Indeed and Glassdoor.
+    The second item in the tuple is the subdomain for Indeed
+    The second item in the tuple is the subdomain (and tld if there's a ':' separator) for Glassdoor
+    """
+
+    ARGENTINA = ("argentina", "ar", "com.ar")
     AUSTRALIA = ("australia", "au", "com.au")
     AUSTRIA = ("austria", "at", "at")
     BAHRAIN = ("bahrain", "bh")
-    BELGIUM = ("belgium", "be", "nl:be")
+    BELGIUM = ("belgium", "be", "fr:be")
     BRAZIL = ("brazil", "br", "com.br")
     BULGARIA = ("bulgaria", "bg")
     CANADA = ("canada", "ca", "ca")
@@ -72,7 +78,6 @@ class Country(Enum):
     DENMARK = ("denmark", "dk")
     ECUADOR = ("ecuador", "ec")
     EGYPT = ("egypt", "eg")
-    ESTONIA = ("estonia", "ee")
     FINLAND = ("finland", "fi")
     FRANCE = ("france", "fr", "fr")
     GERMANY = ("germany", "de", "de")
@@ -86,8 +91,6 @@ class Country(Enum):
     ITALY = ("italy", "it", "it")
     JAPAN = ("japan", "jp")
     KUWAIT = ("kuwait", "kw")
-    LATVIA = ("latvia", "lv")
-    LITHUANIA = ("lithuania", "lt")
     LUXEMBOURG = ("luxembourg", "lu")
     MALAYSIA = ("malaysia", "malaysia")
     MEXICO = ("mexico", "mx", "com.mx")
@@ -119,8 +122,8 @@ class Country(Enum):
     TURKEY = ("turkey", "tr")
     UKRAINE = ("ukraine", "ua")
     UNITEDARABEMIRATES = ("united arab emirates", "ae")
-    UK = ("uk", "uk", "co.uk")
-    USA = ("usa", "www", "com")
+    UK = ("uk,united kingdom", "uk", "co.uk")
+    USA = ("usa,us,united states", "www", "com")
     URUGUAY = ("uruguay", "uy")
     VENEZUELA = ("venezuela", "ve")
     VIETNAM = ("vietnam", "vn")
@@ -156,7 +159,7 @@ class Country(Enum):
         for country in cls:
             country_names = country.value[0].split(',')
             if country_str in country_names:
-                return (country_names[0],) + country.value[1:]
+                return country
         valid_countries = [country.value for country in cls]
         raise ValueError(
             f"Invalid country string: '{country_str}'. Valid countries are: {', '.join([country[0] for country in valid_countries])}"
@@ -175,10 +178,13 @@ class Location(BaseModel):
         if self.state:
             location_parts.append(self.state)
         if self.country and self.country not in (Country.US_CANADA, Country.WORLDWIDE):
-            if self.country.value[0] in ("usa", "uk"):
-                location_parts.append(self.country.value[0].upper())
+            country_name = self.country.value[0]
+            if "," in country_name:
+                country_name = country_name.split(",")[0]
+            if country_name in ("usa", "uk"):
+                location_parts.append(country_name.upper())
             else:
-                location_parts.append(self.country.value[0].title())
+                location_parts.append(country_name.title())
         return ", ".join(location_parts)
 
 
@@ -188,6 +194,10 @@ class CompensationInterval(Enum):
     WEEKLY = "weekly"
     DAILY = "daily"
     HOURLY = "hourly"
+
+    @classmethod
+    def get_interval(cls, pay_period):
+        return cls[pay_period].value if pay_period in cls.__members__ else None
 
 
 class Compensation(BaseModel):

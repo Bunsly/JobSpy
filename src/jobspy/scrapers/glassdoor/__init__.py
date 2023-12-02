@@ -4,17 +4,13 @@ jobspy.scrapers.glassdoor
 
 This module contains routines to scrape Glassdoor.
 """
-import math
-import time
-import re
 import json
-from datetime import datetime, date
-from typing import Optional, Tuple, Any
-from bs4 import BeautifulSoup
+from typing import Optional, Any
+from datetime import datetime, timedelta
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import GlassdoorException
-from ..utils import count_urgent_words, extract_emails_from_text, create_session
+from ..utils import create_session
 from ...jobs import (
     JobPost,
     Compensation,
@@ -22,7 +18,6 @@ from ...jobs import (
     Location,
     JobResponse,
     JobType,
-    Country,
 )
 
 
@@ -49,9 +44,6 @@ class GlassdoorScraper(Scraper):
     ) -> (list[JobPost], str | None):
         """
         Scrapes a page of Glassdoor for jobs with scraper_input criteria
-        :param scraper_input:
-        :return: jobs found on page
-        :return: cursor for next page
         """
         try:
             payload = self.add_payload(
@@ -86,8 +78,9 @@ class GlassdoorScraper(Scraper):
             company_name = job["header"]["employerNameFromSearch"]
             location_name = job["header"].get("locationName", "")
             location_type = job["header"].get("locationType", "")
-            is_remote = False
-            location = None
+            age_in_days = job["header"].get("ageInDays")
+            is_remote, location = False, None
+            date_posted = (datetime.now() - timedelta(days=age_in_days)).date() if age_in_days else None
 
             if location_type == "S":
                 is_remote = True
@@ -99,10 +92,11 @@ class GlassdoorScraper(Scraper):
             job = JobPost(
                 title=title,
                 company_name=company_name,
+                date_posted=date_posted,
                 job_url=job_url,
                 location=location,
                 compensation=compensation,
-                is_remote=is_remote,
+                is_remote=is_remote
             )
             jobs.append(job)
 
@@ -161,15 +155,8 @@ class GlassdoorScraper(Scraper):
         interval = None
         if pay_period == "ANNUAL":
             interval = CompensationInterval.YEARLY
-        elif pay_period == "MONTHLY":
-            interval = CompensationInterval.MONTHLY
-        elif pay_period == "WEEKLY":
-            interval = CompensationInterval.WEEKLY
-        elif pay_period == "DAILY":
-            interval = CompensationInterval.DAILY
-        elif pay_period == "HOURLY":
-            interval = CompensationInterval.HOURLY
-
+        elif pay_period:
+            interval = CompensationInterval.get_interval(pay_period)
         min_amount = int(adjusted_pay.get("p10") // 1)
         max_amount = int(adjusted_pay.get("p90") // 1)
 
@@ -179,12 +166,6 @@ class GlassdoorScraper(Scraper):
             max_amount=max_amount,
             currency=currency,
         )
-
-    def get_job_type_enum(self, job_type_str: str) -> list[JobType] | None:
-        for job_type in JobType:
-            if job_type_str in job_type.value:
-                return [job_type]
-        return None
 
     def get_location(self, location: str, is_remote: bool) -> (int, str):
         if not location or is_remote:
@@ -243,10 +224,17 @@ class GlassdoorScraper(Scraper):
             payload["variables"]["filterParams"].append(
                 {"filterKey": "jobType", "values": filter_value}
             )
-
         return json.dumps([payload])
 
-    def parse_location(self, location_name: str) -> Location:
+    @staticmethod
+    def get_job_type_enum(job_type_str: str) -> list[JobType] | None:
+        for job_type in JobType:
+            if job_type_str in job_type.value:
+                return [job_type]
+        return None
+
+    @staticmethod
+    def parse_location(location_name: str) -> Location:
         if not location_name or location_name == "Remote":
             return None
         city, _, state = location_name.partition(", ")
