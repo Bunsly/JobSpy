@@ -65,6 +65,7 @@ class IndeedScraper(Scraper):
             "l": scraper_input.location,
             "filter": 0,
             "start": scraper_input.offset + page * 10,
+            "sort": "date"
         }
         if scraper_input.distance:
             params["radius"] = scraper_input.distance
@@ -151,6 +152,7 @@ class IndeedScraper(Scraper):
                 title=job["displayTitle"],
                 description=description,
                 company_name=job["company"],
+                company_url=self.url + job["companyOverviewLink"] if "companyOverviewLink" in job else None,
                 location=Location(
                     city=job.get("jobLocationCity"),
                     state=job.get("jobLocationState"),
@@ -237,28 +239,18 @@ class IndeedScraper(Scraper):
         if response.status_code not in range(200, 400):
             return None
 
-        # Search for job description in the response content
-        job_desc_pattern = re.compile(r'"sanitizedJobDescription":"(.*?)"\s*,', re.DOTALL)
-        job_desc_match = job_desc_pattern.search(response.text)
-
-        # If a match is found, parse the HTML to extract the text
-        if job_desc_match:
-            # Extracting the job description HTML content
-            job_desc_html = job_desc_match.group(1)
-            # Unescape HTML entities
-            job_desc_html = html.unescape(job_desc_html)
-            # Replace escaped forward slashes and remove line breaks
-            job_desc_html = job_desc_html.replace('\\/', '/').replace('\\n', ' ')
-            # Parse the HTML content with BeautifulSoup
-            soup = BeautifulSoup(job_desc_html, "html.parser")
-            # Extract text content from the HTML, with whitespace normalized
-            text_content = ' '.join(soup.get_text(separator=" ").split())
-            # Further clean up to remove any tags that might have been missed
-            clean_text = re.sub(r'<[^>]+>', '', text_content)
-            return clean_text.strip()
-        else:
+        try:
+            data = json.loads(response.text)
+            job_description = data["body"]["jobInfoWrapperModel"]["jobInfoModel"][
+                "sanitizedJobDescription"
+            ]
+        except (KeyError, TypeError, IndexError):
             return None
 
+        soup = BeautifulSoup(job_description, "html.parser")
+        text_content = " ".join(soup.get_text(separator=" ").split()).strip()
+
+        return text_content
 
     @staticmethod
     def get_job_type(job: dict) -> list[JobType] | None:
@@ -317,7 +309,7 @@ class IndeedScraper(Scraper):
                 raise IndeedException("Could not find mosaic provider job cards data")
         else:
             raise IndeedException(
-                "Could not find a script tag containing mosaic provider data"
+                "Could not find any results for the search"
             )
 
     @staticmethod

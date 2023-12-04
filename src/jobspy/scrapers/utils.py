@@ -39,12 +39,6 @@ def create_session(proxy: dict | None = None, is_tls: bool = True):
             random_tls_extension_order=True,
         )
         session.proxies = proxy
-        # TODO multiple proxies
-        # if self.proxies:
-        #     session.proxies = {
-        #         "http": random.choice(self.proxies),
-        #         "https": random.choice(self.proxies),
-        #     }
     else:
         session = requests.Session()
         session.allow_redirects = True
