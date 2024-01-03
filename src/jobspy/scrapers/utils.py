@@ -1,8 +1,10 @@
 import re
 import numpy as np
 
-import requests
 import tls_client
+import requests
+from requests.adapters import HTTPAdapter, Retry
+
 from ..jobs import JobType
 
 
@@ -27,11 +29,11 @@ def extract_emails_from_text(text: str) -> list[str] | None:
     return email_regex.findall(text)
 
 
-def create_session(proxy: dict | None = None, is_tls: bool = True):
+def create_session(proxy: dict | None = None, is_tls: bool = True, has_retry: bool = False):
     """
-    Creates a tls client session
+    Creates a requests session with optional tls, proxy, and retry settings.
 
-    :return: A session object with or without proxies.
+    :return: A session object
     """
     if is_tls:
         session = tls_client.Session(
@@ -44,6 +46,16 @@ def create_session(proxy: dict | None = None, is_tls: bool = True):
         session.allow_redirects = True
         if proxy:
             session.proxies.update(proxy)
+        if has_retry:
+            retries = Retry(total=3,
+                            connect=3,
+                            status=3,
+                            status_forcelist=[500, 502, 503, 504, 429],
+                            backoff_factor=1)
+            adapter = HTTPAdapter(max_retries=retries)
+
+            session.mount('http://', adapter)
+            session.mount('https://', adapter)
 
     return session
 

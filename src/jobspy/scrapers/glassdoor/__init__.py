@@ -26,7 +26,7 @@ class GlassdoorScraper(Scraper):
         """
         Initializes GlassdoorScraper with the Glassdoor job search url
         """
-        site = Site(Site.ZIP_RECRUITER)
+        site = Site(Site.GLASSDOOR)
         super().__init__(site, proxy=proxy)
 
         self.url = None
@@ -49,7 +49,7 @@ class GlassdoorScraper(Scraper):
             payload = self.add_payload(
                 scraper_input, location_id, location_type, page_num, cursor
             )
-            session = create_session(self.proxy, is_tls=False)
+            session = create_session(self.proxy, is_tls=False, has_retry=True)
             response = session.post(
                 f"{self.url}/graph", headers=self.headers(), timeout=10, data=payload
             )
@@ -171,7 +171,7 @@ class GlassdoorScraper(Scraper):
         if not location or is_remote:
             return "11047", "STATE"  # remote options
         url = f"{self.url}/findPopularLocationAjax.htm?maxLocationsToReturn=10&term={location}"
-        session = create_session(self.proxy)
+        session = create_session(self.proxy, has_retry=True)
         response = session.get(url)
         if response.status_code != 200:
             raise GlassdoorException(
@@ -194,7 +194,7 @@ class GlassdoorScraper(Scraper):
         location_type: str,
         page_num: int,
         cursor: str | None = None,
-    ) -> dict[str, str | Any]:
+    ) -> str:
         payload = {
             "operationName": "JobSearchResultsQuery",
             "variables": {
