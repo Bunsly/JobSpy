@@ -92,8 +92,11 @@ class LinkedInScraper(Scraper):
                 raise LinkedInException(str(e))
 
             soup = BeautifulSoup(response.text, "html.parser")
+            job_cards = soup.find_all("div", class_="base-search-card")
+            if len(job_cards) == 0:
+                return JobResponse(jobs=job_list)
 
-            for job_card in soup.find_all("div", class_="base-search-card"):
+            for job_card in job_cards:
                 job_url = None
                 href_tag = job_card.find("a", class_="base-card__full-link")
                 if href_tag and "href" in href_tag.attrs:
