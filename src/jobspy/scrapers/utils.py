@@ -29,7 +29,7 @@ def extract_emails_from_text(text: str) -> list[str] | None:
     return email_regex.findall(text)
 
 
-def create_session(proxy: dict | None = None, is_tls: bool = True, has_retry: bool = False):
+def create_session(proxy: dict | None = None, is_tls: bool = True, has_retry: bool = False, delay: int = 1) -> requests.Session:
     """
     Creates a requests session with optional tls, proxy, and retry settings.
 
@@ -51,7 +51,7 @@ def create_session(proxy: dict | None = None, is_tls: bool = True, has_retry: bo
                             connect=3,
                             status=3,
                             status_forcelist=[500, 502, 503, 504, 429],
-                            backoff_factor=1)
+                            backoff_factor=delay)
             adapter = HTTPAdapter(max_retries=retries)
 
             session.mount('http://', adapter)
