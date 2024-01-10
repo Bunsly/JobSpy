@@ -115,7 +115,7 @@ class LinkedInScraper(Scraper):
                     raise LinkedInException("Exception occurred while processing jobs")
 
             page += 25
-            time.sleep(random.uniform(3, 5))
+            time.sleep(random.uniform(LinkedInScraper.DELAY, LinkedInScraper.DELAY + 2))
 
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
