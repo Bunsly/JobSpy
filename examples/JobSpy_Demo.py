@@ -20,7 +20,7 @@ all_jobs = []
 max_retries = 3
 
 # nuumber of results at each iteration
-results_in_each_iteration = 50
+results_in_each_iteration = 30
 
 while len(all_jobs) < results_wanted:
     retry_count = 0
