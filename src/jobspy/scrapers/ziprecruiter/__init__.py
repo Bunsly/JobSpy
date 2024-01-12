@@ -27,7 +27,6 @@ class ZipRecruiterScraper(Scraper):
         """
         site = Site(Site.ZIP_RECRUITER)
         self.url = "https://www.ziprecruiter.com"
-        # self.session = requests.Session()
         self.session = create_session(proxy)
         self.get_cookies()
         super().__init__(site, proxy=proxy)
