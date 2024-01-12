@@ -10,6 +10,7 @@ import re
 from datetime import datetime, date
 from typing import Optional, Tuple, Any
 
+import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 
@@ -26,6 +27,8 @@ class ZipRecruiterScraper(Scraper):
         """
         site = Site(Site.ZIP_RECRUITER)
         self.url = "https://www.ziprecruiter.com"
+        self.session = create_session(proxy)
+        self.get_cookies()
         super().__init__(site, proxy=proxy)
 
         self.jobs_per_page = 20
@@ -44,12 +47,10 @@ class ZipRecruiterScraper(Scraper):
         if continue_token:
             params["continue"] = continue_token
         try:
-            session = create_session(self.proxy, is_tls=True)
-            response = session.get(
+            response = self.session.get(
                 f"https://api.ziprecruiter.com/jobs-app/jobs",
                 headers=self.headers(),
                 params=self.add_params(scraper_input),
-                timeout_seconds=10,
             )
             if response.status_code != 200:
                 raise ZipRecruiterException(
@@ -156,6 +157,11 @@ class ZipRecruiterScraper(Scraper):
             num_urgent_words=count_urgent_words(description) if description else None,
         )
 
+    def get_cookies(self):
+        url="https://api.ziprecruiter.com/jobs-app/event"
+        data="event_type=session&logged_in=false&number_of_retry=1&property=model%3AiPhone&property=os%3AiOS&property=locale%3Aen_us&property=app_build_number%3A4734&property=app_version%3A91.0&property=manufacturer%3AApple&property=timestamp%3A2024-01-12T12%3A04%3A42-06%3A00&property=screen_height%3A852&property=os_version%3A16.6.1&property=source%3Ainstall&property=screen_width%3A393&property=device_model%3AiPhone%2014%20Pro&property=brand%3AApple"
+        self.session.post(url, data=data, headers=ZipRecruiterScraper.headers())
+
     @staticmethod
     def get_job_type_enum(job_type_str: str) -> list[JobType] | None:
         for job_type in JobType:
@@ -195,12 +201,16 @@ class ZipRecruiterScraper(Scraper):
     @staticmethod
     def headers() -> dict:
         """
-        Returns headers needed for ZipRecruiter API requests
+        Returns headers needed for requests
         :return: dict - Dictionary containing headers
         """
         return {
-            'Host': 'api.ziprecruiter.com',
-            'accept': '*/*',
-            'authorization': 'Basic YTBlZjMyZDYtN2I0Yy00MWVkLWEyODMtYTI1NDAzMzI0YTcyOg==',
-            'Cookie': '__cf_bm=DZ7eJOw6lka.Bwy5jLeDqWanaZ8BJlVAwaXrmcbYnxM-1701505132-0-AfGaVIfTA2kJlmleK14o722vbVwpZ+4UxFznsWv+guvzXSpD9KVEy/+pNzvEZUx88yaEShJwGt3/EVjhHirX/ASustKxg47V/aXRd2XIO2QN; zglobalid=61f94830-1990-4130-b222-d9d0e09c7825.57da9ea9581c.656ae86b; ziprecruiter_browser=018188e0-045b-4ad7-aa50-627a6c3d43aa; ziprecruiter_session=5259b2219bf95b6d2299a1417424bc2edc9f4b38; zva=100000000%3Bvid%3AZWroa0x_F1KEeGeU'
+            "Host": "api.ziprecruiter.com",
+            "accept": "*/*",
+            "x-zr-zva-override": "100000000;vid:ZT1huzm_EQlDTVEc",
+            "x-pushnotificationid": "0ff4983d38d7fc5b3370297f2bcffcf4b3321c418f5c22dd152a0264707602a0",
+            "x-deviceid": "D77B3A92-E589-46A4-8A39-6EF6F1D86006",
+            "user-agent": "Job Search/87.0 (iPhone; CPU iOS 16_6_1 like Mac OS X)",
+            "authorization": "Basic YTBlZjMyZDYtN2I0Yy00MWVkLWEyODMtYTI1NDAzMzI0YTcyOg==",
+            "accept-language": "en-US,en;q=0.9",
         }
