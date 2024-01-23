@@ -88,7 +88,7 @@ class GlassdoorScraper(Scraper):
     def process_job(self, job_data):
         """Processes a single job and fetches its description."""
         job_id = job_data["jobview"]["job"]["listingId"]
-        job_url = f'https://www.glassdoor.com/job-listing/?jl={job_id}'
+        job_url = f'{self.url}/job-listing/?jl={job_id}'
         if job_url in self.seen_urls:
             return None
         self.seen_urls.add(job_url)
@@ -169,7 +169,7 @@ class GlassdoorScraper(Scraper):
 
     def fetch_job_description(self, job_id):
         """Fetches the job description for a single job ID."""
-        url = "https://www.glassdoor.com/graph"
+        url = f"{self.url}/graph"
         body = [
             {
                 "operationName": "JobDetailQuery",
