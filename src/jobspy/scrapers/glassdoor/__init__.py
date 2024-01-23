@@ -70,7 +70,7 @@ class GlassdoorScraper(Scraper):
         jobs_data = res_json["data"]["jobListings"]["jobListings"]
 
         jobs = []
-        with ThreadPoolExecutor(max_workers=30) as executor:
+        with ThreadPoolExecutor(max_workers=self.jobs_per_page) as executor:
             future_to_job_data = {executor.submit(self.process_job, job): job for job in jobs_data}
             for future in as_completed(future_to_job_data):
                 job_data = future_to_job_data[future]
