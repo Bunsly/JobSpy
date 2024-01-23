@@ -40,6 +40,7 @@ def scrape_jobs(
     country_indeed: str = "usa",
     hyperlinks: bool = False,
     proxy: Optional[str] = None,
+    full_description: Optional[bool] = False,
     offset: Optional[int] = 0,
 ) -> pd.DataFrame:
     """
@@ -74,6 +75,7 @@ def scrape_jobs(
         is_remote=is_remote,
         job_type=job_type,
         easy_apply=easy_apply,
+        full_description=full_description,
         results_wanted=results_wanted,
         offset=offset,
     )

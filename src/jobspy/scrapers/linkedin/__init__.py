@@ -111,7 +111,7 @@ class LinkedInScraper(Scraper):
 
                 # Call process_job directly without threading
                 try:
-                    job_post = self.process_job(job_card, job_url)
+                    job_post = self.process_job(job_card, job_url, scraper_input.full_description)
                     if job_post:
                         job_list.append(job_post)
                 except Exception as e:
@@ -123,7 +123,7 @@ class LinkedInScraper(Scraper):
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
 
-    def process_job(self, job_card: Tag, job_url: str) -> Optional[JobPost]:
+    def process_job(self, job_card: Tag, job_url: str, full_descr: bool) -> Optional[JobPost]:
         salary_tag = job_card.find('span', class_='job-search-card__salary-info')
 
         compensation = None
@@ -160,7 +160,7 @@ class LinkedInScraper(Scraper):
             if metadata_card
             else None
         )
-        date_posted = None
+        date_posted = description = job_type = None
         if datetime_tag and "datetime" in datetime_tag.attrs:
             datetime_str = datetime_tag["datetime"]
             try:
@@ -169,9 +169,8 @@ class LinkedInScraper(Scraper):
                 date_posted = None
         benefits_tag = job_card.find("span", class_="result-benefits__text")
         benefits = " ".join(benefits_tag.get_text().split()) if benefits_tag else None
-
-        # removed to speed up scraping
-        # description, job_type = self.get_job_description(job_url)
+        if full_descr:
+            description, job_type = self.get_job_description(job_url)
 
         return JobPost(
             title=title,
@@ -182,10 +181,10 @@ class LinkedInScraper(Scraper):
             job_url=job_url,
             compensation=compensation,
             benefits=benefits,
-            # job_type=job_type,
-            # description=description,
-            # emails=extract_emails_from_text(description) if description else None,
-            # num_urgent_words=count_urgent_words(description) if description else None,
+            job_type=job_type,
+            description=description,
+            emails=extract_emails_from_text(description) if description else None,
+            num_urgent_words=count_urgent_words(description) if description else None,
         )
 
     def get_job_description(
@@ -214,7 +213,7 @@ class LinkedInScraper(Scraper):
 
         description = None
         if div_content:
-            description = " ".join(div_content.get_text().split()).strip()
+            description = "\n".join(line.strip() for line in div_content.get_text(separator="\n").splitlines() if line.strip())
 
         def get_job_type(
             soup_job_type: BeautifulSoup,

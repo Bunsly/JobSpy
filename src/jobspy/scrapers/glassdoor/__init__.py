@@ -5,8 +5,12 @@ jobspy.scrapers.glassdoor
 This module contains routines to scrape Glassdoor.
 """
 import json
-from typing import Optional, Any
+import requests
+from bs4 import BeautifulSoup
+from typing import Optional
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from ..utils import count_urgent_words, extract_emails_from_text
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import GlassdoorException
@@ -66,43 +70,62 @@ class GlassdoorScraper(Scraper):
         jobs_data = res_json["data"]["jobListings"]["jobListings"]
 
         jobs = []
-        for i, job in enumerate(jobs_data):
-            job_url = res_json["data"]["jobListings"]["jobListingSeoLinks"][
-                "linkItems"
-            ][i]["url"]
-            if job_url in self.seen_urls:
-                continue
-            self.seen_urls.add(job_url)
-            job = job["jobview"]
-            title = job["job"]["jobTitleText"]
-            company_name = job["header"]["employerNameFromSearch"]
-            location_name = job["header"].get("locationName", "")
-            location_type = job["header"].get("locationType", "")
-            age_in_days = job["header"].get("ageInDays")
-            is_remote, location = False, None
-            date_posted = (datetime.now() - timedelta(days=age_in_days)).date() if age_in_days else None
-
-            if location_type == "S":
-                is_remote = True
-            else:
-                location = self.parse_location(location_name)
-
-            compensation = self.parse_compensation(job["header"])
-
-            job = JobPost(
-                title=title,
-                company_name=company_name,
-                date_posted=date_posted,
-                job_url=job_url,
-                location=location,
-                compensation=compensation,
-                is_remote=is_remote
-            )
-            jobs.append(job)
+        with ThreadPoolExecutor(max_workers=self.jobs_per_page) as executor:
+            future_to_job_data = {executor.submit(self.process_job, job): job for job in jobs_data}
+            for future in as_completed(future_to_job_data):
+                job_data = future_to_job_data[future]
+                try:
+                    job_post = future.result()
+                    if job_post:
+                        jobs.append(job_post)
+                except Exception as exc:
+                    raise GlassdoorException(f'Glassdoor generated an exception: {exc}')
 
         return jobs, self.get_cursor_for_page(
             res_json["data"]["jobListings"]["paginationCursors"], page_num + 1
         )
+
+    def process_job(self, job_data):
+        """Processes a single job and fetches its description."""
+        job_id = job_data["jobview"]["job"]["listingId"]
+        job_url = f'{self.url}/job-listing/?jl={job_id}'
+        if job_url in self.seen_urls:
+            return None
+        self.seen_urls.add(job_url)
+        job = job_data["jobview"]
+        title = job["job"]["jobTitleText"]
+        company_name = job["header"]["employerNameFromSearch"]
+        location_name = job["header"].get("locationName", "")
+        location_type = job["header"].get("locationType", "")
+        age_in_days = job["header"].get("ageInDays")
+        is_remote, location = False, None
+        date_posted = (datetime.now() - timedelta(days=age_in_days)).date() if age_in_days else None
+
+        if location_type == "S":
+            is_remote = True
+        else:
+            location = self.parse_location(location_name)
+
+        compensation = self.parse_compensation(job["header"])
+
+        try:
+            description = self.fetch_job_description(job_id)
+        except Exception as e :
+            description = None
+
+        job_post = JobPost(
+            title=title,
+            company_name=company_name,
+            date_posted=date_posted,
+            job_url=job_url,
+            location=location,
+            compensation=compensation,
+            is_remote=is_remote,
+            description=description,
+            emails=extract_emails_from_text(description) if description else None,
+            num_urgent_words=count_urgent_words(description) if description else None,
+        )
+        return job_post
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -110,6 +133,7 @@ class GlassdoorScraper(Scraper):
         :param scraper_input: Information about job search criteria.
         :return: JobResponse containing a list of jobs.
         """
+        scraper_input.results_wanted = min(900, scraper_input.results_wanted)
         self.country = scraper_input.country
         self.url = self.country.get_url()
 
@@ -142,6 +166,43 @@ class GlassdoorScraper(Scraper):
             raise GlassdoorException(str(e))
 
         return JobResponse(jobs=all_jobs)
+
+    def fetch_job_description(self, job_id):
+        """Fetches the job description for a single job ID."""
+        url = f"{self.url}/graph"
+        body = [
+            {
+                "operationName": "JobDetailQuery",
+                "variables": {
+                    "jl": job_id,
+                    "queryString": "q",
+                    "pageTypeEnum": "SERP"
+                },
+                "query": """
+                query JobDetailQuery($jl: Long!, $queryString: String, $pageTypeEnum: PageTypeEnum) {
+                    jobview: jobView(
+                        listingId: $jl
+                        contextHolder: {queryString: $queryString, pageTypeEnum: $pageTypeEnum}
+                    ) {
+                        job {
+                            description
+                            __typename
+                        }
+                        __typename
+                    }
+                }
+                """
+            }
+        ]
+        response = requests.post(url, json=body, headers=GlassdoorScraper.headers())
+        if response.status_code != 200:
+            return None
+        data = response.json()[0]
+        desc = data['data']['jobview']['job']['description']
+        soup = BeautifulSoup(desc, 'html.parser')
+        description = soup.get_text(separator='\n')
+
+        return description
 
     @staticmethod
     def parse_compensation(data: dict) -> Optional[Compensation]:

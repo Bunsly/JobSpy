@@ -109,7 +109,7 @@ class ZipRecruiterScraper(Scraper):
 
         description = BeautifulSoup(
             job.get("job_description", "").strip(), "html.parser"
-        ).get_text()
+        ).get_text(separator="\n")
 
         company = job["hiring_company"].get("name") if "hiring_company" in job else None
         country_value = "usa" if job.get("job_country") == "US" else "canada"
