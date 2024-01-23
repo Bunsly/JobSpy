@@ -78,16 +78,8 @@ class GlassdoorScraper(Scraper):
                     job_post = future.result()
                     if job_post:
                         jobs.append(job_post)
-                except GlassdoorException as exc:
-                    print(f'Glassdoor generated an exception: {exc}')
-
-        # for job_data in jobs_data:
-        #     try:
-        #         job_post = self.process_job(job_data)
-        #         if job_post:
-        #             jobs.append(job_post)
-        #     except Exception as exc:
-        #         print(f'Job data {job_data} generated an exception: {exc}')
+                except Exception as exc:
+                    raise GlassdoorException(f'Glassdoor generated an exception: {exc}')
 
         return jobs, self.get_cursor_for_page(
             res_json["data"]["jobListings"]["paginationCursors"], page_num + 1
@@ -141,6 +133,7 @@ class GlassdoorScraper(Scraper):
         :param scraper_input: Information about job search criteria.
         :return: JobResponse containing a list of jobs.
         """
+        scraper_input.results_wanted = min(900, scraper_input.results_wanted)
         self.country = scraper_input.country
         self.url = self.country.get_url()
 
