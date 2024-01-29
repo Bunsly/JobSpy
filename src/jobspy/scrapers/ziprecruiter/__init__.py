@@ -10,14 +10,13 @@ import re
 from datetime import datetime, date
 from typing import Optional, Tuple, Any
 
-import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import ZipRecruiterException
-from ..utils import count_urgent_words, extract_emails_from_text, create_session
 from ...jobs import JobPost, Compensation, Location, JobResponse, JobType, Country
+from ..utils import count_urgent_words, extract_emails_from_text, create_session, modify_and_get_description
 
 
 class ZipRecruiterScraper(Scraper):
@@ -107,9 +106,9 @@ class ZipRecruiterScraper(Scraper):
         title = job.get("name")
         job_url = job.get("job_url")
 
-        description = BeautifulSoup(
-            job.get("job_description", "").strip(), "html.parser"
-        ).get_text(separator="\n")
+        job_description_html = job.get("job_description", "").strip()
+        description_soup = BeautifulSoup(job_description_html, "html.parser")
+        description = modify_and_get_description(description_soup)
 
         company = job["hiring_company"].get("name") if "hiring_company" in job else None
         country_value = "usa" if job.get("job_country") == "US" else "canada"

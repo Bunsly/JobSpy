@@ -4,23 +4,36 @@ jobspy.scrapers.linkedin
 
 This module contains routines to scrape LinkedIn.
 """
+import time
 import random
 from typing import Optional
 from datetime import datetime
 
 import requests
-import time
 from requests.exceptions import ProxyError
-from bs4 import BeautifulSoup
-from bs4.element import Tag
 from threading import Lock
+from bs4.element import Tag
+from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urlunparse
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import LinkedInException
 from ..utils import create_session
-from ...jobs import JobPost, Location, JobResponse, JobType, Country, Compensation
-from ..utils import count_urgent_words, extract_emails_from_text, get_enum_from_job_type, currency_parser
+from ...jobs import (
+    JobPost,
+    Location,
+    JobResponse,
+    JobType,
+    Country,
+    Compensation
+)
+from ..utils import (
+    count_urgent_words,
+    extract_emails_from_text,
+    get_enum_from_job_type,
+    currency_parser,
+    modify_and_get_description
+)
 
 
 class LinkedInScraper(Scraper):
@@ -213,7 +226,7 @@ class LinkedInScraper(Scraper):
 
         description = None
         if div_content:
-            description = "\n".join(line.strip() for line in div_content.get_text(separator="\n").splitlines() if line.strip())
+            description = modify_and_get_description(div_content)
 
         def get_job_type(
             soup_job_type: BeautifulSoup,
