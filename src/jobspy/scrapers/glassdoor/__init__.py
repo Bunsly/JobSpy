@@ -14,7 +14,7 @@ from ..utils import count_urgent_words, extract_emails_from_text
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import GlassdoorException
-from ..utils import create_session
+from ..utils import create_session, modify_and_get_description
 from ...jobs import (
     JobPost,
     Compensation,
@@ -200,9 +200,7 @@ class GlassdoorScraper(Scraper):
         data = response.json()[0]
         desc = data['data']['jobview']['job']['description']
         soup = BeautifulSoup(desc, 'html.parser')
-        description = soup.get_text(separator='\n')
-
-        return description
+        return modify_and_get_description(soup)
 
     @staticmethod
     def parse_compensation(data: dict) -> Optional[Compensation]:
@@ -292,12 +290,11 @@ class GlassdoorScraper(Scraper):
         for job_type in JobType:
             if job_type_str in job_type.value:
                 return [job_type]
-        return None
 
     @staticmethod
-    def parse_location(location_name: str) -> Location:
+    def parse_location(location_name: str) -> Location | None:
         if not location_name or location_name == "Remote":
-            return None
+            return
         city, _, state = location_name.partition(", ")
         return Location(city=city, state=state)
 
@@ -306,7 +303,6 @@ class GlassdoorScraper(Scraper):
         for cursor_data in pagination_cursors:
             if cursor_data["pageNumber"] == page_num:
                 return cursor_data["cursor"]
-        return None
 
     @staticmethod
     def headers() -> dict:

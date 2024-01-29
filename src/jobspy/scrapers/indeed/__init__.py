@@ -21,6 +21,7 @@ from ..utils import (
     extract_emails_from_text,
     create_session,
     get_enum_from_job_type,
+    modify_and_get_description
 )
 from ...jobs import (
     JobPost,
@@ -247,9 +248,7 @@ class IndeedScraper(Scraper):
             return None
 
         soup = BeautifulSoup(job_description, "html.parser")
-        text_content = "\n".join(soup.stripped_strings)
-
-        return text_content
+        return modify_and_get_description(soup)
 
     @staticmethod
     def get_job_type(job: dict) -> list[JobType] | None:

@@ -8,6 +8,15 @@ from requests.adapters import HTTPAdapter, Retry
 from ..jobs import JobType
 
 
+def modify_and_get_description(soup):
+    for li in soup.find_all('li'):
+        li.string = "- " + li.get_text()
+
+    description = soup.get_text(separator='\n').strip()
+    description = re.sub(r'\n+', '\n', description)
+    return description
+
+
 def count_urgent_words(description: str) -> int:
     """
     Count the number of urgent words or phrases in a job description.
