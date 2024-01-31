@@ -22,6 +22,7 @@ from ..utils import (
     extract_emails_from_text,
     create_session,
     get_enum_from_job_type,
+    modify_and_get_description
 )
 from ...jobs import (
     JobPost,
@@ -79,7 +80,7 @@ class IndeedScraper(Scraper):
         if sc_values:
             params["sc"] = "0kf:" + "".join(sc_values) + ";"
         try:
-            session = create_session(self.proxy, is_tls=True)
+            session = create_session(self.proxy)
             response = session.get(
                 f"{self.url}/jobs",
                 headers=self.get_headers(),
@@ -141,7 +142,8 @@ class IndeedScraper(Scraper):
             date_posted = datetime.fromtimestamp(timestamp_seconds)
             date_posted = date_posted.strftime("%Y-%m-%d")
 
-            description = self.get_description(job_url)
+            description = self.get_description(job_url) if scraper_input.full_description else None
+
             with io.StringIO(job["snippet"]) as f:
                 soup_io = BeautifulSoup(f, "html.parser")
                 li_elements = soup_io.find_all("li")
@@ -248,9 +250,7 @@ class IndeedScraper(Scraper):
             return None
 
         soup = BeautifulSoup(job_description, "html.parser")
-        text_content = " ".join(soup.get_text(separator=" ").split()).strip()
-
-        return text_content
+        return modify_and_get_description(soup)
 
     @staticmethod
     def get_job_type(job: dict) -> list[JobType] | None:

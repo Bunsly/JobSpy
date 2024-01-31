@@ -4,26 +4,40 @@ jobspy.scrapers.linkedin
 
 This module contains routines to scrape LinkedIn.
 """
+import time
+import random
 from typing import Optional
 from datetime import datetime
 
 import requests
-import time
 from requests.exceptions import ProxyError
-from bs4 import BeautifulSoup
-from bs4.element import Tag
 from threading import Lock
+from bs4.element import Tag
+from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urlunparse
 
 from .. import Scraper, ScraperInput, Site
-from ..utils import count_urgent_words, extract_emails_from_text, get_enum_from_job_type, currency_parser
 from ..exceptions import LinkedInException
-from ...jobs import JobPost, Location, JobResponse, JobType, Country, Compensation
+from ..utils import create_session
+from ...jobs import (
+    JobPost,
+    Location,
+    JobResponse,
+    JobType,
+    Country,
+    Compensation
+)
+from ..utils import (
+    count_urgent_words,
+    extract_emails_from_text,
+    get_enum_from_job_type,
+    currency_parser,
+    modify_and_get_description
+)
 
 
 class LinkedInScraper(Scraper):
-    MAX_RETRIES = 3
-    DELAY = 10
+    DELAY = 3
 
     def __init__(self, proxy: Optional[str] = None):
         """
@@ -57,6 +71,7 @@ class LinkedInScraper(Scraper):
             return mapping.get(job_type_enum, "")
 
         while len(job_list) < scraper_input.results_wanted and page < 1000:
+            session = create_session(is_tls=False, has_retry=True, delay=5)
             params = {
                 "keywords": scraper_input.search_term,
                 "location": scraper_input.location,
@@ -71,44 +86,30 @@ class LinkedInScraper(Scraper):
             }
 
             params = {k: v for k, v in params.items() if v is not None}
-            retries = 0
-            while retries < self.MAX_RETRIES:
-                try:
-                    response = requests.get(
-                        f"{self.url}/jobs-guest/jobs/api/seeMoreJobPostings/search?",
-                        params=params,
-                        allow_redirects=True,
-                        proxies=self.proxy,
-                        timeout=10,
-                    )
-                    response.raise_for_status()
-
-                    break
-                except requests.HTTPError as e:
-                    if hasattr(e, "response") and e.response is not None:
-                        if e.response.status_code in (429, 502):
-                            time.sleep(self.DELAY)
-                            retries += 1
-                            continue
-                        else:
-                            raise LinkedInException(
-                                f"bad response status code: {e.response.status_code}"
-                            )
-                    else:
-                        raise
-                except ProxyError as e:
-                    raise LinkedInException("bad proxy")
-                except Exception as e:
-                    raise LinkedInException(str(e))
-            else:
-                # Raise an exception if the maximum number of retries is reached
-                raise LinkedInException(
-                    "Max retries reached, failed to get a valid response"
+            try:
+                response = session.get(
+                    f"{self.url}/jobs-guest/jobs/api/seeMoreJobPostings/search?",
+                    params=params,
+                    allow_redirects=True,
+                    proxies=self.proxy,
+                    headers=self.headers(),
+                    timeout=10,
                 )
+                response.raise_for_status()
+
+            except requests.HTTPError as e:
+                raise LinkedInException(f"bad response status code: {e.response.status_code}")
+            except ProxyError as e:
+                raise LinkedInException("bad proxy")
+            except Exception as e:
+                raise LinkedInException(str(e))
 
             soup = BeautifulSoup(response.text, "html.parser")
+            job_cards = soup.find_all("div", class_="base-search-card")
+            if len(job_cards) == 0:
+                return JobResponse(jobs=job_list)
 
-            for job_card in soup.find_all("div", class_="base-search-card"):
+            for job_card in job_cards:
                 job_url = None
                 href_tag = job_card.find("a", class_="base-card__full-link")
                 if href_tag and "href" in href_tag.attrs:
@@ -123,18 +124,19 @@ class LinkedInScraper(Scraper):
 
                 # Call process_job directly without threading
                 try:
-                    job_post = self.process_job(job_card, job_url)
+                    job_post = self.process_job(job_card, job_url, scraper_input.full_description)
                     if job_post:
                         job_list.append(job_post)
                 except Exception as e:
                     raise LinkedInException("Exception occurred while processing jobs")
 
             page += 25
+            time.sleep(random.uniform(LinkedInScraper.DELAY, LinkedInScraper.DELAY + 2))
 
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
 
-    def process_job(self, job_card: Tag, job_url: str) -> Optional[JobPost]:
+    def process_job(self, job_card: Tag, job_url: str, full_descr: bool) -> Optional[JobPost]:
         salary_tag = job_card.find('span', class_='job-search-card__salary-info')
 
         compensation = None
@@ -171,7 +173,7 @@ class LinkedInScraper(Scraper):
             if metadata_card
             else None
         )
-        date_posted = None
+        date_posted = description = job_type = None
         if datetime_tag and "datetime" in datetime_tag.attrs:
             datetime_str = datetime_tag["datetime"]
             try:
@@ -180,21 +182,20 @@ class LinkedInScraper(Scraper):
                 date_posted = None
         benefits_tag = job_card.find("span", class_="result-benefits__text")
         benefits = " ".join(benefits_tag.get_text().split()) if benefits_tag else None
-
-        description, job_type = self.get_job_description(job_url)
-        # description, job_type = None, []
+        if full_descr:
+            description, job_type = self.get_job_description(job_url)
 
         return JobPost(
             title=title,
-            description=description,
             company_name=company,
             company_url=company_url,
             location=location,
             date_posted=date_posted,
             job_url=job_url,
-            job_type=job_type,
             compensation=compensation,
             benefits=benefits,
+            job_type=job_type,
+            description=description,
             emails=extract_emails_from_text(description) if description else None,
             num_urgent_words=count_urgent_words(description) if description else None,
         )
@@ -208,12 +209,10 @@ class LinkedInScraper(Scraper):
         :return: description or None
         """
         try:
-            response = requests.get(job_page_url, timeout=5, proxies=self.proxy)
+            session = create_session(is_tls=False, has_retry=True)
+            response = session.get(job_page_url, timeout=5, proxies=self.proxy)
             response.raise_for_status()
         except requests.HTTPError as e:
-            if hasattr(e, "response") and e.response is not None:
-                if e.response.status_code in (429, 502):
-                    time.sleep(self.DELAY)
             return None, None
         except Exception as e:
             return None, None
@@ -227,7 +226,7 @@ class LinkedInScraper(Scraper):
 
         description = None
         if div_content:
-            description = " ".join(div_content.get_text().split()).strip()
+            description = modify_and_get_description(div_content)
 
         def get_job_type(
             soup_job_type: BeautifulSoup,
@@ -292,3 +291,20 @@ class LinkedInScraper(Scraper):
 
         return location
 
+    @staticmethod
+    def headers() -> dict:
+        return {
+            'authority': 'www.linkedin.com',
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'accept-language': 'en-US,en;q=0.9',
+            'cache-control': 'max-age=0',
+            'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            # 'sec-ch-ua-mobile': '?0',
+            # 'sec-ch-ua-platform': '"macOS"',
+            # 'sec-fetch-dest': 'document',
+            # 'sec-fetch-mode': 'navigate',
+            # 'sec-fetch-site': 'none',
+            # 'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }

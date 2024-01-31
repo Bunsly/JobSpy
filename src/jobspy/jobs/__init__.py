@@ -1,7 +1,7 @@
-from typing import Union, Optional
+from typing import Optional
 from datetime import date
 from enum import Enum
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 
 
 class JobType(Enum):

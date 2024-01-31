@@ -8,6 +8,15 @@ from requests.adapters import HTTPAdapter, Retry
 from ..jobs import JobType
 
 
+def modify_and_get_description(soup):
+    for li in soup.find_all('li'):
+        li.string = "- " + li.get_text()
+
+    description = soup.get_text(separator='\n').strip()
+    description = re.sub(r'\n+', '\n', description)
+    return description
+
+
 def count_urgent_words(description: str) -> int:
     """
     Count the number of urgent words or phrases in a job description.
@@ -29,7 +38,7 @@ def extract_emails_from_text(text: str) -> list[str] | None:
     return email_regex.findall(text)
 
 
-def create_session(proxy: dict | None = None, is_tls: bool = True, has_retry: bool = False):
+def create_session(proxy: dict | None = None, is_tls: bool = True, has_retry: bool = False, delay: int = 1) -> requests.Session:
     """
     Creates a requests session with optional tls, proxy, and retry settings.
 
@@ -51,7 +60,7 @@ def create_session(proxy: dict | None = None, is_tls: bool = True, has_retry: bo
                             connect=3,
                             status=3,
                             status_forcelist=[500, 502, 503, 504, 429],
-                            backoff_factor=1)
+                            backoff_factor=delay)
             adapter = HTTPAdapter(max_retries=retries)
 
             session.mount('http://', adapter)
