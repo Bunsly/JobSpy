@@ -80,6 +80,7 @@ Optional
 JobPost
 ├── title (str)
 ├── company (str)
+├── company_url (str)
 ├── job_url (str)
 ├── location (object)
 │   ├── country (str)
