@@ -158,16 +158,11 @@ persist, [submit an issue](https://github.com/Bunsly/JobSpy/issues).
 **Q: Received a response code 429?**  
 **A:** This indicates that you have been blocked by the job board site for sending too many requests. All of the job board sites are aggressive with blocking. We recommend:
 
-- Waiting a few seconds between requests.
+- Waiting some time between scrapes (site-dependent).
 - Trying a VPN or proxy to change your IP address.
 
 ---
 
-**Q: Experiencing a "Segmentation fault: 11" on macOS Catalina?**  
-**A:** This is due to `tls_client` dependency not supporting your architecture. Solutions and workarounds include:
-
-- Upgrade to a newer version of MacOS
-- Reach out to the maintainers of [tls_client](https://github.com/bogdanfinn/tls-client) for fixes
 
 
   
