@@ -183,6 +183,8 @@ class ZipRecruiterScraper(Scraper):
                 job_type_value = "part_time"
             else:
                 job_type_value = scraper_input.job_type.value
+        if scraper_input.easy_apply:
+            params['zipapply'] = 1
 
         if job_type_value:
             params[

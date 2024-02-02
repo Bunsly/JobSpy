@@ -8,6 +8,7 @@ import re
 import math
 import io
 import json
+from typing import Any
 from datetime import datetime
 
 import urllib.parse
@@ -44,7 +45,7 @@ class IndeedScraper(Scraper):
         site = Site(Site.INDEED)
         super().__init__(site, proxy=proxy)
 
-        self.jobs_per_page = 15
+        self.jobs_per_page = 25
         self.seen_urls = set()
 
     def scrape_page(
@@ -60,30 +61,12 @@ class IndeedScraper(Scraper):
         domain = self.country.indeed_domain_value
         self.url = f"https://{domain}.indeed.com"
 
-        params = {
-            "q": scraper_input.search_term,
-            "l": scraper_input.location,
-            "filter": 0,
-            "start": scraper_input.offset + page * 10,
-            "sort": "date"
-        }
-        if scraper_input.distance:
-            params["radius"] = scraper_input.distance
-
-        sc_values = []
-        if scraper_input.is_remote:
-            sc_values.append("attr(DSQF7)")
-        if scraper_input.job_type:
-            sc_values.append("jt({})".format(scraper_input.job_type.value))
-
-        if sc_values:
-            params["sc"] = "0kf:" + "".join(sc_values) + ";"
         try:
             session = create_session(self.proxy)
             response = session.get(
-                f"{self.url}/jobs",
+                f"{self.url}/m/jobs",
                 headers=self.get_headers(),
-                params=params,
+                params=self.add_params(scraper_input, page),
                 allow_redirects=True,
                 timeout_seconds=10,
             )
@@ -112,8 +95,8 @@ class IndeedScraper(Scraper):
         ):
             raise IndeedException("No jobs found.")
 
-        def process_job(job) -> JobPost | None:
-            job_url = f'{self.url}/jobs/viewjob?jk={job["jobkey"]}'
+        def process_job(job: dict) -> JobPost | None:
+            job_url = f'{self.url}/m/jobs/viewjob?jk={job["jobkey"]}'
             job_url_client = f'{self.url}/viewjob?jk={job["jobkey"]}'
             if job_url in self.seen_urls:
                 return None
@@ -194,7 +177,7 @@ class IndeedScraper(Scraper):
         #: get first page to initialize session
         job_list, total_results = self.scrape_page(scraper_input, 0)
 
-        with ThreadPoolExecutor(max_workers=1) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             futures: list[Future] = [
                 executor.submit(self.scrape_page, scraper_input, page)
                 for page in range(1, pages_to_process + 1)
@@ -331,17 +314,14 @@ class IndeedScraper(Scraper):
     @staticmethod
     def get_headers():
         return {
-            "authority": "www.indeed.com",
-            "accept": "*/*",
-            "accept-language": "en-US,en;q=0.9",
-            "referer": "https://www.indeed.com/viewjob?jk=fe6182337d72c7b1&tk=1hcbfcmd0k62t802&from=serp&vjs=3&advn=8132938064490989&adid=408692607&ad=-6NYlbfkN0A3Osc99MJFDKjquSk4WOGT28ALb_ad4QMtrHreCb9ICg6MiSVy9oDAp3evvOrI7Q-O9qOtQTg1EPbthP9xWtBN2cOuVeHQijxHjHpJC65TjDtftH3AXeINjBvAyDrE8DrRaAXl8LD3Fs1e_xuDHQIssdZ2Mlzcav8m5jHrA0fA64ZaqJV77myldaNlM7-qyQpy4AsJQfvg9iR2MY7qeC5_FnjIgjKIy_lNi9OPMOjGRWXA94CuvC7zC6WeiJmBQCHISl8IOBxf7EdJZlYdtzgae3593TFxbkd6LUwbijAfjax39aAuuCXy3s9C4YgcEP3TwEFGQoTpYu9Pmle-Ae1tHGPgsjxwXkgMm7Cz5mBBdJioglRCj9pssn-1u1blHZM4uL1nK9p1Y6HoFgPUU9xvKQTHjKGdH8d4y4ETyCMoNF4hAIyUaysCKdJKitC8PXoYaWhDqFtSMR4Jys8UPqUV&xkcb=SoDD-_M3JLQfWnQTDh0LbzkdCdPP&xpse=SoBa6_I3JLW9FlWZlB0PbzkdCdPP&sjdu=i6xVERweJM_pVUvgf-MzuaunBTY7G71J5eEX6t4DrDs5EMPQdODrX7Nn-WIPMezoqr5wA_l7Of-3CtoiUawcHw",
-            "sec-ch-ua": '"Google Chrome";v="119", "Chromium";v="119", "Not?A_Brand";v="24"',
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": '"Windows"',
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-origin",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+          'Host': 'www.indeed.com',
+          'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'sec-fetch-site': 'same-origin',
+          'sec-fetch-dest': 'document',
+          'accept-language': 'en-US,en;q=0.9',
+          'sec-fetch-mode': 'navigate',
+          'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Indeed App 192.0',
+          'referer': 'https://www.indeed.com/m/jobs?q=software%20intern&l=Dallas%2C%20TX&from=serpso&rq=1&rsIdx=3',
         }
 
     @staticmethod
@@ -354,3 +334,29 @@ class IndeedScraper(Scraper):
             if taxonomy["label"] == "remote" and len(taxonomy["attributes"]) > 0:
                 return True
         return False
+
+    @staticmethod
+    def add_params(scraper_input: ScraperInput, page: int) -> dict[str, str | Any]:
+        params = {
+            "q": scraper_input.search_term,
+            "l": scraper_input.location,
+            "filter": 0,
+            "start": scraper_input.offset + page * 10,
+            "sort": "date"
+        }
+        if scraper_input.distance:
+            params["radius"] = scraper_input.distance
+
+        sc_values = []
+        if scraper_input.is_remote:
+            sc_values.append("attr(DSQF7)")
+        if scraper_input.job_type:
+            sc_values.append("jt({})".format(scraper_input.job_type.value))
+
+        if sc_values:
+            params["sc"] = "0kf:" + "".join(sc_values) + ";"
+
+        if scraper_input.easy_apply:
+            params['iafilter'] = 1
+
+        return params
