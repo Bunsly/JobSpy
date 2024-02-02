@@ -88,13 +88,14 @@ class GlassdoorScraper(Scraper):
     def process_job(self, job_data):
         """Processes a single job and fetches its description."""
         job_id = job_data["jobview"]["job"]["listingId"]
-        job_url = f'{self.url}/job-listing/?jl={job_id}'
+        job_url = f'{self.url}job-listing/j?jl={job_id}'
         if job_url in self.seen_urls:
             return None
         self.seen_urls.add(job_url)
         job = job_data["jobview"]
         title = job["job"]["jobTitleText"]
         company_name = job["header"]["employerNameFromSearch"]
+        company_id = job_data['jobview']['header']['employer']['id']
         location_name = job["header"].get("locationName", "")
         location_type = job["header"].get("locationType", "")
         age_in_days = job["header"].get("ageInDays")
@@ -115,6 +116,7 @@ class GlassdoorScraper(Scraper):
 
         job_post = JobPost(
             title=title,
+            company_url=f"{self.url}Overview/W-EI_IE{company_id}.htm" if company_id else None,
             company_name=company_name,
             date_posted=date_posted,
             job_url=job_url,
@@ -258,7 +260,7 @@ class GlassdoorScraper(Scraper):
             "operationName": "JobSearchResultsQuery",
             "variables": {
                 "excludeJobListingIds": [],
-                "filterParams": [],
+                "filterParams": [{"filterKey": "applicationType", "values": "1"}] if scraper_input.easy_apply else [],
                 "keyword": scraper_input.search_term,
                 "numJobsToShow": 30,
                 "locationType": location_type,
