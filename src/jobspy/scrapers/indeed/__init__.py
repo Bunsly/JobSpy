@@ -154,8 +154,9 @@ class IndeedScraper(Scraper):
             )
             return job_post
 
+        workers = 10 if scraper_input.full_description else 10  # possibly lessen 10 when fetching desc based on feedback
         jobs = jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]
-        with ThreadPoolExecutor(max_workers=1) as executor:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
             job_results: list[Future] = [
                 executor.submit(process_job, job) for job in jobs
             ]
@@ -206,7 +207,7 @@ class IndeedScraper(Scraper):
         parsed_url = urllib.parse.urlparse(job_page_url)
         params = urllib.parse.parse_qs(parsed_url.query)
         jk_value = params.get("jk", [None])[0]
-        formatted_url = f"{self.url}/viewjob?jk={jk_value}&spa=1"
+        formatted_url = f"{self.url}/m/viewjob?jk={jk_value}&spa=1"
         session = create_session(self.proxy)
 
         try:
@@ -223,10 +224,18 @@ class IndeedScraper(Scraper):
             return None
 
         try:
-            data = json.loads(response.text)
-            job_description = data["body"]["jobInfoWrapperModel"]["jobInfoModel"][
-                "sanitizedJobDescription"
-            ]
+            soup = BeautifulSoup(response.text, 'html.parser')
+            script_tags = soup.find_all('script')
+
+            job_description = ''
+            for tag in script_tags:
+                if 'window._initialData' in tag.text:
+                    json_str = tag.text
+                    json_str = json_str.split('window._initialData=')[1]
+                    json_str = json_str.rsplit(';', 1)[0]
+                    data = json.loads(json_str)
+                    job_description = data["jobInfoWrapperModel"]["jobInfoModel"]["sanitizedJobDescription"]
+                    break
         except (KeyError, TypeError, IndexError):
             return None
 
