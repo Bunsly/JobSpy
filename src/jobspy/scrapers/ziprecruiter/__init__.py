@@ -6,8 +6,7 @@ This module contains routines to scrape ZipRecruiter.
 """
 import math
 import time
-import re
-from datetime import datetime, date
+from datetime import datetime, timezone
 from typing import Optional, Tuple, Any
 
 from bs4 import BeautifulSoup
@@ -119,17 +118,7 @@ class ZipRecruiterScraper(Scraper):
         job_type = ZipRecruiterScraper.get_job_type_enum(
             job.get("employment_type", "").replace("_", "").lower()
         )
-
-        save_job_url = job.get("SaveJobURL", "")
-        posted_time_match = re.search(
-            r"posted_time=(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)", save_job_url
-        )
-        if posted_time_match:
-            date_time_str = posted_time_match.group(1)
-            date_posted_obj = datetime.strptime(date_time_str, "%Y-%m-%dT%H:%M:%SZ")
-            date_posted = date_posted_obj.date()
-        else:
-            date_posted = date.today()
+        date_posted = datetime.fromisoformat(job['posted_time'].rstrip("Z")).date()
 
         return JobPost(
             title=title,

@@ -246,6 +246,8 @@ class GlassdoorScraper(Scraper):
             location_type = "CITY"
         elif location_type == "S":
             location_type = "STATE"
+        elif location_type == 'N':
+            location_type = "COUNTRY"
         return int(items[0]["locationId"]), location_type
 
     @staticmethod
