@@ -44,12 +44,12 @@ class ZipRecruiterScraper(Scraper):
         """
         params = self.add_params(scraper_input)
         if continue_token:
-            params["continue"] = continue_token
+            params["continue_from"] = continue_token
         try:
             response = self.session.get(
                 f"https://api.ziprecruiter.com/jobs-app/jobs",
                 headers=self.headers(),
-                params=self.add_params(scraper_input),
+                params=params
             )
             if response.status_code != 200:
                 raise ZipRecruiterException(
@@ -68,7 +68,7 @@ class ZipRecruiterScraper(Scraper):
         with ThreadPoolExecutor(max_workers=self.jobs_per_page) as executor:
             job_results = [executor.submit(self.process_job, job) for job in jobs_list]
 
-        job_list = [result.result() for result in job_results if result.result()]
+        job_list = list(filter(None, (result.result() for result in job_results)))
         return job_list, next_continue_token
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
@@ -95,16 +95,15 @@ class ZipRecruiterScraper(Scraper):
             if not continue_token:
                 break
 
-        if len(job_list) > scraper_input.results_wanted:
-            job_list = job_list[: scraper_input.results_wanted]
+        return JobResponse(jobs=job_list[: scraper_input.results_wanted])
 
-        return JobResponse(jobs=job_list)
-
-    @staticmethod
-    def process_job(job: dict) -> JobPost:
+    def process_job(self, job: dict) -> JobPost | None:
         """Processes an individual job dict from the response"""
         title = job.get("name")
-        job_url = job.get("job_url")
+        job_url = f"https://www.ziprecruiter.com/jobs//j?lvk={job['listing_key']}"
+        if job_url in self.seen_urls:
+            return
+        self.seen_urls.add(job_url)
 
         job_description_html = job.get("job_description", "").strip()
         description_soup = BeautifulSoup(job_description_html, "html.parser")
@@ -173,7 +172,6 @@ class ZipRecruiterScraper(Scraper):
         params = {
             "search": scraper_input.search_term,
             "location": scraper_input.location,
-            "form": "jobs-landing",
         }
         job_type_value = None
         if scraper_input.job_type:
