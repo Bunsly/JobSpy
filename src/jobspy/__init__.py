@@ -1,7 +1,7 @@
 import pandas as pd
+from typing import Tuple
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
-from typing import Tuple, Optional
 
 from .jobs import JobType, Location
 from .scrapers.indeed import IndeedScraper
@@ -29,19 +29,20 @@ def _map_str_to_site(site_name: str) -> Site:
 
 
 def scrape_jobs(
-    site_name: str | list[str] | Site | list[Site],
-    search_term: str,
-    location: str = "",
-    distance: int = None,
+    site_name: str | list[str] | Site | list[Site] | None = None,
+    search_term: str | None = None,
+    location: str | None = None,
+    distance: int | None = None,
     is_remote: bool = False,
-    job_type: str = None,
-    easy_apply: bool = False,  # linkedin
+    job_type: str | None = None,
+    easy_apply: bool | None = None,
     results_wanted: int = 15,
     country_indeed: str = "usa",
     hyperlinks: bool = False,
-    proxy: Optional[str] = None,
-    full_description: Optional[bool] = False,
-    offset: Optional[int] = 0,
+    proxy: str | None = None,
+    full_description: bool | None = False,
+    linkedin_company_ids: list[int] | None = None,
+    offset: int | None = 0,
 ) -> pd.DataFrame:
     """
     Simultaneously scrapes job data from multiple job sites.
@@ -56,18 +57,23 @@ def scrape_jobs(
 
     job_type = get_enum_from_value(job_type) if job_type else None
 
-    if type(site_name) == str:
-        site_type = [_map_str_to_site(site_name)]
-    else:  #: if type(site_name) == list
-        site_type = [
-            _map_str_to_site(site) if type(site) == str else site_name
-            for site in site_name
-        ]
+    def get_site_type():
+        site_types = list(Site)
+        if isinstance(site_name, str):
+            site_types = [_map_str_to_site(site_name)]
+        elif isinstance(site_name, Site):
+            site_types = [site_name]
+        elif isinstance(site_name, list):
+            site_types = [
+                _map_str_to_site(site) if isinstance(site, str) else site
+                for site in site_name
+            ]
+        return site_types
 
     country_enum = Country.from_string(country_indeed)
 
     scraper_input = ScraperInput(
-        site_type=site_type,
+        site_type=get_site_type(),
         country=country_enum,
         search_term=search_term,
         location=location,
@@ -77,6 +83,7 @@ def scrape_jobs(
         easy_apply=easy_apply,
         full_description=full_description,
         results_wanted=results_wanted,
+        linkedin_company_ids=linkedin_company_ids,
         offset=offset,
     )
 
