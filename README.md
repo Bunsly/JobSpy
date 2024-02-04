@@ -70,6 +70,7 @@ Optional
 ├── full_description (bool): fetches full description for Indeed / LinkedIn (much slower)
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
 ├── easy_apply (bool): filters for jobs that are hosted on the job board site
+├── linkedin_company_ids (list[int): searches for linkedin jobs with specific company ids
 ├── country_indeed (enum): filters the country on Indeed (see below for correct spelling)
 ├── offset (num): starts the search from an offset (e.g. 25 will start the search from the 25th result)
 ```
