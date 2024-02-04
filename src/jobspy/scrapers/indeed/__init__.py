@@ -348,7 +348,7 @@ class IndeedScraper(Scraper):
     def add_params(scraper_input: ScraperInput, page: int) -> dict[str, str | Any]:
         params = {
             "q": scraper_input.search_term,
-            "l": scraper_input.location,
+            "l": scraper_input.location if scraper_input.location else scraper_input.country.value[0].split(',')[-1],
             "filter": 0,
             "start": scraper_input.offset + page * 10,
             "sort": "date"

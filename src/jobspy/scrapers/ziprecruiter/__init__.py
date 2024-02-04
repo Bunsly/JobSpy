@@ -31,6 +31,7 @@ class ZipRecruiterScraper(Scraper):
 
         self.jobs_per_page = 20
         self.seen_urls = set()
+        self.delay = 5
 
     def find_jobs_in_page(
         self, scraper_input: ScraperInput, continue_token: str | None = None
@@ -59,7 +60,6 @@ class ZipRecruiterScraper(Scraper):
                 raise ZipRecruiterException("bad proxy")
             raise ZipRecruiterException(str(e))
 
-        time.sleep(5)
         response_data = response.json()
         jobs_list = response_data.get("jobs", [])
         next_continue_token = response_data.get("continue", None)
@@ -85,6 +85,9 @@ class ZipRecruiterScraper(Scraper):
             if len(job_list) >= scraper_input.results_wanted:
                 break
 
+            if page > 1:
+                time.sleep(self.delay)
+
             jobs_on_page, continue_token = self.find_jobs_in_page(
                 scraper_input, continue_token
             )
@@ -108,7 +111,7 @@ class ZipRecruiterScraper(Scraper):
         description_soup = BeautifulSoup(job_description_html, "html.parser")
         description = modify_and_get_description(description_soup)
 
-        company = job["hiring_company"].get("name") if "hiring_company" in job else None
+        company = job.get("hiring_company", {}).get("name")
         country_value = "usa" if job.get("job_country") == "US" else "canada"
         country_enum = Country.from_string(country_value)
 
@@ -183,6 +186,8 @@ class ZipRecruiterScraper(Scraper):
 
         if scraper_input.distance:
             params["radius"] = scraper_input.distance
+
+        params = {k: v for k, v in params.items() if v is not None}
 
         return params
 

@@ -70,7 +70,9 @@ class LinkedInScraper(Scraper):
 
             return mapping.get(job_type_enum, "")
 
-        while len(job_list) < scraper_input.results_wanted and page < 1000:
+        continue_search = lambda: len(job_list) < scraper_input.results_wanted and page < 1000
+
+        while continue_search():
             session = create_session(is_tls=False, has_retry=True, delay=5)
             params = {
                 "keywords": scraper_input.search_term,
@@ -83,6 +85,7 @@ class LinkedInScraper(Scraper):
                 "pageNum": 0,
                 "start": page + scraper_input.offset,
                 "f_AL": "true" if scraper_input.easy_apply else None,
+                "f_C": ','.join(map(str, scraper_input.linkedin_company_ids)) if scraper_input.linkedin_company_ids else None
             }
 
             params = {k: v for k, v in params.items() if v is not None}
@@ -130,8 +133,9 @@ class LinkedInScraper(Scraper):
                 except Exception as e:
                     raise LinkedInException("Exception occurred while processing jobs")
 
-            page += 25
-            time.sleep(random.uniform(LinkedInScraper.DELAY, LinkedInScraper.DELAY + 2))
+            if continue_search():
+                time.sleep(random.uniform(LinkedInScraper.DELAY, LinkedInScraper.DELAY + 2))
+                page += 25
 
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
