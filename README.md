@@ -29,18 +29,20 @@ _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/)
 ### Usage
 
 ```python
+import csv
 from jobspy import scrape_jobs
 
 jobs = scrape_jobs(
     site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor"],
     search_term="software engineer",
     location="Dallas, TX",
-    results_wanted=10,
+    results_wanted=20,
+    hours_old=72, # (only linkedin is hour specific, others round up to days old)
     country_indeed='USA'  # only needed for indeed / glassdoor
 )
 print(f"Found {len(jobs)} jobs")
 print(jobs.head())
-jobs.to_csv("jobs.csv", index=False) # to_xlsx
+jobs.to_csv("jobs.csv", quoting=csv.QUOTE_NONNUMERIC, escapechar="\\", index=False) # to_xlsx
 ```
 
 ### Output
@@ -73,6 +75,7 @@ Optional
 ├── linkedin_company_ids (list[int): searches for linkedin jobs with specific company ids
 ├── country_indeed (enum): filters the country on Indeed (see below for correct spelling)
 ├── offset (num): starts the search from an offset (e.g. 25 will start the search from the 25th result)
+├── hours_old (int): filters jobs by the number of hours since the job was posted (all but LinkedIn rounds up to next day)
 ```
 
 ### JobPost Schema
