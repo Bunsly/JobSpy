@@ -43,6 +43,8 @@ def scrape_jobs(
     full_description: bool | None = False,
     linkedin_company_ids: list[int] | None = None,
     offset: int | None = 0,
+    hours_old: int = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """
     Simultaneously scrapes job data from multiple job sites.
@@ -85,6 +87,7 @@ def scrape_jobs(
         results_wanted=results_wanted,
         linkedin_company_ids=linkedin_company_ids,
         offset=offset,
+        hours_old=hours_old
     )
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
