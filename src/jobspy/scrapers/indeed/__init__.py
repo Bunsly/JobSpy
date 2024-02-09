@@ -103,19 +103,6 @@ class IndeedScraper(Scraper):
             self.seen_urls.add(job_url)
             description = job_detailed['description']['html']
 
-            compensation = None
-            comp = job_detailed['compensation']['baseSalary']
-            if comp:
-                interval = CompensationInterval.get_interval(comp['unitOfWork'])
-                interval = self.get_correct_interval(comp['unitOfWork'])
-                if interval:
-                    compensation = Compensation(
-                        interval=interval,
-                        min_amount=round(comp['range'].get('min', 0), 2) if comp['range'].get(
-                            'min') is not None else None,
-                        max_amount = round(comp['range'].get('max', 0), 2) if comp['range'].get('max') is not None else None,
-                        currency=job_detailed['compensation']['currencyCode']
-                    )
 
             job_type = IndeedScraper.get_job_type(job)
             timestamp_seconds = job["pubDate"] / 1000
@@ -133,7 +120,7 @@ class IndeedScraper(Scraper):
                     country=self.country,
                 ),
                 job_type=job_type,
-                compensation=compensation,
+                compensation=self.get_compensation(job, job_detailed),
                 date_posted=date_posted,
                 job_url=job_url_client,
                 emails=extract_emails_from_text(description) if description else None,
@@ -254,6 +241,44 @@ class IndeedScraper(Scraper):
                         if job_type:
                             job_types.append(job_type)
         return job_types
+
+    @staticmethod
+    def get_compensation(job: dict, job_detailed: dict) -> Compensation:
+        """
+        Parses the job to get
+        :param job:
+        :param job_detailed:
+        :return: compensation object
+        """
+        comp = job_detailed['compensation']['baseSalary']
+        if comp:
+            interval = IndeedScraper.get_correct_interval(comp['unitOfWork'])
+            if interval:
+                return Compensation(
+                    interval=interval,
+                    min_amount=round(comp['range'].get('min'), 2) if comp['range'].get('min') is not None else None,
+                    max_amount=round(comp['range'].get('max'), 2) if comp['range'].get('max') is not None else None,
+                    currency=job_detailed['compensation']['currencyCode']
+                )
+
+        extracted_salary = job.get("extractedSalary")
+        compensation = None
+        if extracted_salary:
+            salary_snippet = job.get("salarySnippet")
+            currency = salary_snippet.get("currency") if salary_snippet else None
+            interval = (extracted_salary.get("type"),)
+            if isinstance(interval, tuple):
+                interval = interval[0]
+
+            interval = interval.upper()
+            if interval in CompensationInterval.__members__:
+                compensation = Compensation(
+                    interval=CompensationInterval[interval],
+                    min_amount=int(extracted_salary.get("min")),
+                    max_amount=int(extracted_salary.get("max")),
+                    currency=currency,
+                )
+        return compensation
 
     @staticmethod
     def parse_jobs(soup: BeautifulSoup) -> dict:
@@ -453,8 +478,10 @@ class IndeedScraper(Scraper):
     @staticmethod
     def get_correct_interval(interval: str) -> CompensationInterval:
         interval_mapping = {
+            "DAY": "DAILY",
             "YEAR": "YEARLY",
             "HOUR": "HOURLY",
+            "WEEK": "WEEKLY",
             "MONTH": "MONTHLY"
         }
         mapped_interval = interval_mapping.get(interval.upper(), None)
