@@ -67,7 +67,7 @@ Optional
 ├── job_type (enum): fulltime, parttime, internship, contract
 ├── proxy (str): in format 'http://user:pass@host:port' or [https, socks]
 ├── is_remote (bool)
-├── linkedin_full_description (bool): fetches full description for LinkedIn (slower)
+├── full_description (bool): fetches full description for LinkedIn (slower)
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
 ├── easy_apply (bool): filters for jobs that are hosted on the job board site
 ├── linkedin_company_ids (list[int): searches for linkedin jobs with specific company ids
