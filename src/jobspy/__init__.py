@@ -1,7 +1,6 @@
 import pandas as pd
 from typing import Tuple
-import concurrent.futures
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .jobs import JobType, Location
 from .scrapers.indeed import IndeedScraper
@@ -119,7 +118,7 @@ def scrape_jobs(
             executor.submit(worker, site): site for site in scraper_input.site_type
         }
 
-        for future in concurrent.futures.as_completed(future_to_site):
+        for future in as_completed(future_to_site):
             site_value, scraped_data = future.result()
             site_to_jobs_dict[site_value] = scraped_data
 

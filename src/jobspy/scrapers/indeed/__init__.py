@@ -6,8 +6,8 @@ This module contains routines to scrape Indeed.
 """
 import re
 import math
-import io
 import json
+import requests
 from typing import Any
 from datetime import datetime
 
@@ -80,13 +80,14 @@ class IndeedScraper(Scraper):
             raise IndeedException(str(e))
 
         soup = BeautifulSoup(response.content, "html.parser")
+        job_list = []
+        total_num_jobs = IndeedScraper.total_jobs(soup)
         if "did not match any jobs" in response.text:
-            raise IndeedException("Parsing exception: Search did not match any jobs")
+            return job_list, total_num_jobs
 
         jobs = IndeedScraper.parse_jobs(
             soup
         )  #: can raise exception, handled by main scrape function
-        total_num_jobs = IndeedScraper.total_jobs(soup)
 
         if (
             not jobs.get("metaData", {})
@@ -95,70 +96,51 @@ class IndeedScraper(Scraper):
         ):
             raise IndeedException("No jobs found.")
 
-        def process_job(job: dict) -> JobPost | None:
+        def process_job(job: dict, job_detailed: dict) -> JobPost | None:
             job_url = f'{self.url}/m/jobs/viewjob?jk={job["jobkey"]}'
             job_url_client = f'{self.url}/viewjob?jk={job["jobkey"]}'
             if job_url in self.seen_urls:
                 return None
+            self.seen_urls.add(job_url)
+            description = job_detailed['description']['html']
 
-            extracted_salary = job.get("extractedSalary")
-            compensation = None
-            if extracted_salary:
-                salary_snippet = job.get("salarySnippet")
-                currency = salary_snippet.get("currency") if salary_snippet else None
-                interval = (extracted_salary.get("type"),)
-                if isinstance(interval, tuple):
-                    interval = interval[0]
-
-                interval = interval.upper()
-                if interval in CompensationInterval.__members__:
-                    compensation = Compensation(
-                        interval=CompensationInterval[interval],
-                        min_amount=int(extracted_salary.get("min")),
-                        max_amount=int(extracted_salary.get("max")),
-                        currency=currency,
-                    )
 
             job_type = IndeedScraper.get_job_type(job)
             timestamp_seconds = job["pubDate"] / 1000
             date_posted = datetime.fromtimestamp(timestamp_seconds)
             date_posted = date_posted.strftime("%Y-%m-%d")
 
-            description = self.get_description(job_url) if scraper_input.full_description else None
-
-            with io.StringIO(job["snippet"]) as f:
-                soup_io = BeautifulSoup(f, "html.parser")
-                li_elements = soup_io.find_all("li")
-                if description is None and li_elements:
-                    description = " ".join(li.text for li in li_elements)
-
             job_post = JobPost(
                 title=job["normTitle"],
                 description=description,
                 company_name=job["company"],
-                company_url=self.url + job["companyOverviewLink"] if "companyOverviewLink" in job else None,
+                company_url=f"{self.url}{job_detailed['employer']['relativeCompanyPageUrl']}" if job_detailed['employer'] else None,
                 location=Location(
                     city=job.get("jobLocationCity"),
                     state=job.get("jobLocationState"),
                     country=self.country,
                 ),
                 job_type=job_type,
-                compensation=compensation,
+                compensation=self.get_compensation(job, job_detailed),
                 date_posted=date_posted,
                 job_url=job_url_client,
                 emails=extract_emails_from_text(description) if description else None,
                 num_urgent_words=count_urgent_words(description)
                 if description
                 else None,
-                is_remote=self.is_remote_job(job),
+                is_remote=IndeedScraper.is_job_remote(job, job_detailed, description)
+
             )
             return job_post
 
-        workers = 10 if scraper_input.full_description else 10  # possibly lessen 10 when fetching desc based on feedback
+        workers = 10
         jobs = jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]
+        job_keys = [job['jobkey'] for job in jobs]
+        jobs_detailed = self.get_job_details(job_keys)
+
         with ThreadPoolExecutor(max_workers=workers) as executor:
             job_results: list[Future] = [
-                executor.submit(process_job, job) for job in jobs
+                executor.submit(process_job, job, job_detailed['job']) for job, job_detailed in zip(jobs, jobs_detailed)
             ]
 
         job_list = [result.result() for result in job_results if result.result()]
@@ -171,26 +153,34 @@ class IndeedScraper(Scraper):
         :param scraper_input:
         :return: job_response
         """
-        pages_to_process = (
-            math.ceil(scraper_input.results_wanted / self.jobs_per_page) - 1
-        )
-
-        #: get first page to initialize session
         job_list, total_results = self.scrape_page(scraper_input, 0)
+        pages_processed = 1
 
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures: list[Future] = [
-                executor.submit(self.scrape_page, scraper_input, page)
-                for page in range(1, pages_to_process + 1)
-            ]
+        while len(self.seen_urls) < scraper_input.results_wanted:
+            pages_to_process = math.ceil((scraper_input.results_wanted - len(self.seen_urls)) / self.jobs_per_page)
+            new_jobs = False
 
-            for future in futures:
-                jobs, _ = future.result()
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures: list[Future] = [
+                    executor.submit(self.scrape_page, scraper_input, page + pages_processed)
+                    for page in range(pages_to_process)
+                ]
 
-                job_list += jobs
+                for future in futures:
+                    jobs, _ = future.result()
+                    if jobs:
+                        job_list += jobs
+                        new_jobs = True
+                    if len(self.seen_urls) >= scraper_input.results_wanted:
+                        break
 
-        if len(job_list) > scraper_input.results_wanted:
-            job_list = job_list[: scraper_input.results_wanted]
+            pages_processed += pages_to_process
+            if not new_jobs:
+                break
+
+
+        if len(self.seen_urls) > scraper_input.results_wanted:
+            job_list = job_list[:scraper_input.results_wanted]
 
         job_response = JobResponse(
             jobs=job_list,
@@ -260,6 +250,44 @@ class IndeedScraper(Scraper):
                         if job_type:
                             job_types.append(job_type)
         return job_types
+
+    @staticmethod
+    def get_compensation(job: dict, job_detailed: dict) -> Compensation:
+        """
+        Parses the job to get
+        :param job:
+        :param job_detailed:
+        :return: compensation object
+        """
+        comp = job_detailed['compensation']['baseSalary']
+        if comp:
+            interval = IndeedScraper.get_correct_interval(comp['unitOfWork'])
+            if interval:
+                return Compensation(
+                    interval=interval,
+                    min_amount=round(comp['range'].get('min'), 2) if comp['range'].get('min') is not None else None,
+                    max_amount=round(comp['range'].get('max'), 2) if comp['range'].get('max') is not None else None,
+                    currency=job_detailed['compensation']['currencyCode']
+                )
+
+        extracted_salary = job.get("extractedSalary")
+        compensation = None
+        if extracted_salary:
+            salary_snippet = job.get("salarySnippet")
+            currency = salary_snippet.get("currency") if salary_snippet else None
+            interval = (extracted_salary.get("type"),)
+            if isinstance(interval, tuple):
+                interval = interval[0]
+
+            interval = interval.upper()
+            if interval in CompensationInterval.__members__:
+                compensation = Compensation(
+                    interval=CompensationInterval[interval],
+                    min_amount=int(extracted_salary.get("min")),
+                    max_amount=int(extracted_salary.get("max")),
+                    currency=currency,
+                )
+        return compensation
 
     @staticmethod
     def parse_jobs(soup: BeautifulSoup) -> dict:
@@ -334,17 +362,6 @@ class IndeedScraper(Scraper):
         }
 
     @staticmethod
-    def is_remote_job(job: dict) -> bool:
-        """
-        :param job:
-        :return: bool
-        """
-        for taxonomy in job.get("taxonomyAttributes", []):
-            if taxonomy["label"] == "remote" and len(taxonomy["attributes"]) > 0:
-                return True
-        return False
-
-    @staticmethod
     def add_params(scraper_input: ScraperInput, page: int) -> dict[str, str | Any]:
         params = {
             "q": scraper_input.search_term,
@@ -369,3 +386,115 @@ class IndeedScraper(Scraper):
             params['iafilter'] = 1
 
         return params
+
+    @staticmethod
+    def is_job_remote(job: dict, job_detailed: dict, description: str) -> bool:
+        remote_keywords = ['remote', 'work from home', 'wfh']
+        is_remote_in_attributes = any(
+            any(keyword in attr['label'].lower() for keyword in remote_keywords)
+            for attr in job_detailed['attributes']
+        )
+        is_remote_in_description = any(keyword in description.lower() for keyword in remote_keywords)
+        is_remote_in_location = any(
+            keyword in job_detailed['location']['formatted']['long'].lower()
+            for keyword in remote_keywords
+        )
+        is_remote_in_taxonomy = any(
+            taxonomy["label"] == "remote" and len(taxonomy["attributes"]) > 0
+            for taxonomy in job.get("taxonomyAttributes", [])
+        )
+        return is_remote_in_attributes or is_remote_in_description or is_remote_in_location
+
+    @staticmethod
+    def get_job_details(job_keys: list[str]) -> dict:
+        """
+        Queries the GraphQL endpoint for detailed job information for the given job keys.
+        """
+        url = "https://apis.indeed.com/graphql"
+        headers = {
+            'Host': 'apis.indeed.com',
+            'content-type': 'application/json',
+            'indeed-api-key': '161092c2017b5bbab13edb12461a62d5a833871e7cad6d9d475304573de67ac8',
+            'accept': 'application/json',
+            'indeed-locale': 'en-US',
+            'accept-language': 'en-US,en;q=0.9',
+            'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Indeed App 193.1',
+            'indeed-app-info': 'appv=193.1; appid=com.indeed.jobsearch; osv=16.6.1; os=ios; dtype=phone',
+            'indeed-co': 'US',
+        }
+
+        job_keys_gql = '[' + ', '.join(f'"{key}"' for key in job_keys) + ']'
+
+        payload = {
+            "query": f"""
+            query GetJobData {{
+              jobData(input: {{
+                jobKeys: {job_keys_gql}
+              }}) {{
+                results {{
+                  job {{
+                    key
+                    title
+                    description {{
+                      html
+                    }}
+                    location {{
+                      countryName
+                      countryCode
+                      city
+                      postalCode
+                      streetAddress
+                      formatted {{
+                        short
+                        long
+                      }}
+                    }}
+                    compensation {{
+                      baseSalary {{
+                        unitOfWork
+                        range {{
+                          ... on Range {{
+                            min
+                            max
+                          }}
+                        }}
+                      }}
+                      currencyCode
+                    }}
+                    attributes {{
+                      label
+                    }}
+                    employer {{
+                      relativeCompanyPageUrl
+                    }}
+                    recruit {{
+                      viewJobUrl
+                      detailedSalary
+                      workSchedule
+                    }}
+                  }}
+                }}
+              }}
+            }}
+            """
+        }
+        response = requests.post(url, headers=headers, json=payload)
+        if response.status_code == 200:
+            return response.json()['data']['jobData']['results']
+        else:
+            return {}
+
+    @staticmethod
+    def get_correct_interval(interval: str) -> CompensationInterval:
+        interval_mapping = {
+            "DAY": "DAILY",
+            "YEAR": "YEARLY",
+            "HOUR": "HOURLY",
+            "WEEK": "WEEKLY",
+            "MONTH": "MONTHLY"
+        }
+        mapped_interval = interval_mapping.get(interval.upper(), None)
+        if mapped_interval and mapped_interval in CompensationInterval.__members__:
+            return CompensationInterval[mapped_interval]
+        else:
+            raise ValueError(f"Unsupported interval: {interval}")
