@@ -408,8 +408,7 @@ class IndeedScraper(Scraper):
         )
         return is_remote_in_attributes or is_remote_in_description or is_remote_in_location
 
-    @staticmethod
-    def get_job_details(job_keys: list[str]) -> dict:
+    def get_job_details(self, job_keys: list[str]) -> dict:
         """
         Queries the GraphQL endpoint for detailed job information for the given job keys.
         """
@@ -481,7 +480,7 @@ class IndeedScraper(Scraper):
             }}
             """
         }
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload, proxies=self.proxy)
         if response.status_code == 200:
             return response.json()['data']['jobData']['results']
         else:
