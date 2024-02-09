@@ -74,6 +74,7 @@ Optional
 ├── linkedin_company_ids (list[int): searches for linkedin jobs with specific company ids
 ├── country_indeed (enum): filters the country on Indeed (see below for correct spelling)
 ├── offset (num): starts the search from an offset (e.g. 25 will start the search from the 25th result)
+├── hours_old (int): filters jobs by the number of hours since the job was posted
 ```
 
 ### JobPost Schema
