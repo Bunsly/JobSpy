@@ -80,13 +80,14 @@ class IndeedScraper(Scraper):
             raise IndeedException(str(e))
 
         soup = BeautifulSoup(response.content, "html.parser")
+        job_list = []
+        total_num_jobs = IndeedScraper.total_jobs(soup)
         if "did not match any jobs" in response.text:
-            raise IndeedException("Parsing exception: Search did not match any jobs")
+            return job_list, total_num_jobs
 
         jobs = IndeedScraper.parse_jobs(
             soup
         )  #: can raise exception, handled by main scrape function
-        total_num_jobs = IndeedScraper.total_jobs(soup)
 
         if (
             not jobs.get("metaData", {})
@@ -152,26 +153,34 @@ class IndeedScraper(Scraper):
         :param scraper_input:
         :return: job_response
         """
-        pages_to_process = (
-            math.ceil(scraper_input.results_wanted / self.jobs_per_page) - 1
-        )
-
-        #: get first page to initialize session
         job_list, total_results = self.scrape_page(scraper_input, 0)
+        pages_processed = 1
 
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures: list[Future] = [
-                executor.submit(self.scrape_page, scraper_input, page)
-                for page in range(1, pages_to_process + 1)
-            ]
+        while len(self.seen_urls) < scraper_input.results_wanted:
+            pages_to_process = math.ceil((scraper_input.results_wanted - len(self.seen_urls)) / self.jobs_per_page)
+            new_jobs = False
 
-            for future in futures:
-                jobs, _ = future.result()
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures: list[Future] = [
+                    executor.submit(self.scrape_page, scraper_input, page + pages_processed)
+                    for page in range(pages_to_process)
+                ]
 
-                job_list += jobs
+                for future in futures:
+                    jobs, _ = future.result()
+                    if jobs:
+                        job_list += jobs
+                        new_jobs = True
+                    if len(self.seen_urls) >= scraper_input.results_wanted:
+                        break
 
-        if len(job_list) > scraper_input.results_wanted:
-            job_list = job_list[: scraper_input.results_wanted]
+            pages_processed += pages_to_process
+            if not new_jobs:
+                break
+
+
+        if len(self.seen_urls) > scraper_input.results_wanted:
+            job_list = job_list[:scraper_input.results_wanted]
 
         job_response = JobResponse(
             jobs=job_list,
