@@ -192,4 +192,4 @@ def scrape_jobs(
     else:
         jobs_formatted_df = pd.DataFrame()
 
-    return jobs_formatted_df
+    return jobs_formatted_df.sort_values(by='date_posted', ascending=False)

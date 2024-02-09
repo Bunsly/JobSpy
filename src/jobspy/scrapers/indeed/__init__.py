@@ -364,7 +364,7 @@ class IndeedScraper(Scraper):
     @staticmethod
     def add_params(scraper_input: ScraperInput, page: int) -> dict[str, str | Any]:
         # `fromage` is the posting time filter in days
-        fromage = min(scraper_input.hours_old // 24, 1) if scraper_input.hours_old else None
+        fromage = max(scraper_input.hours_old // 24, 1) if scraper_input.hours_old else None
         params = {
             "q": scraper_input.search_term,
             "l": scraper_input.location if scraper_input.location else scraper_input.country.value[0].split(',')[-1],

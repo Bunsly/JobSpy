@@ -165,6 +165,9 @@ class ZipRecruiterScraper(Scraper):
             "search": scraper_input.search_term,
             "location": scraper_input.location,
         }
+        if scraper_input.hours_old:
+            fromage = max(scraper_input.hours_old // 24, 1) if scraper_input.hours_old else None
+            params['days'] = fromage
         job_type_value = None
         if scraper_input.job_type:
             if scraper_input.job_type.value == "fulltime":
