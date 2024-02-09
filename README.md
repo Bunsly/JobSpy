@@ -37,6 +37,7 @@ jobs = scrape_jobs(
     location="Dallas, TX",
     results_wanted=10,
     country_indeed='USA'  # only needed for indeed / glassdoor
+    # full_description=True (get full description for LinkedIn/Indeed; slower)
 )
 print(f"Found {len(jobs)} jobs")
 print(jobs.head())
