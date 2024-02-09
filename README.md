@@ -37,7 +37,7 @@ jobs = scrape_jobs(
     search_term="software engineer",
     location="Dallas, TX",
     results_wanted=20,
-    hours_old=72, # (only linedin is hour specific, others round up to days old)
+    hours_old=72, # (only linkedin is hour specific, others round up to days old)
     country_indeed='USA'  # only needed for indeed / glassdoor
 )
 print(f"Found {len(jobs)} jobs")
