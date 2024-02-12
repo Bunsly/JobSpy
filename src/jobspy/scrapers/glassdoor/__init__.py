@@ -6,7 +6,6 @@ This module contains routines to scrape Glassdoor.
 """
 import json
 import requests
-from bs4 import BeautifulSoup
 from typing import Optional
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -14,7 +13,7 @@ from ..utils import count_urgent_words, extract_emails_from_text
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import GlassdoorException
-from ..utils import create_session, modify_and_get_description
+from ..utils import create_session
 from ...jobs import (
     JobPost,
     Compensation,
@@ -35,6 +34,7 @@ class GlassdoorScraper(Scraper):
 
         self.url = None
         self.country = None
+        self.session = None
         self.jobs_per_page = 30
         self.seen_urls = set()
 
@@ -53,8 +53,7 @@ class GlassdoorScraper(Scraper):
             payload = self.add_payload(
                 scraper_input, location_id, location_type, page_num, cursor
             )
-            session = create_session(self.proxy, is_tls=False, has_retry=True)
-            response = session.post(
+            response = self.session.post(
                 f"{self.url}/graph", headers=self.headers(), timeout=10, data=payload
             )
             if response.status_code != 200:
@@ -73,7 +72,6 @@ class GlassdoorScraper(Scraper):
         with ThreadPoolExecutor(max_workers=self.jobs_per_page) as executor:
             future_to_job_data = {executor.submit(self.process_job, job): job for job in jobs_data}
             for future in as_completed(future_to_job_data):
-                job_data = future_to_job_data[future]
                 try:
                     job_post = future.result()
                     if job_post:
@@ -111,7 +109,7 @@ class GlassdoorScraper(Scraper):
 
         try:
             description = self.fetch_job_description(job_id)
-        except Exception as e :
+        except:
             description = None
 
         job_post = JobPost(
@@ -145,6 +143,8 @@ class GlassdoorScraper(Scraper):
         all_jobs: list[JobPost] = []
         cursor = None
         max_pages = 30
+        self.session = create_session(self.proxy, is_tls=False, has_retry=True)
+        self.session.get(self.url)
 
         try:
             for page in range(
@@ -201,8 +201,7 @@ class GlassdoorScraper(Scraper):
             return None
         data = response.json()[0]
         desc = data['data']['jobview']['job']['description']
-        soup = BeautifulSoup(desc, 'html.parser')
-        return modify_and_get_description(soup)
+        return desc
 
     @staticmethod
     def parse_compensation(data: dict) -> Optional[Compensation]:
@@ -267,7 +266,6 @@ class GlassdoorScraper(Scraper):
             filter_params.append({"filterKey": "fromAge", "values": str(fromage)})
         payload = {
             "operationName": "JobSearchResultsQuery",
-
             "variables": {
                 "excludeJobListingIds": [],
                 "filterParams": filter_params,
@@ -281,21 +279,177 @@ class GlassdoorScraper(Scraper):
                 "fromage": fromage,
                 "sort": "date"
             },
-            "query": "query JobSearchResultsQuery($excludeJobListingIds: [Long!], $keyword: String, $locationId: Int, $locationType: LocationTypeEnum, $numJobsToShow: Int!, $pageCursor: String, $pageNumber: Int, $filterParams: [FilterParams], $originalPageUrl: String, $seoFriendlyUrlInput: String, $parameterUrlInput: String, $seoUrl: Boolean) {\n  jobListings(\n    contextHolder: {searchParams: {excludeJobListingIds: $excludeJobListingIds, keyword: $keyword, locationId: $locationId, locationType: $locationType, numPerPage: $numJobsToShow, pageCursor: $pageCursor, pageNumber: $pageNumber, filterParams: $filterParams, originalPageUrl: $originalPageUrl, seoFriendlyUrlInput: $seoFriendlyUrlInput, parameterUrlInput: $parameterUrlInput, seoUrl: $seoUrl, searchType: SR}}\n  ) {\n    companyFilterOptions {\n      id\n      shortName\n      __typename\n    }\n    filterOptions\n    indeedCtk\n    jobListings {\n      ...JobView\n      __typename\n    }\n    jobListingSeoLinks {\n      linkItems {\n        position\n        url\n        __typename\n      }\n      __typename\n    }\n    jobSearchTrackingKey\n    jobsPageSeoData {\n      pageMetaDescription\n      pageTitle\n      __typename\n    }\n    paginationCursors {\n      cursor\n      pageNumber\n      __typename\n    }\n    indexablePageForSeo\n    searchResultsMetadata {\n      searchCriteria {\n        implicitLocation {\n          id\n          localizedDisplayName\n          type\n          __typename\n        }\n        keyword\n        location {\n          id\n          shortName\n          localizedShortName\n          localizedDisplayName\n          type\n          __typename\n        }\n        __typename\n      }\n      footerVO {\n        countryMenu {\n          childNavigationLinks {\n            id\n            link\n            textKey\n            __typename\n          }\n          __typename\n        }\n        __typename\n      }\n      helpCenterDomain\n      helpCenterLocale\n      jobAlert {\n        jobAlertExists\n        __typename\n      }\n      jobSerpFaq {\n        questions {\n          answer\n          question\n          __typename\n        }\n        __typename\n      }\n      jobSerpJobOutlook {\n        occupation\n        paragraph\n        __typename\n      }\n      showMachineReadableJobs\n      __typename\n    }\n    serpSeoLinksVO {\n      relatedJobTitlesResults\n      searchedJobTitle\n      searchedKeyword\n      searchedLocationIdAsString\n      searchedLocationSeoName\n      searchedLocationType\n      topCityIdsToNameResults {\n        key\n        value\n        __typename\n      }\n      topEmployerIdsToNameResults {\n        key\n        value\n        __typename\n      }\n      topEmployerNameResults\n      topOccupationResults\n      __typename\n    }\n    totalJobsCount\n    __typename\n  }\n}\n\nfragment JobView on JobListingSearchResult {\n  jobview {\n    header {\n      adOrderId\n      advertiserType\n      adOrderSponsorshipLevel\n      ageInDays\n      divisionEmployerName\n      easyApply\n      employer {\n        id\n        name\n        shortName\n        __typename\n      }\n      employerNameFromSearch\n      goc\n      gocConfidence\n      gocId\n      jobCountryId\n      jobLink\n      jobResultTrackingKey\n      jobTitleText\n      locationName\n      locationType\n      locId\n      needsCommission\n      payCurrency\n      payPeriod\n      payPeriodAdjustedPay {\n        p10\n        p50\n        p90\n        __typename\n      }\n      rating\n      salarySource\n      savedJobId\n      sponsored\n      __typename\n    }\n    job {\n      descriptionFragments\n      importConfigId\n      jobTitleId\n      jobTitleText\n      listingId\n      __typename\n    }\n    jobListingAdminDetails {\n      cpcVal\n      importConfigId\n      jobListingId\n      jobSourceId\n      userEligibleForAdminJobDetails\n      __typename\n    }\n    overview {\n      shortName\n      squareLogoUrl\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n",
+            "query": """
+            query JobSearchResultsQuery(
+                $excludeJobListingIds: [Long!], 
+                $keyword: String, 
+                $locationId: Int, 
+                $locationType: LocationTypeEnum, 
+                $numJobsToShow: Int!, 
+                $pageCursor: String, 
+                $pageNumber: Int, 
+                $filterParams: [FilterParams], 
+                $originalPageUrl: String, 
+                $seoFriendlyUrlInput: String, 
+                $parameterUrlInput: String, 
+                $seoUrl: Boolean
+            ) {
+                jobListings(
+                    contextHolder: {
+                        searchParams: {
+                            excludeJobListingIds: $excludeJobListingIds, 
+                            keyword: $keyword, 
+                            locationId: $locationId, 
+                            locationType: $locationType, 
+                            numPerPage: $numJobsToShow, 
+                            pageCursor: $pageCursor, 
+                            pageNumber: $pageNumber, 
+                            filterParams: $filterParams, 
+                            originalPageUrl: $originalPageUrl, 
+                            seoFriendlyUrlInput: $seoFriendlyUrlInput, 
+                            parameterUrlInput: $parameterUrlInput, 
+                            seoUrl: $seoUrl, 
+                            searchType: SR
+                        }
+                    }
+                ) {
+                    companyFilterOptions {
+                        id
+                        shortName
+                        __typename
+                    }
+                    filterOptions
+                    indeedCtk
+                    jobListings {
+                        ...JobView
+                        __typename
+                    }
+                    jobListingSeoLinks {
+                        linkItems {
+                            position
+                            url
+                            __typename
+                        }
+                        __typename
+                    }
+                    jobSearchTrackingKey
+                    jobsPageSeoData {
+                        pageMetaDescription
+                        pageTitle
+                        __typename
+                    }
+                    paginationCursors {
+                        cursor
+                        pageNumber
+                        __typename
+                    }
+                    indexablePageForSeo
+                    searchResultsMetadata {
+                        searchCriteria {
+                            implicitLocation {
+                                id
+                                localizedDisplayName
+                                type
+                                __typename
+                            }
+                            keyword
+                            location {
+                                id
+                                shortName
+                                localizedShortName
+                                localizedDisplayName
+                                type
+                                __typename
+                            }
+                            __typename
+                        }
+                        helpCenterDomain
+                        helpCenterLocale
+                        jobSerpJobOutlook {
+                            occupation
+                            paragraph
+                            __typename
+                        }
+                        showMachineReadableJobs
+                        __typename
+                    }
+                    totalJobsCount
+                    __typename
+                }
+            }
+
+            fragment JobView on JobListingSearchResult {
+                jobview {
+                    header {
+                        adOrderId
+                        advertiserType
+                        adOrderSponsorshipLevel
+                        ageInDays
+                        divisionEmployerName
+                        easyApply
+                        employer {
+                            id
+                            name
+                            shortName
+                            __typename
+                        }
+                        employerNameFromSearch
+                        goc
+                        gocConfidence
+                        gocId
+                        jobCountryId
+                        jobLink
+                        jobResultTrackingKey
+                        jobTitleText
+                        locationName
+                        locationType
+                        locId
+                        needsCommission
+                        payCurrency
+                        payPeriod
+                        payPeriodAdjustedPay {
+                            p10
+                            p50
+                            p90
+                            __typename
+                        }
+                        rating
+                        salarySource
+                        savedJobId
+                        sponsored
+                        __typename
+                    }
+                    job {
+                        description
+                        importConfigId
+                        jobTitleId
+                        jobTitleText
+                        listingId
+                        __typename
+                    }
+                    jobListingAdminDetails {
+                        cpcVal
+                        importConfigId
+                        jobListingId
+                        jobSourceId
+                        userEligibleForAdminJobDetails
+                        __typename
+                    }
+                    overview {
+                        shortName
+                        squareLogoUrl
+                        __typename
+                    }
+                    __typename
+                }
+                __typename
+            }
+            """
         }
 
-        job_type_filters = {
-            JobType.FULL_TIME: "fulltime",
-            JobType.PART_TIME: "parttime",
-            JobType.CONTRACT: "contract",
-            JobType.INTERNSHIP: "internship",
-            JobType.TEMPORARY: "temporary",
-        }
-
-        if scraper_input.job_type in job_type_filters:
-            filter_value = job_type_filters[scraper_input.job_type]
+        if scraper_input.job_type:
             payload["variables"]["filterParams"].append(
-                {"filterKey": "jobType", "values": filter_value}
+                {"filterKey": "jobType", "values": scraper_input.job_type.value[0]}
             )
         return json.dumps([payload])
 
@@ -331,7 +485,6 @@ class GlassdoorScraper(Scraper):
             "apollographql-client-name": "job-search-next",
             "apollographql-client-version": "4.65.5",
             "content-type": "application/json",
-            "cookie": 'gdId=91e2dfc4-c8b5-4fa7-83d0-11512b80262c; G_ENABLED_IDPS=google; trs=https%3A%2F%2Fwww.redhat.com%2F:referral:referral:2023-07-05+09%3A50%3A14.862:undefined:undefined; g_state={"i_p":1688587331651,"i_l":1}; _cfuvid=.7llazxhYFZWi6EISSPdVjtqF0NMVwzxr_E.cB1jgLs-1697828392979-0-604800000; GSESSIONID=undefined; JSESSIONID=F03DD1B5EE02DB6D842FE42B142F88F3; cass=1; jobsClicked=true; indeedCtk=1hd77b301k79i801; asst=1697829114.2; G_AUTHUSER_H=0; uc=8013A8318C98C517FE6DD0024636DFDEF978FC33266D93A2FAFEF364EACA608949D8B8FA2DC243D62DE271D733EB189D809ABE5B08D7B1AE865D217BD4EEBB97C282F5DA5FEFE79C937E3F6110B2A3A0ADBBA3B4B6DF5A996FEE00516100A65FCB11DA26817BE8D1C1BF6CFE36B5B68A3FDC2CFEC83AB797F7841FBB157C202332FC7E077B56BD39B167BDF3D9866E3B; AWSALB=zxc/Yk1nbWXXT6HjNyn3H4h4950ckVsFV/zOrq5LSoChYLE1qV+hDI8Axi3fUa9rlskndcO0M+Fw+ZnJ+AQ2afBFpyOd1acouLMYgkbEpqpQaWhY6/Gv4QH1zBcJ; AWSALBCORS=zxc/Yk1nbWXXT6HjNyn3H4h4950ckVsFV/zOrq5LSoChYLE1qV+hDI8Axi3fUa9rlskndcO0M+Fw+ZnJ+AQ2afBFpyOd1acouLMYgkbEpqpQaWhY6/Gv4QH1zBcJ; gdsid=1697828393025:1697830776351:668396EDB9E6A832022D34414128093D; at=HkH8Hnqi9uaMC7eu0okqyIwqp07ht9hBvE1_St7E_hRqPvkO9pUeJ1Jcpds4F3g6LL5ADaCNlxrPn0o6DumGMfog8qI1-zxaV_jpiFs3pugntw6WpVyYWdfioIZ1IDKupyteeLQEM1AO4zhGjY_rPZynpsiZBPO_B1au94sKv64rv23yvP56OiWKKfI-8_9hhLACEwWvM-Az7X-4aE2QdFt93VJbXbbGVf07bdDZfimsIkTtgJCLSRhU1V0kEM1Efyu66vo3m77gFFaMW7lxyYnb36I5PdDtEXBm3aL-zR7-qa5ywd94ISEivgqQOA4FPItNhqIlX4XrfD1lxVz6rfPaoTIDi4DI6UMCUjwyPsuv8mn0rYqDfRnmJpZ97fJ5AnhrknAd_6ZWN5v1OrxJczHzcXd8LO820QPoqxzzG13bmSTXLwGSxMUCtSrVsq05hicimQ3jpRt0c1dA4OkTNqF7_770B9JfcHcM8cr8-C4IL56dnOjr9KBGfN1Q2IvZM2cOBRbV7okiNOzKVZ3qJ24AE34WA2F3U6Whiu6H8nIuGG5hSNkVygY6CtglNZfFF9p8pJAZm79PngrrBv-CXFBZmhYLFo46lmFetDkiJ6mirtez4tKpzTIYjIp4_JAkiZFwbLJ2QGH4mK8kyyW0lZiX1DTuQec50N_5wvRo0Gt7nlKxzLsApMnaNhuQeH5ygh_pa381ORo9mQGi0EYF9zk00pa2--z4PtjfQ8KFq36GgpxKy5-o4qgqygZj8F01L8r-FiX2G4C7PREMIpAyHX2A4-_JxA1IS2j12EyqKTLqE9VcP06qm2Z-YuIW3ctmpMxy5G9_KiEiGv17weizhSFnl6SbpAEY-2VSmQ5V6jm3hoMp2jemkuGCRkZeFstLDEPxlzFN7WM; __cf_bm=zGaVjIJw4irf40_7UVw54B6Ohm271RUX4Tc8KVScrbs-1697830777-0-AYv2GnKTnnCU+cY9xHbJunO0DwlLDO6SIBnC/s/qldpKsGK0rRAjD6y8lbyATT/KlS7g29OZaN4fbd0lrJg0KmWbIybZIzfWVLHSYePVuOhu; asst=1697829114.2; at=dFhXf64wsf2TlnWy41xLs7skJkuxgKToEGcjGtDfUvW4oEAJ4tTIR5dKQ8wbwT75aIaGgdCfvcb-da7vwrCGWscCncmfLFQpJ9l-LLwoRfk-pMsxHhd77wvf-W7I0HSm7-Q5lQJqI9WyNGRxOa-RpzBTf4L8_Et4-3FzjPaAoYY5pY1FhuwXbN5asGOAMW-p8cjpbfn3PumlIYuckguWnjrcY2F31YJ_1noeoHM9tCGpymANbqGXRkG6aXY7yCfVXtdgZU1K5SMeaSPZIuF_iLUxjc_corzpNiH6qq7BIAmh-e5Aa-g7cwpZcln1fmwTVw4uTMZf1eLIMTa9WzgqZNkvG-sGaq_XxKA_Wai6xTTkOHfRgm4632Ba2963wdJvkGmUUa3tb_L4_wTgk3eFnHp5JhghLfT2Pe3KidP-yX__vx8JOsqe3fndCkKXgVz7xQKe1Dur-sMNlGwi4LXfguTT2YUI8C5Miq3pj2IHc7dC97eyyAiAM4HvyGWfaXWZcei6oIGrOwMvYgy0AcwFry6SIP2SxLT5TrxinRRuem1r1IcOTJsMJyUPp1QsZ7bOyq9G_0060B4CPyovw5523hEuqLTM-R5e5yavY6C_1DHUyE15C3mrh7kdvmlGZeflnHqkFTEKwwOftm-Mv-CKD5Db9ABFGNxKB2FH7nDH67hfOvm4tGNMzceBPKYJ3wciTt9jK3wy39_7cOYVywfrZ-oLhw_XtsbGSSeGn3HytrfgSADAh2sT0Gg6eCC9Xy1vh-Za337SVLUDXZ73W2xJxxUHBkFzZs8L_Xndo5DsbpWhVs9IYUGyraJdqB3SLgDbAppIBCJl4fx6_DG8-xOQPBvuFMlTROe1JVdHOzXI1GElwFDTuH1pjkg4I2G0NhAbE06Y-1illQE; gdsid=1697828393025:1697831731408:99C30D94108AC3030D61C736DDCDF11C',
             "gd-csrf-token": "Ft6oHEWlRZrxDww95Cpazw:0pGUrkb2y3TyOpAIqF2vbPmUXoXVkD3oEGDVkvfeCerceQ5-n8mBg3BovySUIjmCPHCaW0H2nQVdqzbtsYqf4Q:wcqRqeegRUa9MVLJGyujVXB7vWFPjdaS1CtrrzJq-ok",
             "origin": "https://www.glassdoor.com",
             "referer": "https://www.glassdoor.com/",

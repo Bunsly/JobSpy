@@ -9,13 +9,12 @@ import time
 from datetime import datetime, timezone
 from typing import Optional, Tuple, Any
 
-from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import ZipRecruiterException
 from ...jobs import JobPost, Compensation, Location, JobResponse, JobType, Country
-from ..utils import count_urgent_words, extract_emails_from_text, create_session, modify_and_get_description
+from ..utils import count_urgent_words, extract_emails_from_text, create_session
 
 
 class ZipRecruiterScraper(Scraper):
@@ -107,9 +106,7 @@ class ZipRecruiterScraper(Scraper):
             return
         self.seen_urls.add(job_url)
 
-        job_description_html = job.get("job_description", "").strip()
-        description_soup = BeautifulSoup(job_description_html, "html.parser")
-        description = modify_and_get_description(description_soup)
+        description = job.get("job_description", "").strip()
 
         company = job.get("hiring_company", {}).get("name")
         country_value = "usa" if job.get("job_country") == "US" else "canada"
@@ -168,25 +165,16 @@ class ZipRecruiterScraper(Scraper):
         if scraper_input.hours_old:
             fromage = max(scraper_input.hours_old // 24, 1) if scraper_input.hours_old else None
             params['days'] = fromage
-        job_type_value = None
+        job_type_map = {
+            JobType.FULL_TIME: 'full_time',
+            JobType.PART_TIME: 'part_time'
+        }
         if scraper_input.job_type:
-            if scraper_input.job_type.value == "fulltime":
-                job_type_value = "full_time"
-            elif scraper_input.job_type.value == "parttime":
-                job_type_value = "part_time"
-            else:
-                job_type_value = scraper_input.job_type.value
+            params['employment_type'] = job_type_map[scraper_input.job_type] if scraper_input.job_type in job_type_map else scraper_input.job_type.value[0]
         if scraper_input.easy_apply:
             params['zipapply'] = 1
-
-        if job_type_value:
-            params[
-                "refine_by_employment"
-            ] = f"employment_type:employment_type:{job_type_value}"
-
         if scraper_input.is_remote:
-            params["refine_by_location_type"] = "only_remote"
-
+            params["remote"] = 1
         if scraper_input.distance:
             params["radius"] = scraper_input.distance
 

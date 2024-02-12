@@ -1,4 +1,5 @@
 import re
+import logging
 import numpy as np
 
 import tls_client
@@ -7,14 +8,14 @@ from requests.adapters import HTTPAdapter, Retry
 
 from ..jobs import JobType
 
-
-def modify_and_get_description(soup):
-    for li in soup.find_all('li'):
-        li.string = "- " + li.get_text()
-
-    description = soup.get_text(separator='\n').strip()
-    description = re.sub(r'\n+', '\n', description)
-    return description
+logger = logging.getLogger("JobSpy")
+if not logger.handlers:
+    logger.setLevel(logging.ERROR)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.ERROR)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
 
 def count_urgent_words(description: str) -> int:
@@ -79,6 +80,7 @@ def get_enum_from_job_type(job_type_str: str) -> JobType | None:
             res = job_type
     return res
 
+
 def currency_parser(cur_str):
     # Remove any non-numerical characters
     # except for ',' '.' or '-' (e.g. EUR)
@@ -94,3 +96,5 @@ def currency_parser(cur_str):
         num = float(cur_str)
 
     return np.round(num, 2)
+
+
