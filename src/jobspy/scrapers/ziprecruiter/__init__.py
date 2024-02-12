@@ -165,7 +165,6 @@ class ZipRecruiterScraper(Scraper):
         if scraper_input.hours_old:
             fromage = max(scraper_input.hours_old // 24, 1) if scraper_input.hours_old else None
             params['days'] = fromage
-        job_type_value = None
         job_type_map = {
             JobType.FULL_TIME: 'full_time',
             JobType.PART_TIME: 'part_time'
@@ -174,15 +173,8 @@ class ZipRecruiterScraper(Scraper):
             params['employment_type'] = job_type_map[scraper_input.job_type] if scraper_input.job_type in job_type_map else scraper_input.job_type.value[0]
         if scraper_input.easy_apply:
             params['zipapply'] = 1
-
-        if job_type_value:
-            params[
-                "empl"
-            ] = f"employment_type:employment_type:{job_type_value}"
-
         if scraper_input.is_remote:
             params["remote"] = 1
-
         if scraper_input.distance:
             params["radius"] = scraper_input.distance
 
