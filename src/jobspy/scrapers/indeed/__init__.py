@@ -49,7 +49,7 @@ class IndeedScraper(Scraper):
 
     def scrape_page(
         self, scraper_input: ScraperInput, page: int
-    ) -> tuple[list[JobPost], int]:
+    ) -> list[JobPost]:
         """
         Scrapes a page of Indeed for jobs with scraper_input criteria
         :param scraper_input:
@@ -57,7 +57,6 @@ class IndeedScraper(Scraper):
         :return: jobs found on page, total number of jobs found for search
         """
         job_list = []
-        total_num_jobs = 0
         self.country = scraper_input.country
         domain = self.country.indeed_domain_value
         self.url = f"https://{domain}.indeed.com"
@@ -80,12 +79,11 @@ class IndeedScraper(Scraper):
                 logger.error(f'Indeed: Bad proxy')
             else:
                 logger.error(f'Indeed: {str(e)}')
-            return job_list, total_num_jobs
+            return job_list
 
         soup = BeautifulSoup(response.content, "html.parser")
-        total_num_jobs = IndeedScraper.total_jobs(soup)
         if "did not match any jobs" in response.text:
-            return job_list, total_num_jobs
+            return job_list
 
         jobs = IndeedScraper.parse_jobs(
             soup
@@ -147,7 +145,7 @@ class IndeedScraper(Scraper):
 
         job_list = [result.result() for result in job_results if result.result()]
 
-        return job_list, total_num_jobs
+        return job_list
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -155,7 +153,7 @@ class IndeedScraper(Scraper):
         :param scraper_input:
         :return: job_response
         """
-        job_list, total_results = self.scrape_page(scraper_input, 0)
+        job_list = self.scrape_page(scraper_input, 0)
         pages_processed = 1
 
         while len(self.seen_urls) < scraper_input.results_wanted:
@@ -169,7 +167,7 @@ class IndeedScraper(Scraper):
                 ]
 
                 for future in futures:
-                    jobs, _ = future.result()
+                    jobs = future.result()
                     if jobs:
                         job_list += jobs
                         new_jobs = True
@@ -184,11 +182,7 @@ class IndeedScraper(Scraper):
         if len(self.seen_urls) > scraper_input.results_wanted:
             job_list = job_list[:scraper_input.results_wanted]
 
-        job_response = JobResponse(
-            jobs=job_list,
-            total_results=total_results,
-        )
-        return job_response
+        return JobResponse(jobs=job_list)
 
     @staticmethod
     def get_job_type(job: dict) -> list[JobType] | None:
@@ -287,24 +281,6 @@ class IndeedScraper(Scraper):
             raise IndeedException(
                 "Could not find any results for the search"
             )
-
-    @staticmethod
-    def total_jobs(soup: BeautifulSoup) -> int:
-        """
-        Parses the total jobs for that search from soup object
-        :param soup:
-        :return: total_num_jobs
-        """
-        script = soup.find("script", string=lambda t: t and "window._initialData" in t)
-
-        pattern = re.compile(r"window._initialData\s*=\s*({.*})\s*;", re.DOTALL)
-        match = pattern.search(script.string)
-        total_num_jobs = 0
-        if match:
-            json_str = match.group(1)
-            data = json.loads(json_str)
-            total_num_jobs = int(data["searchTitleBarModel"]["totalNumResults"])
-        return total_num_jobs
 
     @staticmethod
     def get_headers():
