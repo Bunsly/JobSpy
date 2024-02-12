@@ -11,7 +11,6 @@ import requests
 from typing import Any
 from datetime import datetime
 
-import urllib.parse
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
@@ -22,7 +21,7 @@ from ..utils import (
     extract_emails_from_text,
     create_session,
     get_enum_from_job_type,
-    modify_and_get_description
+    logger
 )
 from ...jobs import (
     JobPost,
@@ -57,6 +56,8 @@ class IndeedScraper(Scraper):
         :param page:
         :return: jobs found on page, total number of jobs found for search
         """
+        job_list = []
+        total_num_jobs = 0
         self.country = scraper_input.country
         domain = self.country.indeed_domain_value
         self.url = f"https://{domain}.indeed.com"
@@ -76,11 +77,12 @@ class IndeedScraper(Scraper):
                 )
         except Exception as e:
             if "Proxy responded with" in str(e):
-                raise IndeedException("bad proxy")
-            raise IndeedException(str(e))
+                logger.error(f'Indeed: Bad proxy')
+            else:
+                logger.error(f'Indeed: {str(e)}')
+            return job_list, total_num_jobs
 
         soup = BeautifulSoup(response.content, "html.parser")
-        job_list = []
         total_num_jobs = IndeedScraper.total_jobs(soup)
         if "did not match any jobs" in response.text:
             return job_list, total_num_jobs
@@ -187,50 +189,6 @@ class IndeedScraper(Scraper):
             total_results=total_results,
         )
         return job_response
-
-    def get_description(self, job_page_url: str) -> str | None:
-        """
-        Retrieves job description by going to the job page url
-        :param job_page_url:
-        :return: description
-        """
-        parsed_url = urllib.parse.urlparse(job_page_url)
-        params = urllib.parse.parse_qs(parsed_url.query)
-        jk_value = params.get("jk", [None])[0]
-        formatted_url = f"{self.url}/m/viewjob?jk={jk_value}&spa=1"
-        session = create_session(self.proxy)
-
-        try:
-            response = session.get(
-                formatted_url,
-                headers=self.get_headers(),
-                allow_redirects=True,
-                timeout_seconds=5,
-            )
-        except Exception as e:
-            return None
-
-        if response.status_code not in range(200, 400):
-            return None
-
-        try:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            script_tags = soup.find_all('script')
-
-            job_description = ''
-            for tag in script_tags:
-                if 'window._initialData' in tag.text:
-                    json_str = tag.text
-                    json_str = json_str.split('window._initialData=')[1]
-                    json_str = json_str.rsplit(';', 1)[0]
-                    data = json.loads(json_str)
-                    job_description = data["jobInfoWrapperModel"]["jobInfoModel"]["sanitizedJobDescription"]
-                    break
-        except (KeyError, TypeError, IndexError):
-            return None
-
-        soup = BeautifulSoup(job_description, "html.parser")
-        return modify_and_get_description(soup)
 
     @staticmethod
     def get_job_type(job: dict) -> list[JobType] | None:
@@ -380,7 +338,7 @@ class IndeedScraper(Scraper):
         if scraper_input.is_remote:
             sc_values.append("attr(DSQF7)")
         if scraper_input.job_type:
-            sc_values.append("jt({})".format(scraper_input.job_type.value))
+            sc_values.append("jt({})".format(scraper_input.job_type.value[0]))
 
         if sc_values:
             params["sc"] = "0kf:" + "".join(sc_values) + ";"
@@ -406,7 +364,7 @@ class IndeedScraper(Scraper):
             taxonomy["label"] == "remote" and len(taxonomy["attributes"]) > 0
             for taxonomy in job.get("taxonomyAttributes", [])
         )
-        return is_remote_in_attributes or is_remote_in_description or is_remote_in_location
+        return is_remote_in_attributes or is_remote_in_description or is_remote_in_location or is_remote_in_taxonomy
 
     def get_job_details(self, job_keys: list[str]) -> dict:
         """

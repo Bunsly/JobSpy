@@ -31,8 +31,7 @@ from ..utils import (
     count_urgent_words,
     extract_emails_from_text,
     get_enum_from_job_type,
-    currency_parser,
-    modify_and_get_description
+    currency_parser
 )
 
 
@@ -236,10 +235,15 @@ class LinkedInScraper(Scraper):
         div_content = soup.find(
             "div", class_=lambda x: x and "show-more-less-html__markup" in x
         )
-
         description = None
-        if div_content:
-            description = modify_and_get_description(div_content)
+        if div_content is not None:
+            def remove_attributes(tag):
+                for attr in list(tag.attrs):
+                    del tag[attr]
+                return tag
+
+            div_content = remove_attributes(div_content)
+            description = div_content.prettify(formatter="html")
 
         def get_job_type(
             soup_job_type: BeautifulSoup,
