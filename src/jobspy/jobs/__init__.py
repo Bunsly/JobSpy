@@ -210,6 +210,11 @@ class Compensation(BaseModel):
     currency: Optional[str] = "USD"
 
 
+class DescriptionFormat(Enum):
+    MARKDOWN = "markdown"
+    HTML = "html"
+
+
 class JobPost(BaseModel):
     title: str
     company_name: str

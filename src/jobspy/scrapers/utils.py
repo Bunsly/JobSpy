@@ -2,13 +2,16 @@ import re
 import logging
 import numpy as np
 
+import html2text
 import tls_client
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
 from ..jobs import JobType
 
+text_maker = html2text.HTML2Text()
 logger = logging.getLogger("JobSpy")
+logger.propagate = False
 if not logger.handlers:
     logger.setLevel(logging.ERROR)
     console_handler = logging.StreamHandler()
@@ -32,6 +35,17 @@ def count_urgent_words(description: str) -> int:
     return count
 
 
+def markdown_converter(description_html: str):
+    if description_html is None:
+        return ""
+    text_maker.ignore_links = False
+    try:
+        markdown = text_maker.handle(description_html)
+        return markdown.strip()
+    except AssertionError as e:
+        return ""
+
+
 def extract_emails_from_text(text: str) -> list[str] | None:
     if not text:
         return None
@@ -42,14 +56,10 @@ def extract_emails_from_text(text: str) -> list[str] | None:
 def create_session(proxy: dict | None = None, is_tls: bool = True, has_retry: bool = False, delay: int = 1) -> requests.Session:
     """
     Creates a requests session with optional tls, proxy, and retry settings.
-
     :return: A session object
     """
     if is_tls:
-        session = tls_client.Session(
-            client_identifier="chrome112",
-            random_tls_extension_order=True,
-        )
+        session = tls_client.Session(random_tls_extension_order=True)
         session.proxies = proxy
     else:
         session = requests.Session()
@@ -66,7 +76,6 @@ def create_session(proxy: dict | None = None, is_tls: bool = True, has_retry: bo
 
             session.mount('http://', adapter)
             session.mount('https://', adapter)
-
     return session
 
 
