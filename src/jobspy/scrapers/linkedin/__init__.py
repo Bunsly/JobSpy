@@ -25,26 +25,30 @@ from ...jobs import (
     JobResponse,
     JobType,
     Country,
-    Compensation
+    Compensation,
+    DescriptionFormat
 )
 from ..utils import (
+    logger,
     count_urgent_words,
     extract_emails_from_text,
     get_enum_from_job_type,
-    currency_parser
+    currency_parser,
+    markdown_converter
 )
 
 
 class LinkedInScraper(Scraper):
-    DELAY = 3
+    base_url = "https://www.linkedin.com"
+    delay = 3
 
     def __init__(self, proxy: Optional[str] = None):
         """
         Initializes LinkedInScraper with the LinkedIn job search url
         """
+        self.scraper_input = None
         site = Site(Site.LINKEDIN)
         self.country = "worldwide"
-        self.url = "https://www.linkedin.com"
         super().__init__(site, proxy=proxy)
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
@@ -53,28 +57,16 @@ class LinkedInScraper(Scraper):
         :param scraper_input:
         :return: job_response
         """
+        self.scraper_input = scraper_input
         job_list: list[JobPost] = []
         seen_urls = set()
         url_lock = Lock()
         page = scraper_input.offset // 25 + 25 if scraper_input.offset else 0
-
         seconds_old = (
             scraper_input.hours_old * 3600
             if scraper_input.hours_old
             else None
         )
-
-        def job_type_code(job_type_enum):
-            mapping = {
-                JobType.FULL_TIME: "F",
-                JobType.PART_TIME: "P",
-                JobType.INTERNSHIP: "I",
-                JobType.CONTRACT: "C",
-                JobType.TEMPORARY: "T",
-            }
-
-            return mapping.get(job_type_enum, "")
-
         continue_search = lambda: len(job_list) < scraper_input.results_wanted and page < 1000
 
         while continue_search():
@@ -84,7 +76,7 @@ class LinkedInScraper(Scraper):
                 "location": scraper_input.location,
                 "distance": scraper_input.distance,
                 "f_WT": 2 if scraper_input.is_remote else None,
-                "f_JT": job_type_code(scraper_input.job_type)
+                "f_JT": self.job_type_code(scraper_input.job_type)
                 if scraper_input.job_type
                 else None,
                 "pageNum": 0,
@@ -97,23 +89,25 @@ class LinkedInScraper(Scraper):
             params = {k: v for k, v in params.items() if v is not None}
             try:
                 response = session.get(
-                    f"{self.url}/jobs-guest/jobs/api/seeMoreJobPostings/search?",
+                    f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search?",
                     params=params,
                     allow_redirects=True,
                     proxies=self.proxy,
-                    headers=self.headers(),
+                    headers=self.headers,
                     timeout=10,
                 )
-                response.raise_for_status()
-
-            except requests.HTTPError as e:
-                raise LinkedInException(
-                    f"bad response status code: {e.response.status_code}"
-                )
-            except ProxyError as e:
-                raise LinkedInException("bad proxy")
+                if response.status_code not in range(200, 400):
+                    if response.status_code == 429:
+                        logger.error(f'429 Response - Blocked by LinkedIn for too many requests')
+                    else:
+                        logger.error(f'LinkedIn response status code {response.status_code}')
+                    return JobResponse(job_list=job_list)
             except Exception as e:
-                raise LinkedInException(str(e))
+                if "Proxy responded with" in str(e):
+                    logger.error(f'Indeed: Bad proxy')
+                else:
+                    logger.error(f'Indeed: {str(e)}')
+                return JobResponse(job_list=job_list)
 
             soup = BeautifulSoup(response.text, "html.parser")
             job_cards = soup.find_all("div", class_="base-search-card")
@@ -126,29 +120,29 @@ class LinkedInScraper(Scraper):
                 if href_tag and "href" in href_tag.attrs:
                     href = href_tag.attrs["href"].split("?")[0]
                     job_id = href.split("-")[-1]
-                    job_url = f"{self.url}/jobs/view/{job_id}"
+                    job_url = f"{self.base_url}/jobs/view/{job_id}"
 
                 with url_lock:
                     if job_url in seen_urls:
                         continue
                     seen_urls.add(job_url)
-
-                # Call process_job directly without threading
                 try:
-                    job_post = self.process_job(job_card, job_url, scraper_input.full_description)
+                    job_post = self._process_job(job_card, job_url, scraper_input.linkedin_fetch_description)
                     if job_post:
                         job_list.append(job_post)
+                    if not continue_search():
+                       break
                 except Exception as e:
-                    raise LinkedInException("Exception occurred while processing jobs")
+                    raise LinkedInException(str(e))
 
             if continue_search():
-                time.sleep(random.uniform(LinkedInScraper.DELAY, LinkedInScraper.DELAY + 2))
+                time.sleep(random.uniform(self.delay, self.delay + 2))
                 page += 25
 
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
 
-    def process_job(self, job_card: Tag, job_url: str, full_descr: bool) -> Optional[JobPost]:
+    def _process_job(self, job_card: Tag, job_url: str, full_descr: bool) -> Optional[JobPost]:
         salary_tag = job_card.find('span', class_='job-search-card__salary-info')
 
         compensation = None
@@ -178,7 +172,7 @@ class LinkedInScraper(Scraper):
         company = company_a_tag.get_text(strip=True) if company_a_tag else "N/A"
 
         metadata_card = job_card.find("div", class_="base-search-card__metadata")
-        location = self.get_location(metadata_card)
+        location = self._get_location(metadata_card)
 
         datetime_tag = (
             metadata_card.find("time", class_="job-search-card__listdate")
@@ -190,12 +184,12 @@ class LinkedInScraper(Scraper):
             datetime_str = datetime_tag["datetime"]
             try:
                 date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
-            except Exception as e:
+            except:
                 date_posted = None
         benefits_tag = job_card.find("span", class_="result-benefits__text")
         benefits = " ".join(benefits_tag.get_text().split()) if benefits_tag else None
         if full_descr:
-            description, job_type = self.get_job_description(job_url)
+            description, job_type = self._get_job_description(job_url)
 
         return JobPost(
             title=title,
@@ -212,7 +206,7 @@ class LinkedInScraper(Scraper):
             num_urgent_words=count_urgent_words(description) if description else None,
         )
 
-    def get_job_description(
+    def _get_job_description(
         self, job_page_url: str
     ) -> tuple[None, None] | tuple[str | None, tuple[str | None, JobType | None]]:
         """
@@ -222,11 +216,9 @@ class LinkedInScraper(Scraper):
         """
         try:
             session = create_session(is_tls=False, has_retry=True)
-            response = session.get(job_page_url, timeout=5, proxies=self.proxy)
+            response = session.get(job_page_url, headers=self.headers, timeout=5, proxies=self.proxy)
             response.raise_for_status()
-        except requests.HTTPError as e:
-            return None, None
-        except Exception as e:
+        except:
             return None, None
         if response.url == "https://www.linkedin.com/signup":
             return None, None
@@ -241,40 +233,13 @@ class LinkedInScraper(Scraper):
                 for attr in list(tag.attrs):
                     del tag[attr]
                 return tag
-
             div_content = remove_attributes(div_content)
             description = div_content.prettify(formatter="html")
+            if self.scraper_input.description_format == DescriptionFormat.MARKDOWN:
+                description = markdown_converter(description)
+        return description, self._parse_job_type(soup)
 
-        def get_job_type(
-            soup_job_type: BeautifulSoup,
-        ) -> list[JobType] | None:
-            """
-            Gets the job type from job page
-            :param soup_job_type:
-            :return: JobType
-            """
-            h3_tag = soup_job_type.find(
-                "h3",
-                class_="description__job-criteria-subheader",
-                string=lambda text: "Employment type" in text,
-            )
-
-            employment_type = None
-            if h3_tag:
-                employment_type_span = h3_tag.find_next_sibling(
-                    "span",
-                    class_="description__job-criteria-text description__job-criteria-text--criteria",
-                )
-                if employment_type_span:
-                    employment_type = employment_type_span.get_text(strip=True)
-                    employment_type = employment_type.lower()
-                    employment_type = employment_type.replace("-", "")
-
-            return [get_enum_from_job_type(employment_type)] if employment_type else []
-
-        return description, get_job_type(soup)
-
-    def get_location(self, metadata_card: Optional[Tag]) -> Location:
+    def _get_location(self, metadata_card: Optional[Tag]) -> Location:
         """
         Extracts the location data from the job metadata card.
         :param metadata_card
@@ -299,25 +264,50 @@ class LinkedInScraper(Scraper):
                 location = Location(
                     city=city,
                     state=state,
-                    country=Country.from_string(country),
+                    country=Country.from_string(country)
                 )
-
         return location
 
     @staticmethod
-    def headers() -> dict:
+    def _parse_job_type(soup_job_type: BeautifulSoup) -> list[JobType] | None:
+        """
+        Gets the job type from job page
+        :param soup_job_type:
+        :return: JobType
+        """
+        h3_tag = soup_job_type.find(
+            "h3",
+            class_="description__job-criteria-subheader",
+            string=lambda text: "Employment type" in text,
+        )
+        employment_type = None
+        if h3_tag:
+            employment_type_span = h3_tag.find_next_sibling(
+                "span",
+                class_="description__job-criteria-text description__job-criteria-text--criteria",
+            )
+            if employment_type_span:
+                employment_type = employment_type_span.get_text(strip=True)
+                employment_type = employment_type.lower()
+                employment_type = employment_type.replace("-", "")
+
+        return [get_enum_from_job_type(employment_type)] if employment_type else []
+
+    @staticmethod
+    def job_type_code(job_type_enum: JobType) -> str:
         return {
-            "authority": "www.linkedin.com",
-            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "accept-language": "en-US,en;q=0.9",
-            "cache-control": "max-age=0",
-            "sec-ch-ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-            # 'sec-ch-ua-mobile': '?0',
-            # 'sec-ch-ua-platform': '"macOS"',
-            # 'sec-fetch-dest': 'document',
-            # 'sec-fetch-mode': 'navigate',
-            # 'sec-fetch-site': 'none',
-            # 'sec-fetch-user': '?1',
-            "upgrade-insecure-requests": "1",
-            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        }
+            JobType.FULL_TIME: "F",
+            JobType.PART_TIME: "P",
+            JobType.INTERNSHIP: "I",
+            JobType.CONTRACT: "C",
+            JobType.TEMPORARY: "T",
+        }.get(job_type_enum, "")
+
+    headers = {
+        "authority": "www.linkedin.com",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "accept-language": "en-US,en;q=0.9",
+        "cache-control": "max-age=0",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    }

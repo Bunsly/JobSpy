@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-jobspy"
-version = "1.1.44"
+version = "1.1.45"
 description = "Job scraper for LinkedIn, Indeed, Glassdoor & ZipRecruiter"
 authors = ["Zachary Hampton <zachary@bunsly.com>", "Cullen Watson <cullen@bunsly.com>"]
 homepage = "https://github.com/Bunsly/JobSpy"
@@ -18,6 +18,7 @@ beautifulsoup4 = "^4.12.2"
 pandas = "^2.1.0"
 NUMPY = "1.24.2"
 pydantic = "^2.3.0"
+html2text = "^2020.1.16"
 
 
 [tool.poetry.group.dev.dependencies]

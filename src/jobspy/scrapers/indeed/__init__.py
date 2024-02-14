@@ -21,6 +21,7 @@ from ..utils import (
     extract_emails_from_text,
     create_session,
     get_enum_from_job_type,
+    markdown_converter,
     logger
 )
 from ...jobs import (
@@ -30,6 +31,7 @@ from ...jobs import (
     Location,
     JobResponse,
     JobType,
+    DescriptionFormat
 )
 from .. import Scraper, ScraperInput, Site
 
@@ -39,113 +41,14 @@ class IndeedScraper(Scraper):
         """
         Initializes IndeedScraper with the Indeed job search url
         """
-        self.url = None
-        self.country = None
+        self.scraper_input = None
+        self.jobs_per_page = 25
+        self.num_workers = 10
+        self.seen_urls = set()
+        self.base_url = None
+        self.api_url = "https://apis.indeed.com/graphql"
         site = Site(Site.INDEED)
         super().__init__(site, proxy=proxy)
-
-        self.jobs_per_page = 25
-        self.seen_urls = set()
-
-    def scrape_page(
-        self, scraper_input: ScraperInput, page: int
-    ) -> list[JobPost]:
-        """
-        Scrapes a page of Indeed for jobs with scraper_input criteria
-        :param scraper_input:
-        :param page:
-        :return: jobs found on page, total number of jobs found for search
-        """
-        job_list = []
-        self.country = scraper_input.country
-        domain = self.country.indeed_domain_value
-        self.url = f"https://{domain}.indeed.com"
-
-        try:
-            session = create_session(self.proxy)
-            response = session.get(
-                f"{self.url}/m/jobs",
-                headers=self.get_headers(),
-                params=self.add_params(scraper_input, page),
-                allow_redirects=True,
-                timeout_seconds=10,
-            )
-            if response.status_code not in range(200, 400):
-                raise IndeedException(
-                    f"bad response with status code: {response.status_code}"
-                )
-        except Exception as e:
-            if "Proxy responded with" in str(e):
-                logger.error(f'Indeed: Bad proxy')
-            else:
-                logger.error(f'Indeed: {str(e)}')
-            return job_list
-
-        soup = BeautifulSoup(response.content, "html.parser")
-        if "did not match any jobs" in response.text:
-            return job_list
-
-        jobs = IndeedScraper.parse_jobs(
-            soup
-        )  #: can raise exception, handled by main scrape function
-
-        if (
-            not jobs.get("metaData", {})
-            .get("mosaicProviderJobCardsModel", {})
-            .get("results")
-        ):
-            raise IndeedException("No jobs found.")
-
-        def process_job(job: dict, job_detailed: dict) -> JobPost | None:
-            job_url = f'{self.url}/m/jobs/viewjob?jk={job["jobkey"]}'
-            job_url_client = f'{self.url}/viewjob?jk={job["jobkey"]}'
-            if job_url in self.seen_urls:
-                return None
-            self.seen_urls.add(job_url)
-            description = job_detailed['description']['html']
-
-
-            job_type = IndeedScraper.get_job_type(job)
-            timestamp_seconds = job["pubDate"] / 1000
-            date_posted = datetime.fromtimestamp(timestamp_seconds)
-            date_posted = date_posted.strftime("%Y-%m-%d")
-
-            job_post = JobPost(
-                title=job["normTitle"],
-                description=description,
-                company_name=job["company"],
-                company_url=f"{self.url}{job_detailed['employer']['relativeCompanyPageUrl']}" if job_detailed['employer'] else None,
-                location=Location(
-                    city=job.get("jobLocationCity"),
-                    state=job.get("jobLocationState"),
-                    country=self.country,
-                ),
-                job_type=job_type,
-                compensation=self.get_compensation(job, job_detailed),
-                date_posted=date_posted,
-                job_url=job_url_client,
-                emails=extract_emails_from_text(description) if description else None,
-                num_urgent_words=count_urgent_words(description)
-                if description
-                else None,
-                is_remote=IndeedScraper.is_job_remote(job, job_detailed, description)
-
-            )
-            return job_post
-
-        workers = 10
-        jobs = jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]
-        job_keys = [job['jobkey'] for job in jobs]
-        jobs_detailed = self.get_job_details(job_keys)
-
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            job_results: list[Future] = [
-                executor.submit(process_job, job, job_detailed['job']) for job, job_detailed in zip(jobs, jobs_detailed)
-            ]
-
-        job_list = [result.result() for result in job_results if result.result()]
-
-        return job_list
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -153,7 +56,8 @@ class IndeedScraper(Scraper):
         :param scraper_input:
         :return: job_response
         """
-        job_list = self.scrape_page(scraper_input, 0)
+        self.scraper_input = scraper_input
+        job_list = self._scrape_page()
         pages_processed = 1
 
         while len(self.seen_urls) < scraper_input.results_wanted:
@@ -162,7 +66,7 @@ class IndeedScraper(Scraper):
 
             with ThreadPoolExecutor(max_workers=10) as executor:
                 futures: list[Future] = [
-                    executor.submit(self.scrape_page, scraper_input, page + pages_processed)
+                    executor.submit(self._scrape_page, page + pages_processed)
                     for page in range(pages_to_process)
                 ]
 
@@ -184,8 +88,136 @@ class IndeedScraper(Scraper):
 
         return JobResponse(jobs=job_list)
 
+    def _scrape_page(self, page: int=0) -> list[JobPost]:
+        """
+        Scrapes a page of Indeed for jobs with scraper_input criteria
+        :param page:
+        :return: jobs found on page, total number of jobs found for search
+        """
+        job_list = []
+        domain = self.scraper_input.country.indeed_domain_value
+        self.base_url = f"https://{domain}.indeed.com"
+
+        try:
+            session = create_session(self.proxy)
+            response = session.get(
+                f"{self.base_url}/m/jobs",
+                headers=self.headers,
+                params=self._add_params(page),
+            )
+            if response.status_code not in range(200, 400):
+                if response.status_code == 429:
+                    logger.error(f'429 Response - Blocked by Indeed for too many requests')
+                else:
+                    logger.error(f'Indeed response status code {response.status_code}')
+                return job_list
+
+        except Exception as e:
+            if "Proxy responded with" in str(e):
+                logger.error(f'Indeed: Bad proxy')
+            else:
+                logger.error(f'Indeed: {str(e)}')
+            return job_list
+
+        soup = BeautifulSoup(response.content, "html.parser")
+        if "did not match any jobs" in response.text:
+            return job_list
+
+        jobs = IndeedScraper._parse_jobs(soup)
+        if (
+            not jobs.get("metaData", {})
+            .get("mosaicProviderJobCardsModel", {})
+            .get("results")
+        ):
+            raise IndeedException("No jobs found.")
+
+        jobs = jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]
+        job_keys = [job['jobkey'] for job in jobs]
+        jobs_detailed = self._get_job_details(job_keys)
+
+        with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
+            job_results: list[Future] = [
+                executor.submit(self._process_job, job, job_detailed['job']) for job, job_detailed in zip(jobs, jobs_detailed)
+            ]
+
+        job_list = [result.result() for result in job_results if result.result()]
+
+        return job_list
+
+    def _process_job(self, job: dict, job_detailed: dict) -> JobPost | None:
+        job_url = f'{self.base_url}/m/jobs/viewjob?jk={job["jobkey"]}'
+        job_url_client = f'{self.base_url}/viewjob?jk={job["jobkey"]}'
+        if job_url in self.seen_urls:
+            return None
+        self.seen_urls.add(job_url)
+        description = job_detailed['description']['html']
+        description = markdown_converter(description) if self.scraper_input.description_format == DescriptionFormat.MARKDOWN else description
+        job_type = self._get_job_type(job)
+        timestamp_seconds = job["pubDate"] / 1000
+        date_posted = datetime.fromtimestamp(timestamp_seconds)
+        date_posted = date_posted.strftime("%Y-%m-%d")
+        return JobPost(
+            title=job["normTitle"],
+            description=description,
+            company_name=job["company"],
+            company_url=f"{self.base_url}{job_detailed['employer']['relativeCompanyPageUrl']}" if job_detailed[
+                'employer'] else None,
+            location=Location(
+                city=job.get("jobLocationCity"),
+                state=job.get("jobLocationState"),
+                country=self.scraper_input.country,
+            ),
+            job_type=job_type,
+            compensation=self._get_compensation(job, job_detailed),
+            date_posted=date_posted,
+            job_url=job_url_client,
+            emails=extract_emails_from_text(description) if description else None,
+            num_urgent_words=count_urgent_words(description) if description else None,
+            is_remote=self._is_job_remote(job, job_detailed, description)
+        )
+
+    def _get_job_details(self, job_keys: list[str]) -> dict:
+        """
+        Queries the GraphQL endpoint for detailed job information for the given job keys.
+        """
+        job_keys_gql = '[' + ', '.join(f'"{key}"' for key in job_keys) + ']'
+        payload = dict(self.api_payload)
+        payload["query"] = self.api_payload["query"].format(job_keys_gql=job_keys_gql)
+        response = requests.post(self.api_url, headers=self.api_headers, json=payload, proxies=self.proxy)
+        if response.status_code == 200:
+            return response.json()['data']['jobData']['results']
+        else:
+            return {}
+
+    def _add_params(self, page: int) -> dict[str, str | Any]:
+        fromage = max(self.scraper_input.hours_old // 24, 1) if self.scraper_input.hours_old else None
+        params = {
+            "q": self.scraper_input.search_term,
+            "l": self.scraper_input.location if self.scraper_input.location else self.scraper_input.country.value[0].split(',')[-1],
+            "filter": 0,
+            "start": self.scraper_input.offset + page * 10,
+            "sort": "date",
+            "fromage": fromage,
+        }
+        if self.scraper_input.distance:
+            params["radius"] = self.scraper_input.distance
+
+        sc_values = []
+        if self.scraper_input.is_remote:
+            sc_values.append("attr(DSQF7)")
+        if self.scraper_input.job_type:
+            sc_values.append("jt({})".format(self.scraper_input.job_type.value[0]))
+
+        if sc_values:
+            params["sc"] = "0kf:" + "".join(sc_values) + ";"
+
+        if self.scraper_input.easy_apply:
+            params['iafilter'] = 1
+
+        return params
+
     @staticmethod
-    def get_job_type(job: dict) -> list[JobType] | None:
+    def _get_job_type(job: dict) -> list[JobType] | None:
         """
         Parses the job to get list of job types
         :param job:
@@ -204,7 +236,7 @@ class IndeedScraper(Scraper):
         return job_types
 
     @staticmethod
-    def get_compensation(job: dict, job_detailed: dict) -> Compensation:
+    def _get_compensation(job: dict, job_detailed: dict) -> Compensation:
         """
         Parses the job to get
         :param job:
@@ -213,7 +245,7 @@ class IndeedScraper(Scraper):
         """
         comp = job_detailed['compensation']['baseSalary']
         if comp:
-            interval = IndeedScraper.get_correct_interval(comp['unitOfWork'])
+            interval = IndeedScraper._get_correct_interval(comp['unitOfWork'])
             if interval:
                 return Compensation(
                     interval=interval,
@@ -242,18 +274,13 @@ class IndeedScraper(Scraper):
         return compensation
 
     @staticmethod
-    def parse_jobs(soup: BeautifulSoup) -> dict:
+    def _parse_jobs(soup: BeautifulSoup) -> dict:
         """
         Parses the jobs from the soup object
         :param soup:
         :return: jobs
         """
-
         def find_mosaic_script() -> Tag | None:
-            """
-            Finds jobcards script tag
-            :return: script_tag
-            """
             script_tags = soup.find_all("script")
 
             for tag in script_tags:
@@ -266,7 +293,6 @@ class IndeedScraper(Scraper):
             return None
 
         script_tag = find_mosaic_script()
-
         if script_tag:
             script_str = script_tag.string
             pattern = r'window.mosaic.providerData\["mosaic-provider-jobcards"\]\s*=\s*({.*?});'
@@ -283,49 +309,7 @@ class IndeedScraper(Scraper):
             )
 
     @staticmethod
-    def get_headers():
-        return {
-          'Host': 'www.indeed.com',
-          'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'sec-fetch-site': 'same-origin',
-          'sec-fetch-dest': 'document',
-          'accept-language': 'en-US,en;q=0.9',
-          'sec-fetch-mode': 'navigate',
-          'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Indeed App 192.0',
-          'referer': 'https://www.indeed.com/m/jobs?q=software%20intern&l=Dallas%2C%20TX&from=serpso&rq=1&rsIdx=3',
-        }
-
-    @staticmethod
-    def add_params(scraper_input: ScraperInput, page: int) -> dict[str, str | Any]:
-        # `fromage` is the posting time filter in days
-        fromage = max(scraper_input.hours_old // 24, 1) if scraper_input.hours_old else None
-        params = {
-            "q": scraper_input.search_term,
-            "l": scraper_input.location if scraper_input.location else scraper_input.country.value[0].split(',')[-1],
-            "filter": 0,
-            "start": scraper_input.offset + page * 10,
-            "sort": "date",
-            "fromage": fromage,
-        }
-        if scraper_input.distance:
-            params["radius"] = scraper_input.distance
-
-        sc_values = []
-        if scraper_input.is_remote:
-            sc_values.append("attr(DSQF7)")
-        if scraper_input.job_type:
-            sc_values.append("jt({})".format(scraper_input.job_type.value[0]))
-
-        if sc_values:
-            params["sc"] = "0kf:" + "".join(sc_values) + ";"
-
-        if scraper_input.easy_apply:
-            params['iafilter'] = 1
-
-        return params
-
-    @staticmethod
-    def is_job_remote(job: dict, job_detailed: dict, description: str) -> bool:
+    def _is_job_remote(job: dict, job_detailed: dict, description: str) -> bool:
         remote_keywords = ['remote', 'work from home', 'wfh']
         is_remote_in_attributes = any(
             any(keyword in attr['label'].lower() for keyword in remote_keywords)
@@ -342,86 +326,8 @@ class IndeedScraper(Scraper):
         )
         return is_remote_in_attributes or is_remote_in_description or is_remote_in_location or is_remote_in_taxonomy
 
-    def get_job_details(self, job_keys: list[str]) -> dict:
-        """
-        Queries the GraphQL endpoint for detailed job information for the given job keys.
-        """
-        url = "https://apis.indeed.com/graphql"
-        headers = {
-            'Host': 'apis.indeed.com',
-            'content-type': 'application/json',
-            'indeed-api-key': '161092c2017b5bbab13edb12461a62d5a833871e7cad6d9d475304573de67ac8',
-            'accept': 'application/json',
-            'indeed-locale': 'en-US',
-            'accept-language': 'en-US,en;q=0.9',
-            'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Indeed App 193.1',
-            'indeed-app-info': 'appv=193.1; appid=com.indeed.jobsearch; osv=16.6.1; os=ios; dtype=phone',
-            'indeed-co': 'US',
-        }
-
-        job_keys_gql = '[' + ', '.join(f'"{key}"' for key in job_keys) + ']'
-
-        payload = {
-            "query": f"""
-            query GetJobData {{
-              jobData(input: {{
-                jobKeys: {job_keys_gql}
-              }}) {{
-                results {{
-                  job {{
-                    key
-                    title
-                    description {{
-                      html
-                    }}
-                    location {{
-                      countryName
-                      countryCode
-                      city
-                      postalCode
-                      streetAddress
-                      formatted {{
-                        short
-                        long
-                      }}
-                    }}
-                    compensation {{
-                      baseSalary {{
-                        unitOfWork
-                        range {{
-                          ... on Range {{
-                            min
-                            max
-                          }}
-                        }}
-                      }}
-                      currencyCode
-                    }}
-                    attributes {{
-                      label
-                    }}
-                    employer {{
-                      relativeCompanyPageUrl
-                    }}
-                    recruit {{
-                      viewJobUrl
-                      detailedSalary
-                      workSchedule
-                    }}
-                  }}
-                }}
-              }}
-            }}
-            """
-        }
-        response = requests.post(url, headers=headers, json=payload, proxies=self.proxy)
-        if response.status_code == 200:
-            return response.json()['data']['jobData']['results']
-        else:
-            return {}
-
     @staticmethod
-    def get_correct_interval(interval: str) -> CompensationInterval:
+    def _get_correct_interval(interval: str) -> CompensationInterval:
         interval_mapping = {
             "DAY": "DAILY",
             "YEAR": "YEARLY",
@@ -434,3 +340,78 @@ class IndeedScraper(Scraper):
             return CompensationInterval[mapped_interval]
         else:
             raise ValueError(f"Unsupported interval: {interval}")
+
+    headers =  {
+      'Host': 'www.indeed.com',
+      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'sec-fetch-site': 'same-origin',
+      'sec-fetch-dest': 'document',
+      'accept-language': 'en-US,en;q=0.9',
+      'sec-fetch-mode': 'navigate',
+      'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Indeed App 192.0',
+      'referer': 'https://www.indeed.com/m/jobs?q=software%20intern&l=Dallas%2C%20TX&from=serpso&rq=1&rsIdx=3',
+    }
+    api_headers = {
+        'Host': 'apis.indeed.com',
+        'content-type': 'application/json',
+        'indeed-api-key': '161092c2017b5bbab13edb12461a62d5a833871e7cad6d9d475304573de67ac8',
+        'accept': 'application/json',
+        'indeed-locale': 'en-US',
+        'accept-language': 'en-US,en;q=0.9',
+        'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Indeed App 193.1',
+        'indeed-app-info': 'appv=193.1; appid=com.indeed.jobsearch; osv=16.6.1; os=ios; dtype=phone',
+        'indeed-co': 'US',
+    }
+    api_payload = {
+        "query": """
+        query GetJobData {{
+          jobData(input: {{
+            jobKeys: {job_keys_gql}
+          }}) {{
+            results {{
+              job {{
+                key
+                title
+                description {{
+                  html
+                }}
+                location {{
+                  countryName
+                  countryCode
+                  city
+                  postalCode
+                  streetAddress
+                  formatted {{
+                    short
+                    long
+                  }}
+                }}
+                compensation {{
+                  baseSalary {{
+                    unitOfWork
+                    range {{
+                      ... on Range {{
+                        min
+                        max
+                      }}
+                    }}
+                  }}
+                  currencyCode
+                }}
+                attributes {{
+                  label
+                }}
+                employer {{
+                  relativeCompanyPageUrl
+                }}
+                recruit {{
+                  viewJobUrl
+                  detailedSalary
+                  workSchedule
+                }}
+              }}
+            }}
+          }}
+        }}
+        """
+    }

@@ -11,7 +11,7 @@ work with us.*
 
 - Scrapes job postings from **LinkedIn**, **Indeed**, **Glassdoor**, & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
-- Proxy support (HTTP/S, SOCKS)
+- Proxy support
 
 [Video Guide for JobSpy](https://www.youtube.com/watch?v=RuP1HrAZnxs&pp=ygUgam9icyBzY3JhcGVyIGJvdCBsaW5rZWRpbiBpbmRlZWQ%3D) -
 Updated for release v1.1.3
@@ -67,12 +67,13 @@ Optional
 ├── location (int)
 ├── distance (int): in miles
 ├── job_type (enum): fulltime, parttime, internship, contract
-├── proxy (str): in format 'http://user:pass@host:port' or [https, socks]
+├── proxy (str): in format 'http://user:pass@host:port'
 ├── is_remote (bool)
-├── full_description (bool): fetches full description for LinkedIn (slower)
+├── linkedin_fetch_description (bool): fetches full description for LinkedIn (slower)
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
 ├── easy_apply (bool): filters for jobs that are hosted on the job board site
 ├── linkedin_company_ids (list[int): searches for linkedin jobs with specific company ids
+├── description_format (enum): markdown, html (format type of the job descriptions)
 ├── country_indeed (enum): filters the country on Indeed (see below for correct spelling)
 ├── offset (num): starts the search from an offset (e.g. 25 will start the search from the 25th result)
 ├── hours_old (int): filters jobs by the number of hours since the job was posted (all but LinkedIn rounds up to next day)
