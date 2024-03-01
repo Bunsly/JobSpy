@@ -152,8 +152,14 @@ def scrape_jobs(
             jobs_dfs.append(job_df)
 
     if jobs_dfs:
-        jobs_df = pd.concat(jobs_dfs, ignore_index=True)
-        desired_order: list[str] = [
+        # Step 1: Filter out all-NA columns from each DataFrame before concatenation
+        filtered_dfs = [df.dropna(axis=1, how='all') for df in jobs_dfs]
+        
+        # Step 2: Concatenate the filtered DataFrames
+        jobs_df = pd.concat(filtered_dfs, ignore_index=True)
+        
+        # Desired column order
+        desired_order = [
             "job_url_hyper" if hyperlinks else "job_url",
             "site",
             "title",
@@ -172,6 +178,16 @@ def scrape_jobs(
             "emails",
             "description",
         ]
-        return jobs_df[desired_order].sort_values(by=['site', 'date_posted'], ascending=[True, False])
+        
+        # Step 3: Ensure all desired columns are present, adding missing ones as empty
+        for column in desired_order:
+            if column not in jobs_df.columns:
+                jobs_df[column] = None  # Add missing columns as empty
+        
+        # Reorder the DataFrame according to the desired order
+        jobs_df = jobs_df[desired_order]
+        
+        # Step 4: Sort the DataFrame as required
+        return jobs_df.sort_values(by=['site', 'date_posted'], ascending=[True, False])
     else:
         return pd.DataFrame()
