@@ -160,7 +160,7 @@ def scrape_jobs(
         
         # Desired column order
         desired_order = [
-            "job_url_hyper" if 'hyperlinks' in locals() or 'hyperlinks' in globals() else "job_url",
+            "job_url_hyper" if hyperlinks else "job_url",
             "site",
             "title",
             "company",

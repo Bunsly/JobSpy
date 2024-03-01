@@ -82,7 +82,6 @@ class IndeedScraper(Scraper):
             if not new_jobs:
                 break
 
-
         if len(self.seen_urls) > scraper_input.results_wanted:
             job_list = job_list[:scraper_input.results_wanted]
 
@@ -124,12 +123,15 @@ class IndeedScraper(Scraper):
             return job_list
 
         jobs = IndeedScraper._parse_jobs(soup)
+        if not jobs:
+            return []
         if (
             not jobs.get("metaData", {})
             .get("mosaicProviderJobCardsModel", {})
             .get("results")
         ):
-            raise IndeedException("No jobs found.")
+            logger.error("Indeed - No jobs found.")
+            return []
 
         jobs = jobs["metaData"]["mosaicProviderJobCardsModel"]["results"]
         job_keys = [job['jobkey'] for job in jobs]
@@ -302,11 +304,11 @@ class IndeedScraper(Scraper):
                 jobs = json.loads(m.group(1).strip())
                 return jobs
             else:
-                raise IndeedException("Could not find mosaic provider job cards data")
+                logger.warning(f'Indeed: Could not find mosaic provider job cards data')
+                return {}
         else:
-            raise IndeedException(
-                "Could not find any results for the search"
-            )
+            logger.warning(f"Indeed: Could not parse any jobs on the page")
+            return {}
 
     @staticmethod
     def _is_job_remote(job: dict, job_detailed: dict, description: str) -> bool:
