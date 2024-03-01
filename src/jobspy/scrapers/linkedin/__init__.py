@@ -68,8 +68,10 @@ class LinkedInScraper(Scraper):
             else None
         )
         continue_search = lambda: len(job_list) < scraper_input.results_wanted and page < 1000
-
+        urlCount = 0
         while continue_search():
+            print(f'LinkedIn searches: {urlCount}')
+            urlCount += 1
             session = create_session(is_tls=False, has_retry=True, delay=5)
             params = {
                 "keywords": scraper_input.search_term,
@@ -136,7 +138,7 @@ class LinkedInScraper(Scraper):
                     raise LinkedInException(str(e))
 
             if continue_search():
-                time.sleep(random.uniform(self.delay, self.delay + 2))
+                time.sleep(random.uniform(self.delay, self.delay + 7))
                 page += 25
 
         job_list = job_list[: scraper_input.results_wanted]
