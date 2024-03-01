@@ -28,7 +28,6 @@ from ...jobs import (
     DescriptionFormat
 )
 
-
 class GlassdoorScraper(Scraper):
     def __init__(self, proxy: Optional[str] = None):
         """
@@ -62,10 +61,13 @@ class GlassdoorScraper(Scraper):
         all_jobs: list[JobPost] = []
         cursor = None
         max_pages = 30
+        urlCount = 0
         self.session = create_session(self.proxy, is_tls=False, has_retry=True)
         self.session.get(self.base_url)
 
         try:
+            print(f'Glassdoor searches: {urlCount}')
+            urlCount += 1
             for page in range(
                 1 + (scraper_input.offset // self.jobs_per_page),
                 min(
@@ -81,16 +83,24 @@ class GlassdoorScraper(Scraper):
                     if len(all_jobs) >= scraper_input.results_wanted:
                         all_jobs = all_jobs[: scraper_input.results_wanted]
                         break
-                except TimeoutError as timeout_exception:  # Specific exception for timeouts
-                    print(f"Timeout occurred on page {page}: {str(timeout_exception)}")
+                except requests.exceptions.ReadTimeout as timeout_exception:
+                    logger.error(f"Timeout occurred on page {page}: {str(timeout_exception)}")
                     # Skip this page and continue to the next
                     continue
                 except Exception as e:
                     raise GlassdoorException(str(e))
+        except requests.exceptions.ReadTimeout as timeout_exception:
+            logger.error(f"Timeout occurred on page {page}: {str(timeout_exception)}")
+        except requests.exceptions.HTTPError as http_error:
+            if http_error.response.status_code == 502:
+                logger.error(f"Bad Gateway (502) encountered: {str(http_error)}")
+                # Decide on a retry mechanism, log the error, or take another appropriate action
+            else:
+                raise  # Re-raise the exception if it's not a 502 error
         except Exception as e:
             raise GlassdoorException(str(e))
         return JobResponse(jobs=all_jobs)
-
+    
     def _fetch_jobs_page(
         self,
         scraper_input: ScraperInput,
@@ -103,10 +113,9 @@ class GlassdoorScraper(Scraper):
         Scrapes a page of Glassdoor for jobs with scraper_input criteria
         """
         self.scraper_input = scraper_input
-        urlCount = 0
+
         try:
-            logger.error(f'Glassdoor searches: {urlCount}')
-            urlCount+=1
+            
             payload = self._add_payload(
                 location_id, location_type, page_num, cursor
             )
