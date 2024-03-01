@@ -81,6 +81,10 @@ class GlassdoorScraper(Scraper):
                     if len(all_jobs) >= scraper_input.results_wanted:
                         all_jobs = all_jobs[: scraper_input.results_wanted]
                         break
+                except TimeoutError as timeout_exception:  # Specific exception for timeouts
+                    print(f"Timeout occurred on page {page}: {str(timeout_exception)}")
+                    # Skip this page and continue to the next
+                    continue
                 except Exception as e:
                     raise GlassdoorException(str(e))
         except Exception as e:
@@ -99,7 +103,10 @@ class GlassdoorScraper(Scraper):
         Scrapes a page of Glassdoor for jobs with scraper_input criteria
         """
         self.scraper_input = scraper_input
+        urlCount = 0
         try:
+            logger.error(f'Glassdoor searches: {urlCount}')
+            urlCount+=1
             payload = self._add_payload(
                 location_id, location_type, page_num, cursor
             )
