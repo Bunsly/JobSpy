@@ -59,11 +59,13 @@ class IndeedScraper(Scraper):
         self.scraper_input = scraper_input
         job_list = self._scrape_page()
         pages_processed = 1
+        urlCount = 0
 
         while len(self.seen_urls) < scraper_input.results_wanted:
             pages_to_process = math.ceil((scraper_input.results_wanted - len(self.seen_urls)) / self.jobs_per_page)
             new_jobs = False
-
+            print(f'Indeed search page: {urlCount}')
+            urlCount += 1
             with ThreadPoolExecutor(max_workers=10) as executor:
                 futures: list[Future] = [
                     executor.submit(self._scrape_page, page + pages_processed)
@@ -96,7 +98,7 @@ class IndeedScraper(Scraper):
         job_list = []
         domain = self.scraper_input.country.indeed_domain_value
         self.base_url = f"https://{domain}.indeed.com"
-
+        
         try:
             session = create_session(self.proxy)
             response = session.get(
