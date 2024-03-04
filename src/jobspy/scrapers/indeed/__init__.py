@@ -15,7 +15,6 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from concurrent.futures import ThreadPoolExecutor, Future
 
-from ..exceptions import IndeedException
 from ..utils import (
     count_urgent_words,
     extract_emails_from_text,
@@ -59,14 +58,11 @@ class IndeedScraper(Scraper):
         self.scraper_input = scraper_input
         job_list = self._scrape_page()
         pages_processed = 1
-        urlCount = 0
 
         while len(self.seen_urls) < scraper_input.results_wanted:
             pages_to_process = math.ceil((scraper_input.results_wanted - len(self.seen_urls)) / self.jobs_per_page)
             new_jobs = False
-            print(f'Indeed search page: {urlCount}')
-            urlCount += 1
-            with ThreadPoolExecutor(max_workers=10) as executor:
+            with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
                 futures: list[Future] = [
                     executor.submit(self._scrape_page, page + pages_processed)
                     for page in range(pages_to_process)
@@ -90,6 +86,7 @@ class IndeedScraper(Scraper):
         return JobResponse(jobs=job_list)
 
     def _scrape_page(self, page: int=0) -> list[JobPost]:
+        logger.info(f'Indeed search page: {page + 1}')
         """
         Scrapes a page of Indeed for jobs with scraper_input criteria
         :param page:
@@ -143,7 +140,6 @@ class IndeedScraper(Scraper):
             job_results: list[Future] = [
                 executor.submit(self._process_job, job, job_detailed['job']) for job, job_detailed in zip(jobs, jobs_detailed)
             ]
-
         job_list = [result.result() for result in job_results if result.result()]
 
         return job_list
