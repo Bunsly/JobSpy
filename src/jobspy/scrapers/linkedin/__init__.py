@@ -9,8 +9,6 @@ import random
 from typing import Optional
 from datetime import datetime
 
-import requests
-from requests.exceptions import ProxyError
 from threading import Lock
 from bs4.element import Tag
 from bs4 import BeautifulSoup
@@ -41,15 +39,16 @@ from ..utils import (
 class LinkedInScraper(Scraper):
     base_url = "https://www.linkedin.com"
     delay = 3
+    band_delay = 4
+    jobs_per_page = 25
 
     def __init__(self, proxy: Optional[str] = None):
         """
         Initializes LinkedInScraper with the LinkedIn job search url
         """
+        super().__init__(Site(Site.LINKEDIN), proxy=proxy)
         self.scraper_input = None
-        site = Site(Site.LINKEDIN)
         self.country = "worldwide"
-        super().__init__(site, proxy=proxy)
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -68,8 +67,8 @@ class LinkedInScraper(Scraper):
             else None
         )
         continue_search = lambda: len(job_list) < scraper_input.results_wanted and page < 1000
-
         while continue_search():
+            logger.info(f'LinkedIn search page: {page // 25 + 1}')
             session = create_session(is_tls=False, has_retry=True, delay=5)
             params = {
                 "keywords": scraper_input.search_term,
@@ -83,8 +82,9 @@ class LinkedInScraper(Scraper):
                 "start": page + scraper_input.offset,
                 "f_AL": "true" if scraper_input.easy_apply else None,
                 "f_C": ','.join(map(str, scraper_input.linkedin_company_ids)) if scraper_input.linkedin_company_ids else None,
-                "f_TPR": f"r{seconds_old}",
             }
+            if seconds_old is not None:
+                params["f_TPR"] = f"r{seconds_old}"
 
             params = {k: v for k, v in params.items() if v is not None}
             try:
@@ -101,13 +101,13 @@ class LinkedInScraper(Scraper):
                         logger.error(f'429 Response - Blocked by LinkedIn for too many requests')
                     else:
                         logger.error(f'LinkedIn response status code {response.status_code}')
-                    return JobResponse(job_list=job_list)
+                    return JobResponse(jobs=job_list)
             except Exception as e:
                 if "Proxy responded with" in str(e):
                     logger.error(f'LinkedIn: Bad proxy')
                 else:
                     logger.error(f'LinkedIn: {str(e)}')
-                return JobResponse(job_list=job_list)
+                return JobResponse(jobs=job_list)
 
             soup = BeautifulSoup(response.text, "html.parser")
             job_cards = soup.find_all("div", class_="base-search-card")
@@ -136,8 +136,8 @@ class LinkedInScraper(Scraper):
                     raise LinkedInException(str(e))
 
             if continue_search():
-                time.sleep(random.uniform(self.delay, self.delay + 2))
-                page += 25
+                time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
+                page += self.jobs_per_page
 
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
