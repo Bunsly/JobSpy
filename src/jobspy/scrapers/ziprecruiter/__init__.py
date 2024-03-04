@@ -63,7 +63,7 @@ class ZipRecruiterScraper(Scraper):
                 break
             if page > 1:
                 time.sleep(self.delay)
-
+            logger.info(f'ZipRecruiter search page: {page}')
             jobs_on_page, continue_token = self._find_jobs_in_page(
                 scraper_input, continue_token
             )
