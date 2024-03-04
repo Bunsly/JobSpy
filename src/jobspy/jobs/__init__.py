@@ -122,7 +122,7 @@ class Country(Enum):
     USA = ("usa,us,united states", "www", "com")
     URUGUAY = ("uruguay", "uy")
     VENEZUELA = ("venezuela", "ve")
-    VIETNAM = ("vietnam", "vn")
+    VIETNAM = ("vietnam", "vn", "com")
 
     # internal for ziprecruiter
     US_CANADA = ("usa/ca", "www")
