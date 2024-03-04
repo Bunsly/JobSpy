@@ -86,12 +86,12 @@ class IndeedScraper(Scraper):
         return JobResponse(jobs=job_list)
 
     def _scrape_page(self, page: int=0) -> list[JobPost]:
-        logger.info(f'Indeed search page: {page + 1}')
         """
         Scrapes a page of Indeed for jobs with scraper_input criteria
         :param page:
         :return: jobs found on page, total number of jobs found for search
         """
+        logger.info(f'Indeed search page: {page + 1}')
         job_list = []
         domain = self.scraper_input.country.indeed_domain_value
         self.base_url = f"https://{domain}.indeed.com"
