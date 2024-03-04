@@ -1,15 +1,14 @@
-import re
 import logging
-import numpy as np
+import re
 
-import html2text
-import tls_client
+import numpy as np
 import requests
+import tls_client
+from markdownify import markdownify as md
 from requests.adapters import HTTPAdapter, Retry
 
 from ..jobs import JobType
 
-text_maker = html2text.HTML2Text()
 logger = logging.getLogger("JobSpy")
 logger.propagate = False
 if not logger.handlers:
@@ -36,13 +35,9 @@ def count_urgent_words(description: str) -> int:
 
 def markdown_converter(description_html: str):
     if description_html is None:
-        return ""
-    text_maker.ignore_links = False
-    try:
-        markdown = text_maker.handle(description_html)
-        return markdown.strip()
-    except AssertionError as e:
-        return ""
+        return None
+    markdown = md(description_html)
+    return markdown.strip()
 
 
 def extract_emails_from_text(text: str) -> list[str] | None:

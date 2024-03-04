@@ -104,15 +104,6 @@ JobPost
 └── is_remote (bool)
 ```
 
-### Exceptions
-
-The following exceptions may be raised when using JobSpy:
-
-* `LinkedInException`
-* `IndeedException`
-* `ZipRecruiterException`
-* `GlassdoorException`
-
 ## Supported Countries for Job Searching
 
 ### **LinkedIn**
@@ -147,7 +138,7 @@ You can specify the following countries when searching on Indeed (use the exact 
 | South Korea          | Spain*       | Sweden     | Switzerland*   |
 | Taiwan               | Thailand     | Turkey     | Ukraine        |
 | United Arab Emirates | UK*          | USA*       | Uruguay        |
-| Venezuela            | Vietnam      |            |                |
+| Venezuela            | Vietnam*     |            |                |
 
 
 Glassdoor can only fetch 900 jobs from the endpoint we're using on a given search.

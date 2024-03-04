@@ -122,7 +122,7 @@ class Country(Enum):
     USA = ("usa,us,united states", "www", "com")
     URUGUAY = ("uruguay", "uy")
     VENEZUELA = ("venezuela", "ve")
-    VIETNAM = ("vietnam", "vn")
+    VIETNAM = ("vietnam", "vn", "com")
 
     # internal for ziprecruiter
     US_CANADA = ("usa/ca", "www")
@@ -136,7 +136,7 @@ class Country(Enum):
 
     @property
     def glassdoor_domain_value(self):
-        if len(self.value) >= 2:
+        if len(self.value) == 3:
             subdomain, _, domain = self.value[2].partition(":")
             if subdomain and domain:
                 return f"{subdomain}.glassdoor.{domain}"
