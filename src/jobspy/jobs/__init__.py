@@ -136,7 +136,7 @@ class Country(Enum):
 
     @property
     def glassdoor_domain_value(self):
-        if len(self.value) == 3:
+        if len(self.value) >= 2:
             subdomain, _, domain = self.value[2].partition(":")
             if subdomain and domain:
                 return f"{subdomain}.glassdoor.{domain}"
