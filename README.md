@@ -119,7 +119,7 @@ Indeed specific
 
 ### **LinkedIn**
 
-LinkedIn searches globally & uses only the `location` parameter. You can only fetch 1000 jobs max from the LinkedIn endpoint we're using
+LinkedIn searches globally & uses only the `location` parameter. You can only fetch 1000 jobs max from the LinkedIn endpoint we are using
 
 ### **ZipRecruiter**
 
