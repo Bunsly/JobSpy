@@ -37,7 +37,7 @@ jobs = scrape_jobs(
     search_term="software engineer",
     location="Dallas, TX",
     results_wanted=20,
-    hours_old=72, # (only linkedin is hour specific, others round up to days old)
+    hours_old=72, # (only Linkedin/Indeed is hour specific, others round up to days old)
     country_indeed='USA'  # only needed for indeed / glassdoor
 )
 print(f"Found {len(jobs)} jobs")
@@ -71,7 +71,7 @@ Optional
 ├── is_remote (bool)
 ├── linkedin_fetch_description (bool): fetches full description for LinkedIn (slower)
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
-├── easy_apply (bool): filters for jobs that are hosted on the job board site
+├── easy_apply (bool): filters for jobs that are hosted on the job board site (not supported on Indeed)
 ├── linkedin_company_ids (list[int): searches for linkedin jobs with specific company ids
 ├── description_format (enum): markdown, html (format type of the job descriptions)
 ├── country_indeed (enum): filters the country on Indeed (see below for correct spelling)
