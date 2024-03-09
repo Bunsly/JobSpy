@@ -19,20 +19,6 @@ if not logger.handlers:
     logger.addHandler(console_handler)
 
 
-def count_urgent_words(description: str) -> int:
-    """
-    Count the number of urgent words or phrases in a job description.
-    """
-    urgent_patterns = re.compile(
-        r"\burgen(t|cy)|\bimmediate(ly)?\b|start asap|\bhiring (now|immediate(ly)?)\b",
-        re.IGNORECASE,
-    )
-    matches = re.findall(urgent_patterns, description)
-    count = len(matches)
-
-    return count
-
-
 def markdown_converter(description_html: str):
     if description_html is None:
         return None

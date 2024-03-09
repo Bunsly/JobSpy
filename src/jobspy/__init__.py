@@ -3,6 +3,7 @@ from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .jobs import JobType, Location
+from .scrapers.utils import logger
 from .scrapers.indeed import IndeedScraper
 from .scrapers.ziprecruiter import ZipRecruiterScraper
 from .scrapers.glassdoor import GlassdoorScraper
@@ -20,7 +21,7 @@ def scrape_jobs(
     site_name: str | list[str] | Site | list[Site] | None = None,
     search_term: str | None = None,
     location: str | None = None,
-    distance: int | None = None,
+    distance: int | None = 50,
     is_remote: bool = False,
     job_type: str | None = None,
     easy_apply: bool | None = None,
@@ -92,6 +93,8 @@ def scrape_jobs(
         scraper_class = SCRAPER_MAPPING[site]
         scraper = scraper_class(proxy=proxy)
         scraped_data: JobResponse = scraper.scrape(scraper_input)
+        site_name = 'ZipRecruiter' if site.value.capitalize() == 'Zip_recruiter' else site.value.capitalize()
+        logger.info(f"{site_name} finished scraping")
         return site.value, scraped_data
 
     site_to_jobs_dict = {}
@@ -160,11 +163,11 @@ def scrape_jobs(
         
         # Desired column order
         desired_order = [
-            "job_url_hyper" if hyperlinks else "job_url",
             "site",
+            "job_url_hyper" if hyperlinks else "job_url",
+            "job_url_direct",
             "title",
             "company",
-            "company_url",
             "location",
             "job_type",
             "date_posted",
@@ -173,10 +176,20 @@ def scrape_jobs(
             "max_amount",
             "currency",
             "is_remote",
-            "num_urgent_words",
-            "benefits",
             "emails",
             "description",
+
+            "company_url",
+            "company_url_direct",
+            "company_addresses",
+            "company_industry",
+            "company_num_employees",
+            "company_revenue",
+            "company_description",
+            "logo_photo_url",
+            "banner_photo_url",
+            "ceo_name",
+            "ceo_photo_url",
         ]
         
         # Step 3: Ensure all desired columns are present, adding missing ones as empty
