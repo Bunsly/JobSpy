@@ -6,7 +6,7 @@ from ..jobs import (
     JobType,
     JobResponse,
     Country,
-    DescriptionFormat
+    DescriptionFormat,
 )
 
 
