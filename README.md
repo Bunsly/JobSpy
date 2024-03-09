@@ -21,7 +21,7 @@ Updated for release v1.1.3
 ### Installation
 
 ```
-pip install python-jobspy
+pip install -U python-jobspy
 ```
 
 _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_
@@ -64,8 +64,8 @@ Required
 ├── site_type (List[enum]): linkedin, zip_recruiter, indeed, glassdoor
 └── search_term (str)
 Optional
-├── location (int)
-├── distance (int): in miles
+├── location (str)
+├── distance (int): in miles, default 50
 ├── job_type (enum): fulltime, parttime, internship, contract
 ├── proxy (str): in format 'http://user:pass@host:port'
 ├── is_remote (bool)
@@ -76,7 +76,7 @@ Optional
 ├── description_format (enum): markdown, html (format type of the job descriptions)
 ├── country_indeed (enum): filters the country on Indeed (see below for correct spelling)
 ├── offset (num): starts the search from an offset (e.g. 25 will start the search from the 25th result)
-├── hours_old (int): filters jobs by the number of hours since the job was posted (all but LinkedIn rounds up to next day)
+├── hours_old (int): filters jobs by the number of hours since the job was posted (ZipRecruiter and Glassdoor round up to next day. If you use this on Indeed, it will not filter by job_type or is_remote)
 ```
 
 ### JobPost Schema
@@ -100,15 +100,26 @@ JobPost
 │   └── currency (enum)
 └── date_posted (date)
 └── emails (str)
-└── num_urgent_words (int)
 └── is_remote (bool)
+
+Indeed specific
+├── company_country (str)
+└── company_addresses (str)
+└── company_industry (str)
+└── company_employees_label (str)
+└── company_revenue_label (str)
+└── company_description (str)
+└── ceo_name (str)
+└── ceo_photo_url (str)
+└── logo_photo_url (str)
+└── banner_photo_url (str)
 ```
 
 ## Supported Countries for Job Searching
 
 ### **LinkedIn**
 
-LinkedIn searches globally & uses only the `location` parameter. You can only fetch 1000 jobs max from the LinkedIn endpoint we're using
+LinkedIn searches globally & uses only the `location` parameter. You can only fetch 1000 jobs max from the LinkedIn endpoint we are using
 
 ### **ZipRecruiter**
 
@@ -141,7 +152,11 @@ You can specify the following countries when searching on Indeed (use the exact 
 | Venezuela            | Vietnam*     |            |                |
 
 
-Glassdoor can only fetch 900 jobs from the endpoint we're using on a given search.
+## Notes
+* Indeed is the best scraper currently with no rate limiting.  
+* Glassdoor can only fetch 900 jobs from the endpoint we're using on a given search.  
+* LinkedIn is the most restrictive and usually rate limits on around the 10th page  
+* ZipRecruiter is okay but has a 5 second delay in between each page to avoid rate limiting.
 ## Frequently Asked Questions
 
 ---

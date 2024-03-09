@@ -28,7 +28,6 @@ from ...jobs import (
 )
 from ..utils import (
     logger,
-    count_urgent_words,
     extract_emails_from_text,
     get_enum_from_job_type,
     currency_parser,
@@ -187,7 +186,6 @@ class LinkedInScraper(Scraper):
             except:
                 date_posted = None
         benefits_tag = job_card.find("span", class_="result-benefits__text")
-        benefits = " ".join(benefits_tag.get_text().split()) if benefits_tag else None
         if full_descr:
             description, job_type = self._get_job_description(job_url)
 
@@ -199,11 +197,9 @@ class LinkedInScraper(Scraper):
             date_posted=date_posted,
             job_url=job_url,
             compensation=compensation,
-            benefits=benefits,
             job_type=job_type,
             description=description,
             emails=extract_emails_from_text(description) if description else None,
-            num_urgent_words=count_urgent_words(description) if description else None,
         )
 
     def _get_job_description(

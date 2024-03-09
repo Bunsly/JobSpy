@@ -11,7 +11,7 @@ import requests
 from typing import Optional
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from ..utils import count_urgent_words, extract_emails_from_text
+from ..utils import extract_emails_from_text
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import GlassdoorException
@@ -188,7 +188,6 @@ class GlassdoorScraper(Scraper):
             is_remote=is_remote,
             description=description,
             emails=extract_emails_from_text(description) if description else None,
-            num_urgent_words=count_urgent_words(description) if description else None,
         )
 
     def _fetch_job_description(self, job_id):

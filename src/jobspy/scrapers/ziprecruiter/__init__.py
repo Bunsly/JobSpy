@@ -14,7 +14,6 @@ from concurrent.futures import ThreadPoolExecutor
 from .. import Scraper, ScraperInput, Site
 from ..utils import (
     logger,
-    count_urgent_words,
     extract_emails_from_text,
     create_session,
     markdown_converter
@@ -161,7 +160,6 @@ class ZipRecruiterScraper(Scraper):
             job_url=job_url,
             description=description,
             emails=extract_emails_from_text(description) if description else None,
-            num_urgent_words=count_urgent_words(description) if description else None,
         )
 
     def _get_cookies(self):
