@@ -4,6 +4,9 @@ jobspy.scrapers.indeed
 
 This module contains routines to scrape Indeed.
 """
+from __future__ import annotations
+from typing import Tuple
+
 import math
 from concurrent.futures import ThreadPoolExecutor, Future
 from datetime import datetime
@@ -77,7 +80,7 @@ class IndeedScraper(Scraper):
             page += 1
         return JobResponse(jobs=job_list[:scraper_input.results_wanted])
 
-    def _scrape_page(self, cursor: str | None) -> (list[JobPost], str | None):
+    def _scrape_page(self, cursor: str | None) -> Tuple[list[JobPost], str | None]:
         """
         Scrapes a page of Indeed for jobs with scraper_input criteria
         :param cursor:

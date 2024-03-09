@@ -4,6 +4,8 @@ jobspy.scrapers.glassdoor
 
 This module contains routines to scrape Glassdoor.
 """
+from __future__ import annotations
+
 import json
 import re
 

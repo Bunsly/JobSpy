@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pandas as pd
 from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed

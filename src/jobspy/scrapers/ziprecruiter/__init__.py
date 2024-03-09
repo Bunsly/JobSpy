@@ -4,6 +4,8 @@ jobspy.scrapers.ziprecruiter
 
 This module contains routines to scrape ZipRecruiter.
 """
+from __future__ import annotations
+
 import math
 import time
 from datetime import datetime
