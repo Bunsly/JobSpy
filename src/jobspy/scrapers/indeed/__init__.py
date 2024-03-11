@@ -90,18 +90,17 @@ class IndeedScraper(Scraper):
         jobs = []
         new_cursor = None
         filters = self._build_filters()
-        location = (
-            self.scraper_input.location
-            or self.scraper_input.country.value[0].split(",")[-1]
-        )
         query = self.job_search_query.format(
             what=(
                 f'what: "{self.scraper_input.search_term}"'
                 if self.scraper_input.search_term
                 else ""
             ),
-            location=location,
-            radius=self.scraper_input.distance,
+            location=(
+                f'location: {{where: "{self.scraper_input.location}", radius: {self.scraper_input.distance}, radiusUnit: MILES}}'
+                if self.scraper_input.location
+                else ""
+            ),
             dateOnIndeed=self.scraper_input.hours_old,
             cursor=f'cursor: "{cursor}"' if cursor else "",
             filters=filters,
@@ -343,7 +342,7 @@ class IndeedScraper(Scraper):
         query GetJobData {{
           jobSearch(
             {what}
-            location: {{ where: "{location}", radius: {radius}, radiusUnit: MILES }}
+            {location}
             includeSponsoredResults: NONE
             limit: 100
             sort: DATE
