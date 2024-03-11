@@ -155,7 +155,7 @@ You can specify the following countries when searching on Indeed (use the exact 
 
 ## Notes
 * Indeed is the best scraper currently with no rate limiting.  
-* Glassdoor/Ziprecruiter can only fetch 900/1000 jobs from the endpoints we are using on a given search.  
+* All the job board endpoints are capped at around 1000 jobs on a given search.  
 * LinkedIn is the most restrictive and usually rate limits around the 10th page.
 
 ## Frequently Asked Questions
