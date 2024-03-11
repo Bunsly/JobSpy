@@ -5,7 +5,7 @@ from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .jobs import JobType, Location
-from .scrapers.utils import logger
+from .scrapers.utils import logger, set_logger_level
 from .scrapers.indeed import IndeedScraper
 from .scrapers.ziprecruiter import ZipRecruiterScraper
 from .scrapers.glassdoor import GlassdoorScraper
@@ -36,6 +36,7 @@ def scrape_jobs(
     linkedin_company_ids: list[int] | None = None,
     offset: int | None = 0,
     hours_old: int = None,
+    verbose: int = 2,
     **kwargs,
 ) -> pd.DataFrame:
     """
@@ -48,6 +49,7 @@ def scrape_jobs(
         Site.ZIP_RECRUITER: ZipRecruiterScraper,
         Site.GLASSDOOR: GlassdoorScraper,
     }
+    set_logger_level(verbose)
 
     def map_str_to_site(site_name: str) -> Site:
         return Site[site_name.upper()]
