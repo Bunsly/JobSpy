@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Optional
 from datetime import date
 from enum import Enum
@@ -156,7 +158,7 @@ class Country(Enum):
         """Convert a string to the corresponding Country enum."""
         country_str = country_str.strip().lower()
         for country in cls:
-            country_names = country.value[0].split(',')
+            country_names = country.value[0].split(",")
             if country_str in country_names:
                 return country
         valid_countries = [country.value for country in cls]
@@ -178,7 +180,10 @@ class Location(BaseModel):
             location_parts.append(self.state)
         if isinstance(self.country, str):
             location_parts.append(self.country)
-        elif self.country and self.country not in (Country.US_CANADA, Country.WORLDWIDE):
+        elif self.country and self.country not in (
+            Country.US_CANADA,
+            Country.WORLDWIDE,
+        ):
             country_name = self.country.value[0]
             if "," in country_name:
                 country_name = country_name.split(",")[0]

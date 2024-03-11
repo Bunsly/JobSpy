@@ -4,6 +4,9 @@ jobspy.scrapers.linkedin
 
 This module contains routines to scrape LinkedIn.
 """
+
+from __future__ import annotations
+
 import time
 import random
 from typing import Optional
@@ -24,14 +27,14 @@ from ...jobs import (
     JobType,
     Country,
     Compensation,
-    DescriptionFormat
+    DescriptionFormat,
 )
 from ..utils import (
     logger,
     extract_emails_from_text,
     get_enum_from_job_type,
     currency_parser,
-    markdown_converter
+    markdown_converter,
 )
 
 
@@ -61,26 +64,32 @@ class LinkedInScraper(Scraper):
         url_lock = Lock()
         page = scraper_input.offset // 25 + 25 if scraper_input.offset else 0
         seconds_old = (
-            scraper_input.hours_old * 3600
-            if scraper_input.hours_old
-            else None
+            scraper_input.hours_old * 3600 if scraper_input.hours_old else None
         )
-        continue_search = lambda: len(job_list) < scraper_input.results_wanted and page < 1000
+        continue_search = (
+            lambda: len(job_list) < scraper_input.results_wanted and page < 1000
+        )
         while continue_search():
-            logger.info(f'LinkedIn search page: {page // 25 + 1}')
+            logger.info(f"LinkedIn search page: {page // 25 + 1}")
             session = create_session(is_tls=False, has_retry=True, delay=5)
             params = {
                 "keywords": scraper_input.search_term,
                 "location": scraper_input.location,
                 "distance": scraper_input.distance,
                 "f_WT": 2 if scraper_input.is_remote else None,
-                "f_JT": self.job_type_code(scraper_input.job_type)
-                if scraper_input.job_type
-                else None,
+                "f_JT": (
+                    self.job_type_code(scraper_input.job_type)
+                    if scraper_input.job_type
+                    else None
+                ),
                 "pageNum": 0,
                 "start": page + scraper_input.offset,
                 "f_AL": "true" if scraper_input.easy_apply else None,
-                "f_C": ','.join(map(str, scraper_input.linkedin_company_ids)) if scraper_input.linkedin_company_ids else None,
+                "f_C": (
+                    ",".join(map(str, scraper_input.linkedin_company_ids))
+                    if scraper_input.linkedin_company_ids
+                    else None
+                ),
             }
             if seconds_old is not None:
                 params["f_TPR"] = f"r{seconds_old}"
@@ -97,15 +106,19 @@ class LinkedInScraper(Scraper):
                 )
                 if response.status_code not in range(200, 400):
                     if response.status_code == 429:
-                        logger.error(f'429 Response - Blocked by LinkedIn for too many requests')
+                        err = (
+                            f"429 Response - Blocked by LinkedIn for too many requests"
+                        )
                     else:
-                        logger.error(f'LinkedIn response status code {response.status_code}')
+                        err = f"LinkedIn response status code {response.status_code}"
+                        err += f" - {response.text}"
+                    logger.error(err)
                     return JobResponse(jobs=job_list)
             except Exception as e:
                 if "Proxy responded with" in str(e):
-                    logger.error(f'LinkedIn: Bad proxy')
+                    logger.error(f"LinkedIn: Bad proxy")
                 else:
-                    logger.error(f'LinkedIn: {str(e)}')
+                    logger.error(f"LinkedIn: {str(e)}")
                 return JobResponse(jobs=job_list)
 
             soup = BeautifulSoup(response.text, "html.parser")
@@ -126,11 +139,12 @@ class LinkedInScraper(Scraper):
                         continue
                     seen_urls.add(job_url)
                 try:
-                    job_post = self._process_job(job_card, job_url, scraper_input.linkedin_fetch_description)
+                    fetch_desc = scraper_input.linkedin_fetch_description
+                    job_post = self._process_job(job_card, job_url, fetch_desc)
                     if job_post:
                         job_list.append(job_post)
                     if not continue_search():
-                       break
+                        break
                 except Exception as e:
                     raise LinkedInException(str(e))
 
@@ -141,8 +155,10 @@ class LinkedInScraper(Scraper):
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
 
-    def _process_job(self, job_card: Tag, job_url: str, full_descr: bool) -> Optional[JobPost]:
-        salary_tag = job_card.find('span', class_='job-search-card__salary-info')
+    def _process_job(
+        self, job_card: Tag, job_url: str, full_descr: bool
+    ) -> Optional[JobPost]:
+        salary_tag = job_card.find("span", class_="job-search-card__salary-info")
 
         compensation = None
         if salary_tag:
@@ -212,7 +228,9 @@ class LinkedInScraper(Scraper):
         """
         try:
             session = create_session(is_tls=False, has_retry=True)
-            response = session.get(job_page_url, headers=self.headers, timeout=5, proxies=self.proxy)
+            response = session.get(
+                job_page_url, headers=self.headers, timeout=5, proxies=self.proxy
+            )
             response.raise_for_status()
         except:
             return None, None
@@ -225,10 +243,12 @@ class LinkedInScraper(Scraper):
         )
         description = None
         if div_content is not None:
+
             def remove_attributes(tag):
                 for attr in list(tag.attrs):
                     del tag[attr]
                 return tag
+
             div_content = remove_attributes(div_content)
             description = div_content.prettify(formatter="html")
             if self.scraper_input.description_format == DescriptionFormat.MARKDOWN:
@@ -257,11 +277,8 @@ class LinkedInScraper(Scraper):
                 )
             elif len(parts) == 3:
                 city, state, country = parts
-                location = Location(
-                    city=city,
-                    state=state,
-                    country=Country.from_string(country)
-                )
+                country = Country.from_string(country)
+                location = Location(city=city, state=state, country=country)
         return location
 
     @staticmethod

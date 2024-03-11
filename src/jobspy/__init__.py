@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pandas as pd
 from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -70,6 +72,7 @@ def scrape_jobs(
                 for site in site_name
             ]
         return site_types
+
     country_enum = Country.from_string(country_indeed)
 
     scraper_input = ScraperInput(
@@ -86,14 +89,15 @@ def scrape_jobs(
         results_wanted=results_wanted,
         linkedin_company_ids=linkedin_company_ids,
         offset=offset,
-        hours_old=hours_old
+        hours_old=hours_old,
     )
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
         scraper = scraper_class(proxy=proxy)
         scraped_data: JobResponse = scraper.scrape(scraper_input)
-        site_name = 'ZipRecruiter' if site.value.capitalize() == 'Zip_recruiter' else site.value.capitalize()
+        cap_name = site.value.capitalize()
+        site_name = "ZipRecruiter" if cap_name == "Zip_recruiter" else cap_name
         logger.info(f"{site_name} finished scraping")
         return site.value, scraped_data
 
@@ -117,9 +121,8 @@ def scrape_jobs(
     for site, job_response in site_to_jobs_dict.items():
         for job in job_response.jobs:
             job_data = job.dict()
-            job_data[
-                "job_url_hyper"
-            ] = f'<a href="{job_data["job_url"]}">{job_data["job_url"]}</a>'
+            job_url = job_data["job_url"]
+            job_data["job_url_hyper"] = f'<a href="{job_url}">{job_url}</a>'
             job_data["site"] = site
             job_data["company"] = job_data["company_name"]
             job_data["job_type"] = (
@@ -156,11 +159,11 @@ def scrape_jobs(
 
     if jobs_dfs:
         # Step 1: Filter out all-NA columns from each DataFrame before concatenation
-        filtered_dfs = [df.dropna(axis=1, how='all') for df in jobs_dfs]
-        
+        filtered_dfs = [df.dropna(axis=1, how="all") for df in jobs_dfs]
+
         # Step 2: Concatenate the filtered DataFrames
         jobs_df = pd.concat(filtered_dfs, ignore_index=True)
-        
+
         # Desired column order
         desired_order = [
             "site",
@@ -178,7 +181,6 @@ def scrape_jobs(
             "is_remote",
             "emails",
             "description",
-
             "company_url",
             "company_url_direct",
             "company_addresses",
@@ -191,16 +193,16 @@ def scrape_jobs(
             "ceo_name",
             "ceo_photo_url",
         ]
-        
+
         # Step 3: Ensure all desired columns are present, adding missing ones as empty
         for column in desired_order:
             if column not in jobs_df.columns:
                 jobs_df[column] = None  # Add missing columns as empty
-        
+
         # Reorder the DataFrame according to the desired order
         jobs_df = jobs_df[desired_order]
-        
+
         # Step 4: Sort the DataFrame as required
-        return jobs_df.sort_values(by=['site', 'date_posted'], ascending=[True, False])
+        return jobs_df.sort_values(by=["site", "date_posted"], ascending=[True, False])
     else:
         return pd.DataFrame()

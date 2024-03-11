@@ -4,6 +4,9 @@ jobspy.scrapers.ziprecruiter
 
 This module contains routines to scrape ZipRecruiter.
 """
+
+from __future__ import annotations
+
 import math
 import time
 from datetime import datetime
@@ -16,7 +19,7 @@ from ..utils import (
     logger,
     extract_emails_from_text,
     create_session,
-    markdown_converter
+    markdown_converter,
 )
 from ...jobs import (
     JobPost,
@@ -25,7 +28,7 @@ from ...jobs import (
     JobResponse,
     JobType,
     Country,
-    DescriptionFormat
+    DescriptionFormat,
 )
 
 
@@ -62,7 +65,7 @@ class ZipRecruiterScraper(Scraper):
                 break
             if page > 1:
                 time.sleep(self.delay)
-            logger.info(f'ZipRecruiter search page: {page}')
+            logger.info(f"ZipRecruiter search page: {page}")
             jobs_on_page, continue_token = self._find_jobs_in_page(
                 scraper_input, continue_token
             )
@@ -88,24 +91,23 @@ class ZipRecruiterScraper(Scraper):
         if continue_token:
             params["continue_from"] = continue_token
         try:
-            res= self.session.get(
-                f"{self.api_url}/jobs-app/jobs",
-                headers=self.headers,
-                params=params
+            res = self.session.get(
+                f"{self.api_url}/jobs-app/jobs", headers=self.headers, params=params
             )
             if res.status_code not in range(200, 400):
                 if res.status_code == 429:
-                    logger.error(f'429 Response - Blocked by ZipRecruiter for too many requests')
+                    err = "429 Response - Blocked by ZipRecruiter for too many requests"
                 else:
-                    logger.error(f'ZipRecruiter response status code {res.status_code}')
+                    err = f"ZipRecruiter response status code {res.status_code}"
+                    err += f" with response: {res.text}"  # ZipRecruiter likely not available in EU
+                logger.error(err)
                 return jobs_list, ""
         except Exception as e:
             if "Proxy responded with" in str(e):
-                logger.error(f'Indeed: Bad proxy')
+                logger.error(f"Indeed: Bad proxy")
             else:
-                logger.error(f'Indeed: {str(e)}')
+                logger.error(f"Indeed: {str(e)}")
             return jobs_list, ""
-
 
         res_data = res.json()
         jobs_list = res_data.get("jobs", [])
@@ -127,7 +129,11 @@ class ZipRecruiterScraper(Scraper):
         self.seen_urls.add(job_url)
 
         description = job.get("job_description", "").strip()
-        description = markdown_converter(description) if self.scraper_input.description_format == DescriptionFormat.MARKDOWN else description
+        description = (
+            markdown_converter(description)
+            if self.scraper_input.description_format == DescriptionFormat.MARKDOWN
+            else description
+        )
         company = job.get("hiring_company", {}).get("name")
         country_value = "usa" if job.get("job_country") == "US" else "canada"
         country_enum = Country.from_string(country_value)
@@ -138,23 +144,22 @@ class ZipRecruiterScraper(Scraper):
         job_type = self._get_job_type_enum(
             job.get("employment_type", "").replace("_", "").lower()
         )
-        date_posted = datetime.fromisoformat(job['posted_time'].rstrip("Z")).date()
+        date_posted = datetime.fromisoformat(job["posted_time"].rstrip("Z")).date()
+        comp_interval = job.get("compensation_interval")
+        comp_interval = "yearly" if comp_interval == "annual" else comp_interval
+        comp_min = int(job["compensation_min"]) if "compensation_min" in job else None
+        comp_max = int(job["compensation_max"]) if "compensation_max" in job else None
+        comp_currency = job.get("compensation_currency")
         return JobPost(
             title=title,
             company_name=company,
             location=location,
             job_type=job_type,
             compensation=Compensation(
-                interval="yearly"
-                if job.get("compensation_interval") == "annual"
-                else job.get("compensation_interval"),
-                min_amount=int(job["compensation_min"])
-                if "compensation_min" in job
-                else None,
-                max_amount=int(job["compensation_max"])
-                if "compensation_max" in job
-                else None,
-                currency=job.get("compensation_currency"),
+                interval=comp_interval,
+                min_amount=comp_min,
+                max_amount=comp_max,
+                currency=comp_currency,
             ),
             date_posted=date_posted,
             job_url=job_url,
@@ -163,8 +168,9 @@ class ZipRecruiterScraper(Scraper):
         )
 
     def _get_cookies(self):
-        data="event_type=session&logged_in=false&number_of_retry=1&property=model%3AiPhone&property=os%3AiOS&property=locale%3Aen_us&property=app_build_number%3A4734&property=app_version%3A91.0&property=manufacturer%3AApple&property=timestamp%3A2024-01-12T12%3A04%3A42-06%3A00&property=screen_height%3A852&property=os_version%3A16.6.1&property=source%3Ainstall&property=screen_width%3A393&property=device_model%3AiPhone%2014%20Pro&property=brand%3AApple"
-        self.session.post(f"{self.api_url}/jobs-app/event", data=data, headers=self.headers)
+        data = "event_type=session&logged_in=false&number_of_retry=1&property=model%3AiPhone&property=os%3AiOS&property=locale%3Aen_us&property=app_build_number%3A4734&property=app_version%3A91.0&property=manufacturer%3AApple&property=timestamp%3A2024-01-12T12%3A04%3A42-06%3A00&property=screen_height%3A852&property=os_version%3A16.6.1&property=source%3Ainstall&property=screen_width%3A393&property=device_model%3AiPhone%2014%20Pro&property=brand%3AApple"
+        url = f"{self.api_url}/jobs-app/event"
+        self.session.post(url, data=data, headers=self.headers)
 
     @staticmethod
     def _get_job_type_enum(job_type_str: str) -> list[JobType] | None:
@@ -180,16 +186,13 @@ class ZipRecruiterScraper(Scraper):
             "location": scraper_input.location,
         }
         if scraper_input.hours_old:
-            fromage = max(scraper_input.hours_old // 24, 1) if scraper_input.hours_old else None
-            params['days'] = fromage
-        job_type_map = {
-            JobType.FULL_TIME: 'full_time',
-            JobType.PART_TIME: 'part_time'
-        }
+            params["days"] = max(scraper_input.hours_old // 24, 1)
+        job_type_map = {JobType.FULL_TIME: "full_time", JobType.PART_TIME: "part_time"}
         if scraper_input.job_type:
-            params['employment_type'] = job_type_map[scraper_input.job_type] if scraper_input.job_type in job_type_map else scraper_input.job_type.value[0]
+            job_type = scraper_input.job_type
+            params["employment_type"] = job_type_map.get(job_type, job_type.value[0])
         if scraper_input.easy_apply:
-            params['zipapply'] = 1
+            params["zipapply"] = 1
         if scraper_input.is_remote:
             params["remote"] = 1
         if scraper_input.distance:

@@ -4,21 +4,23 @@ jobspy.scrapers.glassdoor
 
 This module contains routines to scrape Glassdoor.
 """
-import json
-import re
 
+from __future__ import annotations
+
+import re
+import json
 import requests
-from typing import Optional
+from typing import Optional, Tuple
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from ..utils import extract_emails_from_text
 
 from .. import Scraper, ScraperInput, Site
+from ..utils import extract_emails_from_text
 from ..exceptions import GlassdoorException
 from ..utils import (
     create_session,
     markdown_converter,
-    logger
+    logger,
 )
 from ...jobs import (
     JobPost,
@@ -27,7 +29,7 @@ from ...jobs import (
     Location,
     JobResponse,
     JobType,
-    DescriptionFormat
+    DescriptionFormat,
 )
 
 
@@ -59,25 +61,22 @@ class GlassdoorScraper(Scraper):
 
         self.session = create_session(self.proxy, is_tls=True, has_retry=True)
         token = self._get_csrf_token()
-        self.headers['gd-csrf-token'] = token if token else self.fallback_token
+        self.headers["gd-csrf-token"] = token if token else self.fallback_token
 
         location_id, location_type = self._get_location(
             scraper_input.location, scraper_input.is_remote
         )
         if location_type is None:
-            logger.error('Glassdoor: location not parsed')
+            logger.error("Glassdoor: location not parsed")
             return JobResponse(jobs=[])
         all_jobs: list[JobPost] = []
         cursor = None
 
-        for page in range(
-            1 + (scraper_input.offset // self.jobs_per_page),
-            min(
-                (scraper_input.results_wanted // self.jobs_per_page) + 2,
-                self.max_pages + 1,
-            ),
-        ):
-            logger.info(f'Glassdoor search page: {page}')
+        range_start = 1 + (scraper_input.offset // self.jobs_per_page)
+        tot_pages = (scraper_input.results_wanted // self.jobs_per_page) + 2
+        range_end = min(tot_pages, self.max_pages + 1)
+        for page in range(range_start, range_end):
+            logger.info(f"Glassdoor search page: {page}")
             try:
                 jobs, cursor = self._fetch_jobs_page(
                     scraper_input, location_id, location_type, page, cursor
@@ -87,7 +86,7 @@ class GlassdoorScraper(Scraper):
                     all_jobs = all_jobs[: scraper_input.results_wanted]
                     break
             except Exception as e:
-                logger.error(f'Glassdoor: {str(e)}')
+                logger.error(f"Glassdoor: {str(e)}")
                 break
         return JobResponse(jobs=all_jobs)
 
@@ -98,39 +97,48 @@ class GlassdoorScraper(Scraper):
         location_type: str,
         page_num: int,
         cursor: str | None,
-    ) -> (list[JobPost], str | None):
+    ) -> Tuple[list[JobPost], str | None]:
         """
         Scrapes a page of Glassdoor for jobs with scraper_input criteria
         """
         jobs = []
         self.scraper_input = scraper_input
         try:
-            payload = self._add_payload(
-                location_id, location_type, page_num, cursor
-            )
+            payload = self._add_payload(location_id, location_type, page_num, cursor)
             response = self.session.post(
-                f"{self.base_url}/graph", headers=self.headers, timeout_seconds=15, data=payload
+                f"{self.base_url}/graph",
+                headers=self.headers,
+                timeout_seconds=15,
+                data=payload,
             )
             if response.status_code != 200:
-                raise GlassdoorException(f"bad response status code: {response.status_code}")
+                exc_msg = f"bad response status code: {response.status_code}"
+                raise GlassdoorException(exc_msg)
             res_json = response.json()[0]
             if "errors" in res_json:
                 raise ValueError("Error encountered in API response")
-        except (requests.exceptions.ReadTimeout, GlassdoorException, ValueError, Exception) as e:
-            logger.error(f'Glassdoor: {str(e)}')
+        except (
+            requests.exceptions.ReadTimeout,
+            GlassdoorException,
+            ValueError,
+            Exception,
+        ) as e:
+            logger.error(f"Glassdoor: {str(e)}")
             return jobs, None
 
         jobs_data = res_json["data"]["jobListings"]["jobListings"]
 
         with ThreadPoolExecutor(max_workers=self.jobs_per_page) as executor:
-            future_to_job_data = {executor.submit(self._process_job, job): job for job in jobs_data}
+            future_to_job_data = {
+                executor.submit(self._process_job, job): job for job in jobs_data
+            }
             for future in as_completed(future_to_job_data):
                 try:
                     job_post = future.result()
                     if job_post:
                         jobs.append(job_post)
                 except Exception as exc:
-                    raise GlassdoorException(f'Glassdoor generated an exception: {exc}')
+                    raise GlassdoorException(f"Glassdoor generated an exception: {exc}")
 
         return jobs, self.get_cursor_for_page(
             res_json["data"]["jobListings"]["paginationCursors"], page_num + 1
@@ -140,7 +148,9 @@ class GlassdoorScraper(Scraper):
         """
         Fetches csrf token needed for API by visiting a generic page
         """
-        res = self.session.get(f'{self.base_url}/Job/computer-science-jobs.htm', headers=self.headers)
+        res = self.session.get(
+            f"{self.base_url}/Job/computer-science-jobs.htm", headers=self.headers
+        )
         pattern = r'"token":\s*"([^"]+)"'
         matches = re.findall(pattern, res.text)
         token = None
@@ -153,19 +163,20 @@ class GlassdoorScraper(Scraper):
         Processes a single job and fetches its description.
         """
         job_id = job_data["jobview"]["job"]["listingId"]
-        job_url = f'{self.base_url}job-listing/j?jl={job_id}'
+        job_url = f"{self.base_url}job-listing/j?jl={job_id}"
         if job_url in self.seen_urls:
             return None
         self.seen_urls.add(job_url)
         job = job_data["jobview"]
         title = job["job"]["jobTitleText"]
         company_name = job["header"]["employerNameFromSearch"]
-        company_id = job_data['jobview']['header']['employer']['id']
+        company_id = job_data["jobview"]["header"]["employer"]["id"]
         location_name = job["header"].get("locationName", "")
         location_type = job["header"].get("locationType", "")
         age_in_days = job["header"].get("ageInDays")
         is_remote, location = False, None
-        date_posted = (datetime.now() - timedelta(days=age_in_days)).date() if age_in_days is not None else None
+        date_diff = (datetime.now() - timedelta(days=age_in_days)).date()
+        date_posted = date_diff if age_in_days is not None else None
 
         if location_type == "S":
             is_remote = True
@@ -177,9 +188,10 @@ class GlassdoorScraper(Scraper):
             description = self._fetch_job_description(job_id)
         except:
             description = None
+        company_url = f"{self.base_url}Overview/W-EI_IE{company_id}.htm"
         return JobPost(
             title=title,
-            company_url=f"{self.base_url}Overview/W-EI_IE{company_id}.htm" if company_id else None,
+            company_url=company_url if company_id else None,
             company_name=company_name,
             date_posted=date_posted,
             job_url=job_url,
@@ -201,7 +213,7 @@ class GlassdoorScraper(Scraper):
                 "variables": {
                     "jl": job_id,
                     "queryString": "q",
-                    "pageTypeEnum": "SERP"
+                    "pageTypeEnum": "SERP",
                 },
                 "query": """
                 query JobDetailQuery($jl: Long!, $queryString: String, $pageTypeEnum: PageTypeEnum) {
@@ -216,15 +228,17 @@ class GlassdoorScraper(Scraper):
                         __typename
                     }
                 }
-                """
+                """,
             }
         ]
         res = requests.post(url, json=body, headers=self.headers)
         if res.status_code != 200:
             return None
         data = res.json()[0]
-        desc = data['data']['jobview']['job']['description']
-        return markdown_converter(desc) if self.scraper_input.description_format == DescriptionFormat.MARKDOWN else desc
+        desc = data["data"]["jobview"]["job"]["description"]
+        if self.scraper_input.description_format == DescriptionFormat.MARKDOWN:
+            desc = markdown_converter(desc)
+        return desc
 
     def _get_location(self, location: str, is_remote: bool) -> (int, str):
         if not location or is_remote:
@@ -234,10 +248,13 @@ class GlassdoorScraper(Scraper):
         res = self.session.get(url, headers=self.headers)
         if res.status_code != 200:
             if res.status_code == 429:
-                logger.error(f'429 Response - Blocked by Glassdoor for too many requests')
+                err = f"429 Response - Blocked by Glassdoor for too many requests"
+                logger.error(err)
                 return None, None
             else:
-                logger.error(f'Glassdoor response status code {res.status_code}')
+                err = f"Glassdoor response status code {res.status_code}"
+                err += f" - {res.text}"
+                logger.error(f"Glassdoor response status code {res.status_code}")
                 return None, None
         items = res.json()
 
@@ -248,7 +265,7 @@ class GlassdoorScraper(Scraper):
             location_type = "CITY"
         elif location_type == "S":
             location_type = "STATE"
-        elif location_type == 'N':
+        elif location_type == "N":
             location_type = "COUNTRY"
         return int(items[0]["locationId"]), location_type
 
@@ -259,7 +276,9 @@ class GlassdoorScraper(Scraper):
         page_num: int,
         cursor: str | None = None,
     ) -> str:
-        fromage = max(self.scraper_input.hours_old // 24, 1) if self.scraper_input.hours_old else None
+        fromage = None
+        if self.scraper_input.hours_old:
+            fromage = max(self.scraper_input.hours_old // 24, 1)
         filter_params = []
         if self.scraper_input.easy_apply:
             filter_params.append({"filterKey": "applicationType", "values": "1"})
@@ -278,9 +297,9 @@ class GlassdoorScraper(Scraper):
                 "pageNumber": page_num,
                 "pageCursor": cursor,
                 "fromage": fromage,
-                "sort": "date"
+                "sort": "date",
             },
-            "query": self.query_template
+            "query": self.query_template,
         }
         if self.scraper_input.job_type:
             payload["variables"]["filterParams"].append(

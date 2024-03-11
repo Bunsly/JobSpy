@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 from ..jobs import (
     Enum,
     BaseModel,
     JobType,
     JobResponse,
     Country,
-    DescriptionFormat
+    DescriptionFormat,
 )
 
 
