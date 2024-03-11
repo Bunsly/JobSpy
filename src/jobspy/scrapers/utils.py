@@ -21,6 +21,23 @@ if not logger.handlers:
     logger.addHandler(console_handler)
 
 
+def set_logger_level(verbose: int = 2):
+    """
+    Adjusts the logger's level. This function allows the logging level to be changed at runtime.
+
+    Parameters:
+    - verbose: int {0, 1, 2} (default=2, all logs)
+    """
+    if verbose is None:
+        return
+    level_name = {2: "INFO", 1: "WARNING", 0: "ERROR"}.get(verbose, "INFO")
+    level = getattr(logging, level_name.upper(), None)
+    if level is not None:
+        logger.setLevel(level)
+    else:
+        raise ValueError(f"Invalid log level: {level_name}")
+
+
 def markdown_converter(description_html: str):
     if description_html is None:
         return None

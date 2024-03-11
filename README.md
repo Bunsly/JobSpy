@@ -77,6 +77,7 @@ Optional
 ├── country_indeed (enum): filters the country on Indeed (see below for correct spelling)
 ├── offset (num): starts the search from an offset (e.g. 25 will start the search from the 25th result)
 ├── hours_old (int): filters jobs by the number of hours since the job was posted (ZipRecruiter and Glassdoor round up to next day. If you use this on Indeed, it will not filter by job_type or is_remote)
+├── verbose (int) {0, 1, 2}: Controls the verbosity of the runtime printouts (0 prints only errors, 1 is errors+warnings, 2 is all logs. Default is 2.)
 ```
 
 ### JobPost Schema
