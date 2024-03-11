@@ -198,7 +198,7 @@ class IndeedScraper(Scraper):
         date_posted = datetime.fromtimestamp(timestamp_seconds).strftime("%Y-%m-%d")
         employer = job["employer"].get("dossier") if job["employer"] else None
         employer_details = employer.get("employerDetails", {}) if employer else {}
-        rel_url = job["employer"]["relativeCompanyPageUrl"]
+        rel_url = job["employer"]["relativeCompanyPageUrl"] if job["employer"] else None
         return JobPost(
             title=job["title"],
             description=description,

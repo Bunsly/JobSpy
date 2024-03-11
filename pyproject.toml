@@ -19,13 +19,13 @@ NUMPY = "1.24.2"
 pydantic = "^2.3.0"
 tls-client = "^1.0.1"
 markdownify = "^0.11.6"
-pre-commit = "^3.6.2"
-black = "^24.2.0"
 
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.1"
 jupyter = "^1.0.0"
+black = "^24.2.0"
+pre-commit = "^3.6.2"
 
 [build-system]
 requires = ["poetry-core"]
