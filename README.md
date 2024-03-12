@@ -4,8 +4,8 @@
 
 **Not technical?** Try out the web scraping tool on our site at [usejobspy.com](https://usejobspy.com).
 
-_Looking to build a data-focused software product?_ **[Book a call](https://bunsly.com/)** _to
-work with us._
+*Looking to build a data-focused software product?* **[Book a call](https://bunsly.com/)** *to
+work with us.*
 
 ## Features
 
@@ -61,23 +61,22 @@ zip_recruiter Software Developer                 TEKsystems        Phoenix      
 
 ```plaintext
 Optional
-├── site_name (list|str): linkedin, zip_recruiter, indeed, glassdoor (default is all four)
+├── site_type (list): linkedin, zip_recruiter, indeed, glassdoor (default is all 4)
 ├── search_term (str)
 ├── location (str)
 ├── distance (int): in miles, default 50
 ├── job_type (str): fulltime, parttime, internship, contract
 ├── proxy (str): in format 'http://user:pass@host:port'
 ├── is_remote (bool)
-├── results_wanted (int): number of job results to retrieve for each site specified in 'site_name'
+├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
 ├── easy_apply (bool): filters for jobs that are hosted on the job board site (LinkedIn & Indeed do not allow pairing this with hours_old)
 ├── linkedin_fetch_description (bool): fetches full description for LinkedIn (slower)
 ├── linkedin_company_ids (list[int): searches for linkedin jobs with specific company ids
-├── description_format (str): markdown, html (Format type of the job descriptions. Default is markdown.)
+├── description_format (str): markdown, html (format type of the job descriptions)
 ├── country_indeed (str): filters the country on Indeed (see below for correct spelling)
 ├── offset (int): starts the search from an offset (e.g. 25 will start the search from the 25th result)
 ├── hours_old (int): filters jobs by the number of hours since the job was posted (ZipRecruiter and Glassdoor round up to next day. If you use this on Indeed, it will not filter by job_type/is_remote/easy_apply)
 ├── verbose (int) {0, 1, 2}: Controls the verbosity of the runtime printouts (0 prints only errors, 1 is errors+warnings, 2 is all logs. Default is 2.)
-├── hyperlinks (bool): Whether to turn `job_url`s into hyperlinks. Default is false.
 ```
 
 ### JobPost Schema
@@ -120,7 +119,7 @@ Indeed specific
 
 ### **LinkedIn**
 
-LinkedIn searches globally & uses only the `location` parameter.
+LinkedIn searches globally & uses only the `location` parameter. 
 
 ### **ZipRecruiter**
 
@@ -129,34 +128,34 @@ ZipRecruiter searches for jobs in **US/Canada** & uses only the `location` param
 ### **Indeed / Glassdoor**
 
 Indeed & Glassdoor supports most countries, but the `country_indeed` parameter is required. Additionally, use the `location`
-parameter to narrow down the location, e.g. city & state if necessary.
+parameter to narrow down the location, e.g. city & state if necessary. 
 
-You can specify the following countries when searching on Indeed (use the exact name, \* indicates support for Glassdoor):
+You can specify the following countries when searching on Indeed (use the exact name, * indicates support for Glassdoor):
 
-|                      |               |             |                |
-| -------------------- | ------------- | ----------- | -------------- |
-| Argentina            | Australia\*   | Austria\*   | Bahrain        |
-| Belgium\*            | Brazil\*      | Canada\*    | Chile          |
-| China                | Colombia      | Costa Rica  | Czech Republic |
-| Denmark              | Ecuador       | Egypt       | Finland        |
-| France\*             | Germany\*     | Greece      | Hong Kong\*    |
-| Hungary              | India\*       | Indonesia   | Ireland\*      |
-| Israel               | Italy\*       | Japan       | Kuwait         |
-| Luxembourg           | Malaysia      | Mexico\*    | Morocco        |
-| Netherlands\*        | New Zealand\* | Nigeria     | Norway         |
-| Oman                 | Pakistan      | Panama      | Peru           |
-| Philippines          | Poland        | Portugal    | Qatar          |
-| Romania              | Saudi Arabia  | Singapore\* | South Africa   |
-| South Korea          | Spain\*       | Sweden      | Switzerland\*  |
-| Taiwan               | Thailand      | Turkey      | Ukraine        |
-| United Arab Emirates | UK\*          | USA\*       | Uruguay        |
-| Venezuela            | Vietnam\*     |             |                |
+|                      |              |            |                |
+|----------------------|--------------|------------|----------------|
+| Argentina            | Australia*   | Austria*   | Bahrain        |
+| Belgium*             | Brazil*      | Canada*    | Chile          |
+| China                | Colombia     | Costa Rica | Czech Republic |
+| Denmark              | Ecuador      | Egypt      | Finland        |
+| France*              | Germany*     | Greece     | Hong Kong*     |
+| Hungary              | India*       | Indonesia  | Ireland*       |
+| Israel               | Italy*       | Japan      | Kuwait         |
+| Luxembourg           | Malaysia     | Mexico*    | Morocco        |
+| Netherlands*         | New Zealand* | Nigeria    | Norway         |
+| Oman                 | Pakistan     | Panama     | Peru           |
+| Philippines          | Poland       | Portugal   | Qatar          |
+| Romania              | Saudi Arabia | Singapore* | South Africa   |
+| South Korea          | Spain*       | Sweden     | Switzerland*   |
+| Taiwan               | Thailand     | Turkey     | Ukraine        |
+| United Arab Emirates | UK*          | USA*       | Uruguay        |
+| Venezuela            | Vietnam*     |            |                |
+
 
 ## Notes
-
-- Indeed is the best scraper currently with no rate limiting.
-- All the job board endpoints are capped at around 1000 jobs on a given search.
-- LinkedIn is the most restrictive and usually rate limits around the 10th page.
+* Indeed is the best scraper currently with no rate limiting.  
+* All the job board endpoints are capped at around 1000 jobs on a given search.  
+* LinkedIn is the most restrictive and usually rate limits around the 10th page.
 
 ## Frequently Asked Questions
 
