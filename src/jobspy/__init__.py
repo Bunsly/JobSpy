@@ -41,7 +41,7 @@ def scrape_jobs(
 ) -> pd.DataFrame:
     """
     Simultaneously scrapes job data from multiple job sites.
-    :return: results_wanted: pandas dataframe containing job data
+    :return: pandas dataframe containing job data
     """
     SCRAPER_MAPPING = {
         Site.LINKEDIN: LinkedInScraper,

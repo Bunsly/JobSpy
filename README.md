@@ -69,7 +69,7 @@ Optional
 ├── proxy (str): in format 'http://user:pass@host:port'
 ├── is_remote (bool)
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
-├── easy_apply (bool): filters for jobs that are hosted on the job board site (not supported on Indeed)
+├── easy_apply (bool): filters for jobs that are hosted on the job board site (LinkedIn & Indeed do not allow pairing this with hours_old)
 ├── linkedin_fetch_description (bool): fetches full description for LinkedIn (slower)
 ├── linkedin_company_ids (list[int): searches for linkedin jobs with specific company ids
 ├── description_format (str): markdown, html (format type of the job descriptions)
