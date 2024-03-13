@@ -61,22 +61,23 @@ zip_recruiter Software Developer                 TEKsystems        Phoenix      
 
 ```plaintext
 Optional
-├── site_type (list): linkedin, zip_recruiter, indeed, glassdoor (default is all 4)
+├── site_name (list|str): linkedin, zip_recruiter, indeed, glassdoor (default is all four)
 ├── search_term (str)
 ├── location (str)
 ├── distance (int): in miles, default 50
 ├── job_type (str): fulltime, parttime, internship, contract
 ├── proxy (str): in format 'http://user:pass@host:port'
 ├── is_remote (bool)
-├── results_wanted (int): number of job results to retrieve for each site specified in 'site_type'
+├── results_wanted (int): number of job results to retrieve for each site specified in 'site_name'
 ├── easy_apply (bool): filters for jobs that are hosted on the job board site (LinkedIn & Indeed do not allow pairing this with hours_old)
 ├── linkedin_fetch_description (bool): fetches full description for LinkedIn (slower)
 ├── linkedin_company_ids (list[int): searches for linkedin jobs with specific company ids
-├── description_format (str): markdown, html (format type of the job descriptions)
+├── description_format (str): markdown, html (Format type of the job descriptions. Default is markdown.)
 ├── country_indeed (str): filters the country on Indeed (see below for correct spelling)
 ├── offset (int): starts the search from an offset (e.g. 25 will start the search from the 25th result)
 ├── hours_old (int): filters jobs by the number of hours since the job was posted (ZipRecruiter and Glassdoor round up to next day. If you use this on Indeed, it will not filter by job_type/is_remote/easy_apply)
 ├── verbose (int) {0, 1, 2}: Controls the verbosity of the runtime printouts (0 prints only errors, 1 is errors+warnings, 2 is all logs. Default is 2.)
+├── hyperlinks (bool): Whether to turn `job_url`s into hyperlinks. Default is false.
 ```
 
 ### JobPost Schema
