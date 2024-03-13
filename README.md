@@ -71,7 +71,7 @@ Optional
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_name'
 ├── easy_apply (bool): filters for jobs that are hosted on the job board site (LinkedIn & Indeed do not allow pairing this with hours_old)
 ├── linkedin_fetch_description (bool): fetches full description for LinkedIn (slower)
-├── linkedin_company_ids (list[int): searches for linkedin jobs with specific company ids
+├── linkedin_company_ids (list[int]): searches for linkedin jobs with specific company ids
 ├── description_format (str): markdown, html (Format type of the job descriptions. Default is markdown.)
 ├── country_indeed (str): filters the country on Indeed (see below for correct spelling)
 ├── offset (int): starts the search from an offset (e.g. 25 will start the search from the 25th result)
