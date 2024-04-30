@@ -90,10 +90,11 @@ class IndeedScraper(Scraper):
         jobs = []
         new_cursor = None
         filters = self._build_filters()
+        search_term = self.scraper_input.search_term.replace('"', '\\"') if self.scraper_input.search_term else ""
         query = self.job_search_query.format(
             what=(
-                f'what: "{self.scraper_input.search_term}"'
-                if self.scraper_input.search_term
+                f'what: "{search_term}"'
+                if search_term
                 else ""
             ),
             location=(
