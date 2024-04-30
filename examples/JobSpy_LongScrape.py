@@ -32,17 +32,18 @@ while len(all_jobs) < results_wanted:
                 search_term="software engineer",
                 # New York, NY
                 # Dallas, TX
-
                 # Los Angeles, CA
                 location="Los Angeles, CA",
-                results_wanted=min(results_in_each_iteration, results_wanted - len(all_jobs)),
+                results_wanted=min(
+                    results_in_each_iteration, results_wanted - len(all_jobs)
+                ),
                 country_indeed="USA",
                 offset=offset,
                 # proxy="http://jobspy:5a4vpWtj8EeJ2hoYzk@ca.smartproxy.com:20001",
             )
 
             # Add the scraped jobs to the list
-            all_jobs.extend(jobs.to_dict('records'))
+            all_jobs.extend(jobs.to_dict("records"))
 
             # Increment the offset for the next page of results
             offset += results_in_each_iteration

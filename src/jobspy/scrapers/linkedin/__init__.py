@@ -197,15 +197,16 @@ class LinkedInScraper(Scraper):
             if metadata_card
             else None
         )
-        date_posted = description = job_type = job_url_direct = None
+        date_posted = None
         if datetime_tag and "datetime" in datetime_tag.attrs:
             datetime_str = datetime_tag["datetime"]
             try:
                 date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
             except:
                 date_posted = None
+        job_details = {}
         if full_descr:
-            description, job_type, job_url_direct = self._get_job_description(job_url)
+            job_details = self._get_job_details(job_url)
 
         return JobPost(
             title=title,
@@ -216,20 +217,18 @@ class LinkedInScraper(Scraper):
             job_url=job_url,
             job_url_direct=job_url_direct,
             compensation=compensation,
-            job_type=job_type,
-            description=description,
-            emails=extract_emails_from_text(description) if description else None,
+            job_type=job_details.get("job_type"),
+            description=job_details.get("description"),
+            job_url_direct=job_details.get("job_url_direct"),
+            emails=extract_emails_from_text(job_details.get("description")),
+            logo_photo_url=job_details.get("logo_photo_url"),
         )
 
-    def _get_job_description(
-        self, job_page_url: str
-    ) -> tuple[None, None, None] | tuple[
-        str | None, tuple[str | None, JobType | None], str | None
-    ]:
+    def _get_job_details(self, job_page_url: str) -> dict:
         """
-        Retrieves job description by going to the job page url
+        Retrieves job description and other job details by going to the job page url
         :param job_page_url:
-        :return: description or None
+        :return: dict
         """
         try:
             session = create_session(is_tls=False, has_retry=True)
@@ -238,9 +237,9 @@ class LinkedInScraper(Scraper):
             )
             response.raise_for_status()
         except:
-            return None, None
+            return {}
         if response.url == "https://www.linkedin.com/signup":
-            return None, None
+            return {}
 
         soup = BeautifulSoup(response.text, "html.parser")
         div_content = soup.find(
@@ -258,7 +257,14 @@ class LinkedInScraper(Scraper):
             description = div_content.prettify(formatter="html")
             if self.scraper_input.description_format == DescriptionFormat.MARKDOWN:
                 description = markdown_converter(description)
-        return description, self._parse_job_type(soup), self._parse_job_url_direct(soup)
+        return {
+            "description": description,
+            "job_type": self._parse_job_type(soup),
+            "job_url_direct": self._parse_job_url_direct(soup),
+            "logo_photo_url": soup.find("img", {"class": "artdeco-entity-image"}).get(
+                "data-delayed-url"
+            ),
+        }
 
     def _get_location(self, metadata_card: Optional[Tag]) -> Location:
         """
