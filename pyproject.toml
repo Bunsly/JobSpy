@@ -25,8 +25,8 @@ regex = "^2024.4.28"
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.1"
 jupyter = "^1.0.0"
-black = "^24.2.0"
-pre-commit = "^3.6.2"
+black = "*"
+pre-commit = "*"
 
 [build-system]
 requires = ["poetry-core"]

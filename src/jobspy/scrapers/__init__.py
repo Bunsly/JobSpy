@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
+
 from ..jobs import (
     Enum,
     BaseModel,
@@ -36,9 +38,10 @@ class ScraperInput(BaseModel):
     hours_old: int | None = None
 
 
-class Scraper:
+class Scraper(ABC):
     def __init__(self, site: Site, proxy: list[str] | None = None):
         self.site = site
         self.proxy = (lambda p: {"http": p, "https": p} if p else None)(proxy)
 
+    @abstractmethod
     def scrape(self, scraper_input: ScraperInput) -> JobResponse: ...
