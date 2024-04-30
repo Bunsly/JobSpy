@@ -119,7 +119,7 @@ class IndeedScraper(Scraper):
         )
         if response.status_code != 200:
             logger.info(
-                f"Indeed responded with status code: {response.status_code} (submit GitHub issue if this appears to be a beg)"
+                f"Indeed responded with status code: {response.status_code} (submit GitHub issue if this appears to be a bug)"
             )
             return jobs, new_cursor
         data = response.json()

@@ -197,14 +197,13 @@ class LinkedInScraper(Scraper):
             if metadata_card
             else None
         )
-        date_posted = description = job_type = None
+        date_posted = description = job_type = job_url_direct = None
         if datetime_tag and "datetime" in datetime_tag.attrs:
             datetime_str = datetime_tag["datetime"]
             try:
                 date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
             except:
                 date_posted = None
-        benefits_tag = job_card.find("span", class_="result-benefits__text")
         if full_descr:
             description, job_type, job_url_direct = self._get_job_description(job_url)
 
