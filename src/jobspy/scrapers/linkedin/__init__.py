@@ -215,7 +215,6 @@ class LinkedInScraper(Scraper):
             location=location,
             date_posted=date_posted,
             job_url=job_url,
-            job_url_direct=job_url_direct,
             compensation=compensation,
             job_type=job_details.get("job_type"),
             description=job_details.get("description"),
