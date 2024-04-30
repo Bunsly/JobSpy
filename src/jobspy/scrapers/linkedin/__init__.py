@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import time
 import random
+import regex as re
+import urllib.parse
 from typing import Optional
 from datetime import datetime
 
@@ -51,6 +53,7 @@ class LinkedInScraper(Scraper):
         super().__init__(Site(Site.LINKEDIN), proxy=proxy)
         self.scraper_input = None
         self.country = "worldwide"
+        self.job_url_direct_regex = re.compile(r'(?<=\?url=)[^"]+')
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -194,16 +197,15 @@ class LinkedInScraper(Scraper):
             if metadata_card
             else None
         )
-        date_posted = description = job_type = None
+        date_posted = description = job_type = job_url_direct = None
         if datetime_tag and "datetime" in datetime_tag.attrs:
             datetime_str = datetime_tag["datetime"]
             try:
                 date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
             except:
                 date_posted = None
-        benefits_tag = job_card.find("span", class_="result-benefits__text")
         if full_descr:
-            description, job_type = self._get_job_description(job_url)
+            description, job_type, job_url_direct = self._get_job_description(job_url)
 
         return JobPost(
             title=title,
@@ -212,6 +214,7 @@ class LinkedInScraper(Scraper):
             location=location,
             date_posted=date_posted,
             job_url=job_url,
+            job_url_direct=job_url_direct,
             compensation=compensation,
             job_type=job_type,
             description=description,
@@ -220,7 +223,9 @@ class LinkedInScraper(Scraper):
 
     def _get_job_description(
         self, job_page_url: str
-    ) -> tuple[None, None] | tuple[str | None, tuple[str | None, JobType | None]]:
+    ) -> tuple[None, None, None] | tuple[
+        str | None, tuple[str | None, JobType | None], str | None
+    ]:
         """
         Retrieves job description by going to the job page url
         :param job_page_url:
@@ -253,7 +258,7 @@ class LinkedInScraper(Scraper):
             description = div_content.prettify(formatter="html")
             if self.scraper_input.description_format == DescriptionFormat.MARKDOWN:
                 description = markdown_converter(description)
-        return description, self._parse_job_type(soup)
+        return description, self._parse_job_type(soup), self._parse_job_url_direct(soup)
 
     def _get_location(self, metadata_card: Optional[Tag]) -> Location:
         """
@@ -305,6 +310,23 @@ class LinkedInScraper(Scraper):
                 employment_type = employment_type.replace("-", "")
 
         return [get_enum_from_job_type(employment_type)] if employment_type else []
+
+    def _parse_job_url_direct(self, soup: BeautifulSoup) -> str | None:
+        """
+        Gets the job url direct from job page
+        :param soup:
+        :return: str
+        """
+        job_url_direct = None
+        job_url_direct_content = soup.find("code", id="applyUrl")
+        if job_url_direct_content:
+            job_url_direct_match = self.job_url_direct_regex.search(
+                job_url_direct_content.decode_contents().strip()
+            )
+            if job_url_direct_match:
+                job_url_direct = urllib.parse.unquote(job_url_direct_match.group())
+
+        return job_url_direct
 
     @staticmethod
     def job_type_code(job_type_enum: JobType) -> str:
