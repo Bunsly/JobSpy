@@ -190,6 +190,7 @@ class GlassdoorScraper(Scraper):
             description = None
         company_url = f"{self.base_url}Overview/W-EI_IE{company_id}.htm"
         return JobPost(
+            id=str(job_id),
             title=title,
             company_url=company_url if company_id else None,
             company_name=company_name,

@@ -213,6 +213,7 @@ class IndeedScraper(Scraper):
         employer_details = employer.get("employerDetails", {}) if employer else {}
         rel_url = job["employer"]["relativeCompanyPageUrl"] if job["employer"] else None
         return JobPost(
+            id=str(job["key"]),
             title=job["title"],
             description=description,
             company_name=job["employer"].get("name") if job.get("employer") else None,
