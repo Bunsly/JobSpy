@@ -151,6 +151,7 @@ class ZipRecruiterScraper(Scraper):
         comp_max = int(job["compensation_max"]) if "compensation_max" in job else None
         comp_currency = job.get("compensation_currency")
         return JobPost(
+            id=str(job['listing_key']),
             title=title,
             company_name=company,
             location=location,

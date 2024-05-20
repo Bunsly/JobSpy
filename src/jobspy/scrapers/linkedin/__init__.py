@@ -209,6 +209,7 @@ class LinkedInScraper(Scraper):
             job_details = self._get_job_details(job_url)
 
         return JobPost(
+            id=self._get_id(job_url),
             title=title,
             company_name=company,
             company_url=company_url,
@@ -222,6 +223,16 @@ class LinkedInScraper(Scraper):
             emails=extract_emails_from_text(job_details.get("description")),
             logo_photo_url=job_details.get("logo_photo_url"),
         )
+
+    def _get_id(self, url: str):
+        """
+        Extracts the job id from the job url
+        :param url:
+        :return: str
+        """
+        if not url:
+            return None
+        return url.split("/")[-1]
 
     def _get_job_details(self, job_page_url: str) -> dict:
         """

@@ -226,6 +226,7 @@ class DescriptionFormat(Enum):
 
 
 class JobPost(BaseModel):
+    id: str | None = None
     title: str
     company_name: str | None
     job_url: str

@@ -168,6 +168,7 @@ def scrape_jobs(
 
         # Desired column order
         desired_order = [
+            "id",
             "site",
             "job_url_hyper" if hyperlinks else "job_url",
             "job_url_direct",
