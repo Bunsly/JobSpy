@@ -151,7 +151,7 @@ class IndeedScraper(Scraper):
             """.format(
                 start=self.scraper_input.hours_old
             )
-        elif self.scraper_input.easy_apply:
+        if self.scraper_input.easy_apply:
             filters_str = """
             filters: {
                 keyword: {
@@ -160,7 +160,7 @@ class IndeedScraper(Scraper):
                 }
             }
             """
-        elif self.scraper_input.job_type or self.scraper_input.is_remote:
+        if self.scraper_input.job_type or self.scraper_input.is_remote:
             job_type_key_mapping = {
                 JobType.FULL_TIME: "CF3CP",
                 JobType.PART_TIME: "75GKK",
