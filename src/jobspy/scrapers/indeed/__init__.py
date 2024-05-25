@@ -33,7 +33,7 @@ from ...jobs import (
 
 
 class IndeedScraper(Scraper):
-    def __init__(self, proxies: str | None = None):
+    def __init__(self, proxies: list[str] | None = None):
         """
         Initializes IndeedScraper with the Indeed API url
         """
