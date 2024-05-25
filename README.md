@@ -67,7 +67,7 @@ Optional
 ├── location (str)
 ├── distance (int): in miles, default 50
 ├── job_type (str): fulltime, parttime, internship, contract
-├── proxy (str): in format 'http://user:pass@host:port'
+├── proxies (list[str]): in format ['http://user:pass@host:port']
 ├── is_remote (bool)
 ├── results_wanted (int): number of job results to retrieve for each site specified in 'site_name'
 ├── easy_apply (bool): filters for jobs that are hosted on the job board site (LinkedIn & Indeed do not allow pairing this with hours_old)
