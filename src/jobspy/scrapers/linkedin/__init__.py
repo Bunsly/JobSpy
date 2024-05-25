@@ -10,14 +10,13 @@ from __future__ import annotations
 import time
 import random
 import regex as re
-import urllib.parse
 from typing import Optional
 from datetime import datetime
 
 from threading import Lock
 from bs4.element import Tag
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse, unquote
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import LinkedInException
@@ -46,11 +45,19 @@ class LinkedInScraper(Scraper):
     band_delay = 4
     jobs_per_page = 25
 
-    def __init__(self, proxy: Optional[str] = None):
+    def __init__(self, proxies: list[str] | str | None = None):
         """
         Initializes LinkedInScraper with the LinkedIn job search url
         """
-        super().__init__(Site(Site.LINKEDIN), proxy=proxy)
+        super().__init__(Site.LINKEDIN, proxies=proxies)
+        self.session = create_session(
+            proxies=self.proxies,
+            is_tls=False,
+            has_retry=True,
+            delay=5,
+            clear_cookies=True,
+        )
+        self.session.headers.update(self.headers)
         self.scraper_input = None
         self.country = "worldwide"
         self.job_url_direct_regex = re.compile(r'(?<=\?url=)[^"]+')
@@ -74,7 +81,6 @@ class LinkedInScraper(Scraper):
         )
         while continue_search():
             logger.info(f"LinkedIn search page: {page // 25 + 1}")
-            session = create_session(is_tls=False, has_retry=True, delay=5)
             params = {
                 "keywords": scraper_input.search_term,
                 "location": scraper_input.location,
@@ -99,12 +105,9 @@ class LinkedInScraper(Scraper):
 
             params = {k: v for k, v in params.items() if v is not None}
             try:
-                response = session.get(
+                response = self.session.get(
                     f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search?",
                     params=params,
-                    allow_redirects=True,
-                    proxies=self.proxy,
-                    headers=self.headers,
                     timeout=10,
                 )
                 if response.status_code not in range(200, 400):
@@ -241,10 +244,7 @@ class LinkedInScraper(Scraper):
         :return: dict
         """
         try:
-            session = create_session(is_tls=False, has_retry=True)
-            response = session.get(
-                job_page_url, headers=self.headers, timeout=5, proxies=self.proxy
-            )
+            response = self.session.get(job_page_url, timeout=5)
             response.raise_for_status()
         except:
             return {}
@@ -340,7 +340,7 @@ class LinkedInScraper(Scraper):
                 job_url_direct_content.decode_contents().strip()
             )
             if job_url_direct_match:
-                job_url_direct = urllib.parse.unquote(job_url_direct_match.group())
+                job_url_direct = unquote(job_url_direct_match.group())
 
         return job_url_direct
 

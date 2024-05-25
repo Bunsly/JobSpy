@@ -11,7 +11,7 @@ work with us.*
 
 - Scrapes job postings from **LinkedIn**, **Indeed**, **Glassdoor**, & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
-- Proxy support
+- Proxies support
 
 [Video Guide for JobSpy](https://www.youtube.com/watch?v=RuP1HrAZnxs&pp=ygUgam9icyBzY3JhcGVyIGJvdCBsaW5rZWRpbiBpbmRlZWQ%3D) -
 Updated for release v1.1.3
@@ -39,7 +39,10 @@ jobs = scrape_jobs(
     results_wanted=20,
     hours_old=72, # (only Linkedin/Indeed is hour specific, others round up to days old)
     country_indeed='USA',  # only needed for indeed / glassdoor
+    
     # linkedin_fetch_description=True # get full description and direct job url for linkedin (slower)
+    # proxies=["Efb5EA8OIk0BQb:wifi;us;@proxy.soax.com:9000", "localhost"],
+    
 )
 print(f"Found {len(jobs)} jobs")
 print(jobs.head())
@@ -76,8 +79,9 @@ Optional
 ├── job_type (str): 
 |    fulltime, parttime, internship, contract
 │
-├── proxy (str): 
-|    in format 'http://user:pass@host:port'
+├── proxies (): 
+|    in format ['user:pass@host:port', 'localhost']
+|    each job board will round robin through the proxies
 │
 ├── is_remote (bool)
 │
@@ -201,7 +205,7 @@ You can specify the following countries when searching on Indeed (use the exact 
 ## Notes
 * Indeed is the best scraper currently with no rate limiting.  
 * All the job board endpoints are capped at around 1000 jobs on a given search.  
-* LinkedIn is the most restrictive and usually rate limits around the 10th page.
+* LinkedIn is the most restrictive and usually rate limits around the 10th page with one ip. Proxies are a must basically.
 
 ## Frequently Asked Questions
 
@@ -216,7 +220,7 @@ persist, [submit an issue](https://github.com/Bunsly/JobSpy/issues).
 **Q: Received a response code 429?**  
 **A:** This indicates that you have been blocked by the job board site for sending too many requests. All of the job board sites are aggressive with blocking. We recommend:
 
-- Waiting some time between scrapes (site-dependent).
-- Trying a VPN or proxy to change your IP address.
+- Wait some time between scrapes (site-dependent).
+- Try using the proxies param to change your IP address.
 
 ---

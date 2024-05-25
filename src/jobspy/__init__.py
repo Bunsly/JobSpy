@@ -30,7 +30,7 @@ def scrape_jobs(
     results_wanted: int = 15,
     country_indeed: str = "usa",
     hyperlinks: bool = False,
-    proxy: str | None = None,
+    proxies: list[str] | str | None = None,
     description_format: str = "markdown",
     linkedin_fetch_description: bool | None = False,
     linkedin_company_ids: list[int] | None = None,
@@ -96,7 +96,7 @@ def scrape_jobs(
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
-        scraper = scraper_class(proxy=proxy)
+        scraper = scraper_class(proxies=proxies)
         scraped_data: JobResponse = scraper.scrape(scraper_input)
         cap_name = site.value.capitalize()
         site_name = "ZipRecruiter" if cap_name == "Zip_recruiter" else cap_name
