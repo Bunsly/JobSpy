@@ -39,9 +39,9 @@ class ScraperInput(BaseModel):
 
 
 class Scraper(ABC):
-    def __init__(self, site: Site, proxy: list[str] | None = None):
+    def __init__(self, site: Site, proxies: list[str] | None = None):
+        self.proxies = proxies
         self.site = site
-        self.proxy = (lambda p: {"http": p, "https": p} if p else None)(proxy)
 
     @abstractmethod
     def scrape(self, scraper_input: ScraperInput) -> JobResponse: ...

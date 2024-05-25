@@ -36,14 +36,15 @@ class ZipRecruiterScraper(Scraper):
     base_url = "https://www.ziprecruiter.com"
     api_url = "https://api.ziprecruiter.com"
 
-    def __init__(self, proxy: Optional[str] = None):
+    def __init__(self, proxies: list[str] | str | None = None):
         """
         Initializes ZipRecruiterScraper with the ZipRecruiter job search url
         """
+        super().__init__(Site.ZIP_RECRUITER, proxies=proxies)
+
         self.scraper_input = None
-        self.session = create_session(proxy)
+        self.session = create_session(proxies=proxies)
         self._get_cookies()
-        super().__init__(Site.ZIP_RECRUITER, proxy=proxy)
 
         self.delay = 5
         self.jobs_per_page = 20
@@ -151,7 +152,7 @@ class ZipRecruiterScraper(Scraper):
         comp_max = int(job["compensation_max"]) if "compensation_max" in job else None
         comp_currency = job.get("compensation_currency")
         return JobPost(
-            id=str(job['listing_key']),
+            id=str(job["listing_key"]),
             title=title,
             company_name=company,
             location=location,

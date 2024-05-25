@@ -12,14 +12,13 @@ from typing import Tuple
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, Future
 
-import requests
-
 from .. import Scraper, ScraperInput, Site
 from ..utils import (
     extract_emails_from_text,
     get_enum_from_job_type,
     markdown_converter,
     logger,
+    create_session,
 )
 from ...jobs import (
     JobPost,
@@ -33,10 +32,13 @@ from ...jobs import (
 
 
 class IndeedScraper(Scraper):
-    def __init__(self, proxy: str | None = None):
+    def __init__(self, proxies: list[str] | str | None = None):
         """
         Initializes IndeedScraper with the Indeed API url
         """
+        super().__init__(Site.INDEED, proxies=proxies)
+
+        self.session = create_session(proxies=self.proxies, is_tls=False)
         self.scraper_input = None
         self.jobs_per_page = 100
         self.num_workers = 10
@@ -45,8 +47,6 @@ class IndeedScraper(Scraper):
         self.api_country_code = None
         self.base_url = None
         self.api_url = "https://apis.indeed.com/graphql"
-        site = Site(Site.INDEED)
-        super().__init__(site, proxy=proxy)
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -90,13 +90,13 @@ class IndeedScraper(Scraper):
         jobs = []
         new_cursor = None
         filters = self._build_filters()
-        search_term = self.scraper_input.search_term.replace('"', '\\"') if self.scraper_input.search_term else ""
+        search_term = (
+            self.scraper_input.search_term.replace('"', '\\"')
+            if self.scraper_input.search_term
+            else ""
+        )
         query = self.job_search_query.format(
-            what=(
-                f'what: "{search_term}"'
-                if search_term
-                else ""
-            ),
+            what=(f'what: "{search_term}"' if search_term else ""),
             location=(
                 f'location: {{where: "{self.scraper_input.location}", radius: {self.scraper_input.distance}, radiusUnit: MILES}}'
                 if self.scraper_input.location
@@ -111,11 +111,10 @@ class IndeedScraper(Scraper):
         }
         api_headers = self.api_headers.copy()
         api_headers["indeed-co"] = self.api_country_code
-        response = requests.post(
+        response = self.session.post(
             self.api_url,
             headers=api_headers,
             json=payload,
-            proxies=self.proxy,
             timeout=10,
         )
         if response.status_code != 200:

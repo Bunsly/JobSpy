@@ -11,7 +11,7 @@ work with us.*
 
 - Scrapes job postings from **LinkedIn**, **Indeed**, **Glassdoor**, & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
-- Proxy support
+- Proxies support
 
 [Video Guide for JobSpy](https://www.youtube.com/watch?v=RuP1HrAZnxs&pp=ygUgam9icyBzY3JhcGVyIGJvdCBsaW5rZWRpbiBpbmRlZWQ%3D) -
 Updated for release v1.1.3
@@ -39,7 +39,10 @@ jobs = scrape_jobs(
     results_wanted=20,
     hours_old=72, # (only Linkedin/Indeed is hour specific, others round up to days old)
     country_indeed='USA',  # only needed for indeed / glassdoor
+    
     # linkedin_fetch_description=True # get full description and direct job url for linkedin (slower)
+    # proxies=["Efb5EA8OIk0BQb:wifi;us;@proxy.soax.com:9000", "localhost"],
+    
 )
 print(f"Found {len(jobs)} jobs")
 print(jobs.head())
@@ -62,24 +65,69 @@ zip_recruiter Software Developer                 TEKsystems        Phoenix      
 
 ```plaintext
 Optional
-├── site_name (list|str): linkedin, zip_recruiter, indeed, glassdoor (default is all four)
+├── site_name (list|str): 
+|    linkedin, zip_recruiter, indeed, glassdoor 
+|    (default is all four)
+│
 ├── search_term (str)
+│
 ├── location (str)
-├── distance (int): in miles, default 50
-├── job_type (str): fulltime, parttime, internship, contract
-├── proxy (str): in format 'http://user:pass@host:port'
+│
+├── distance (int): 
+|    in miles, default 50
+│
+├── job_type (str): 
+|    fulltime, parttime, internship, contract
+│
+├── proxies (): 
+|    in format ['user:pass@host:port', 'localhost']
+|    each job board will round robin through the proxies
+│
 ├── is_remote (bool)
-├── results_wanted (int): number of job results to retrieve for each site specified in 'site_name'
-├── easy_apply (bool): filters for jobs that are hosted on the job board site (LinkedIn & Indeed do not allow pairing this with hours_old)
-├── linkedin_fetch_description (bool): fetches full description and direct job url for LinkedIn (slower)
-├── linkedin_company_ids (list[int]): searches for linkedin jobs with specific company ids
-├── description_format (str): markdown, html (Format type of the job descriptions. Default is markdown.)
-├── country_indeed (str): filters the country on Indeed (see below for correct spelling)
-├── offset (int): starts the search from an offset (e.g. 25 will start the search from the 25th result)
-├── hours_old (int): filters jobs by the number of hours since the job was posted (ZipRecruiter and Glassdoor round up to next day. If you use this on Indeed, it will not filter by job_type/is_remote/easy_apply)
-├── verbose (int) {0, 1, 2}: Controls the verbosity of the runtime printouts (0 prints only errors, 1 is errors+warnings, 2 is all logs. Default is 2.)
-├── hyperlinks (bool): Whether to turn `job_url`s into hyperlinks. Default is false.
+│
+├── results_wanted (int): 
+|    number of job results to retrieve for each site specified in 'site_name'
+│
+├── easy_apply (bool): 
+|    filters for jobs that are hosted on the job board site
+│
+├── description_format (str): 
+|    markdown, html (Format type of the job descriptions. Default is markdown.)
+│
+├── offset (int): 
+|    starts the search from an offset (e.g. 25 will start the search from the 25th result)
+│
+├── hours_old (int): 
+|    filters jobs by the number of hours since the job was posted 
+|    (ZipRecruiter and Glassdoor round up to next day.)
+│
+├── verbose (int) {0, 1, 2}: 
+|    Controls the verbosity of the runtime printouts 
+|    (0 prints only errors, 1 is errors+warnings, 2 is all logs. Default is 2.)
+
+├── linkedin_fetch_description (bool): 
+|    fetches full description and direct job url for LinkedIn (Increases requests by O(n))
+│
+├── linkedin_company_ids (list[int]): 
+|    searches for linkedin jobs with specific company ids
+|
+├── country_indeed (str): 
+|    filters the country on Indeed & Glassdoor (see below for correct spelling)
 ```
+
+```
+├── Indeed limitations:
+|    Only one from this list can be used in a search:
+|    - hours_old
+|    - job_type & is_remote
+|    - easy_apply
+│
+└── LinkedIn limitations:
+|    Only one from this list can be used in a search:
+|    - hours_old
+|    - easy_apply
+```
+
 
 ### JobPost Schema
 
@@ -157,7 +205,7 @@ You can specify the following countries when searching on Indeed (use the exact 
 ## Notes
 * Indeed is the best scraper currently with no rate limiting.  
 * All the job board endpoints are capped at around 1000 jobs on a given search.  
-* LinkedIn is the most restrictive and usually rate limits around the 10th page.
+* LinkedIn is the most restrictive and usually rate limits around the 10th page with one ip. Proxies are a must basically.
 
 ## Frequently Asked Questions
 
@@ -172,7 +220,7 @@ persist, [submit an issue](https://github.com/Bunsly/JobSpy/issues).
 **Q: Received a response code 429?**  
 **A:** This indicates that you have been blocked by the job board site for sending too many requests. All of the job board sites are aggressive with blocking. We recommend:
 
-- Waiting some time between scrapes (site-dependent).
-- Trying a VPN or proxy to change your IP address.
+- Wait some time between scrapes (site-dependent).
+- Try using the proxies param to change your IP address.
 
 ---
