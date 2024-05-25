@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 import time
 from datetime import datetime
-from typing import Optional, Tuple, Any
+from typing import List, Optional, Tuple, Any
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -36,14 +36,14 @@ class ZipRecruiterScraper(Scraper):
     base_url = "https://www.ziprecruiter.com"
     api_url = "https://api.ziprecruiter.com"
 
-    def __init__(self, proxy: Optional[str] = None):
+    def __init__(self, proxies: Optional[str] = None):
         """
         Initializes ZipRecruiterScraper with the ZipRecruiter job search url
         """
         self.scraper_input = None
-        self.session = create_session(proxy)
+        super().__init__(Site.ZIP_RECRUITER, proxies=proxies)
+        self.session = create_session(self.proxies)
         self._get_cookies()
-        super().__init__(Site.ZIP_RECRUITER, proxy=proxy)
 
         self.delay = 5
         self.jobs_per_page = 20

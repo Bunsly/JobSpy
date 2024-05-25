@@ -33,7 +33,7 @@ from ...jobs import (
 
 
 class IndeedScraper(Scraper):
-    def __init__(self, proxy: str | None = None):
+    def __init__(self, proxies: str | None = None):
         """
         Initializes IndeedScraper with the Indeed API url
         """
@@ -46,7 +46,7 @@ class IndeedScraper(Scraper):
         self.base_url = None
         self.api_url = "https://apis.indeed.com/graphql"
         site = Site(Site.INDEED)
-        super().__init__(site, proxy=proxy)
+        super().__init__(site, proxies=proxies)
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -115,7 +115,7 @@ class IndeedScraper(Scraper):
             self.api_url,
             headers=api_headers,
             json=payload,
-            proxies=self.proxy,
+            proxies=self.proxies,
             timeout=10,
         )
         if response.status_code != 200:

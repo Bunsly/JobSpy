@@ -11,7 +11,7 @@ import time
 import random
 import regex as re
 import urllib.parse
-from typing import Optional
+from typing import List, Optional
 from datetime import datetime
 
 from threading import Lock
@@ -46,11 +46,11 @@ class LinkedInScraper(Scraper):
     band_delay = 4
     jobs_per_page = 25
 
-    def __init__(self, proxy: Optional[str] = None):
+    def __init__(self, proxies: Optional[List[str]] = None):
         """
         Initializes LinkedInScraper with the LinkedIn job search url
         """
-        super().__init__(Site(Site.LINKEDIN), proxy=proxy)
+        super().__init__(Site(Site.LINKEDIN), proxies=proxies)
         self.scraper_input = None
         self.country = "worldwide"
         self.job_url_direct_regex = re.compile(r'(?<=\?url=)[^"]+')
@@ -103,7 +103,7 @@ class LinkedInScraper(Scraper):
                     f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search?",
                     params=params,
                     allow_redirects=True,
-                    proxies=self.proxy,
+                    proxies=self.proxies,
                     headers=self.headers,
                     timeout=10,
                 )
@@ -243,7 +243,7 @@ class LinkedInScraper(Scraper):
         try:
             session = create_session(is_tls=False, has_retry=True)
             response = session.get(
-                job_page_url, headers=self.headers, timeout=5, proxies=self.proxy
+                job_page_url, headers=self.headers, timeout=5, proxies=self.proxies
             )
             response.raise_for_status()
         except:

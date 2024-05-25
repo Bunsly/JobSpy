@@ -53,7 +53,7 @@ def extract_emails_from_text(text: str) -> list[str] | None:
 
 
 def create_session(
-    proxy: dict | None = None,
+    proxies: dict | None = None,
     is_tls: bool = True,
     has_retry: bool = False,
     delay: int = 1,
@@ -64,12 +64,12 @@ def create_session(
     """
     if is_tls:
         session = tls_client.Session(random_tls_extension_order=True)
-        session.proxies = proxy
+        session.proxies = proxies
     else:
         session = requests.Session()
         session.allow_redirects = True
-        if proxy:
-            session.proxies.update(proxy)
+        if proxies:
+            session.proxies.update(proxies)
         if has_retry:
             retries = Retry(
                 total=3,
