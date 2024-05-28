@@ -140,13 +140,14 @@ JobPost
 │   ├── state (str)
 ├── description (str)
 ├── job_type (str): fulltime, parttime, internship, contract
+├── job_function (str)
 ├── compensation (object)
 │   ├── interval (str): yearly, monthly, weekly, daily, hourly
 │   ├── min_amount (int)
 │   ├── max_amount (int)
 │   └── currency (enum)
-└── date_posted (date)
-└── emails (str)
+├── date_posted (date)
+├── emails (str)
 └── is_remote (bool)
 
 Indeed specific
