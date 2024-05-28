@@ -13,7 +13,6 @@ import regex as re
 from typing import Optional
 from datetime import datetime
 
-from threading import Lock
 from bs4.element import Tag
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urlunparse, unquote
@@ -71,8 +70,7 @@ class LinkedInScraper(Scraper):
         self.scraper_input = scraper_input
         job_list: list[JobPost] = []
         seen_urls = set()
-        url_lock = Lock()
-        page = scraper_input.offset // 25 * 25 if scraper_input.offset else 0
+        page = scraper_input.offset // 10 * 10 if scraper_input.offset else 0
         request_count = 0
         seconds_old = (
             scraper_input.hours_old * 3600 if scraper_input.hours_old else None
@@ -142,10 +140,9 @@ class LinkedInScraper(Scraper):
                     job_id = href.split("-")[-1]
                     job_url = f"{self.base_url}/jobs/view/{job_id}"
 
-                with url_lock:
-                    if job_url in seen_urls:
-                        continue
-                    seen_urls.add(job_url)
+                if job_url in seen_urls:
+                    continue
+                seen_urls.add(job_url)
                 try:
                     fetch_desc = scraper_input.linkedin_fetch_description
                     job_post = self._process_job(job_card, job_url, fetch_desc)

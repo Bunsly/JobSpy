@@ -41,7 +41,7 @@ jobs = scrape_jobs(
     country_indeed='USA',  # only needed for indeed / glassdoor
     
     # linkedin_fetch_description=True # get full description and direct job url for linkedin (slower)
-    # proxies=["Efb5EA8OIk0BQb:wifi;us;@proxy.soax.com:9000", "localhost"],
+    # proxies=["208.195.175.46:65095", "208.195.175.45:65095", "localhost"],
     
 )
 print(f"Found {len(jobs)} jobs")
