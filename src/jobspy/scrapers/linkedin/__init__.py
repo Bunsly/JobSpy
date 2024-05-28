@@ -224,6 +224,7 @@ class LinkedInScraper(Scraper):
             job_url_direct=job_details.get("job_url_direct"),
             emails=extract_emails_from_text(job_details.get("description")),
             logo_photo_url=job_details.get("logo_photo_url"),
+            job_function=job_details.get("job_function"),
         )
 
     def _get_id(self, url: str):
@@ -247,7 +248,7 @@ class LinkedInScraper(Scraper):
             response.raise_for_status()
         except:
             return {}
-        if response.url == "https://www.linkedin.com/signup":
+        if "linkedin.com/signup" in response.url:
             return {}
 
         soup = BeautifulSoup(response.text, "html.parser")
@@ -266,6 +267,18 @@ class LinkedInScraper(Scraper):
             description = div_content.prettify(formatter="html")
             if self.scraper_input.description_format == DescriptionFormat.MARKDOWN:
                 description = markdown_converter(description)
+
+        h3_tag = soup.find(
+            "h3", text=lambda text: text and "Job function" in text.strip()
+        )
+
+        job_function = None
+        if h3_tag:
+            job_function_span = h3_tag.find_next(
+                "span", class_="description__job-criteria-text"
+            )
+            if job_function_span:
+                job_function = job_function_span.text.strip()
         return {
             "description": description,
             "job_type": self._parse_job_type(soup),
@@ -273,6 +286,7 @@ class LinkedInScraper(Scraper):
             "logo_photo_url": soup.find("img", {"class": "artdeco-entity-image"}).get(
                 "data-delayed-url"
             ),
+            "job_function": job_function,
         }
 
     def _get_location(self, metadata_card: Optional[Tag]) -> Location:

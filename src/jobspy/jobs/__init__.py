@@ -254,6 +254,9 @@ class JobPost(BaseModel):
     logo_photo_url: str | None = None
     banner_photo_url: str | None = None
 
+    # linkedin only atm
+    job_function: str | None = None
+
 
 class JobResponse(BaseModel):
     jobs: list[JobPost] = []
