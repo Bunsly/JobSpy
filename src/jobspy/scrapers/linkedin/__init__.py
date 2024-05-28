@@ -72,7 +72,8 @@ class LinkedInScraper(Scraper):
         job_list: list[JobPost] = []
         seen_urls = set()
         url_lock = Lock()
-        page = scraper_input.offset // 25 + 25 if scraper_input.offset else 0
+        page = scraper_input.offset // 25 * 25 if scraper_input.offset else 0
+        request_count = 0
         seconds_old = (
             scraper_input.hours_old * 3600 if scraper_input.hours_old else None
         )
@@ -80,7 +81,8 @@ class LinkedInScraper(Scraper):
             lambda: len(job_list) < scraper_input.results_wanted and page < 1000
         )
         while continue_search():
-            logger.info(f"LinkedIn search page: {page // 25 + 1}")
+            request_count += 1
+            logger.info(f"LinkedIn search page: {request_count}")
             params = {
                 "keywords": scraper_input.search_term,
                 "location": scraper_input.location,
@@ -92,7 +94,7 @@ class LinkedInScraper(Scraper):
                     else None
                 ),
                 "pageNum": 0,
-                "start": page + scraper_input.offset,
+                "start": page,
                 "f_AL": "true" if scraper_input.easy_apply else None,
                 "f_C": (
                     ",".join(map(str, scraper_input.linkedin_company_ids))
@@ -156,7 +158,7 @@ class LinkedInScraper(Scraper):
 
             if continue_search():
                 time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
-                page += self.jobs_per_page
+                page += len(job_list)
 
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
