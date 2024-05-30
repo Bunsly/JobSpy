@@ -76,7 +76,7 @@ Optional
 ├── job_type (str): 
 |    fulltime, parttime, internship, contract
 │
-├── proxies (): 
+├── proxies (list): 
 |    in format ['user:pass@host:port', 'localhost']
 |    each job board will round robin through the proxies
 │
