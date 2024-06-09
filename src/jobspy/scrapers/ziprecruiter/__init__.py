@@ -7,12 +7,16 @@ This module contains routines to scrape ZipRecruiter.
 
 from __future__ import annotations
 
+import json
 import math
+import re
 import time
 from datetime import datetime
 from typing import Optional, Tuple, Any
 
 from concurrent.futures import ThreadPoolExecutor
+
+from bs4 import BeautifulSoup
 
 from .. import Scraper, ScraperInput, Site
 from ..utils import (
@@ -20,6 +24,7 @@ from ..utils import (
     extract_emails_from_text,
     create_session,
     markdown_converter,
+    remove_attributes,
 )
 from ...jobs import (
     JobPost,
@@ -151,6 +156,8 @@ class ZipRecruiterScraper(Scraper):
         comp_min = int(job["compensation_min"]) if "compensation_min" in job else None
         comp_max = int(job["compensation_max"]) if "compensation_max" in job else None
         comp_currency = job.get("compensation_currency")
+        description_full, job_url_direct = self._get_descr(job_url)
+
         return JobPost(
             id=str(job["listing_key"]),
             title=title,
@@ -165,9 +172,41 @@ class ZipRecruiterScraper(Scraper):
             ),
             date_posted=date_posted,
             job_url=job_url,
-            description=description,
+            description=description_full if description_full else description,
             emails=extract_emails_from_text(description) if description else None,
+            job_url_direct=job_url_direct,
         )
+
+    def _get_descr(self, job_url):
+        res = self.session.get(job_url, headers=self.headers, allow_redirects=True)
+        description_full = job_url_direct = None
+        if res.ok:
+            soup = BeautifulSoup(res.text, "html.parser")
+            job_descr_div = soup.find("div", class_="job_description")
+            company_descr_section = soup.find("section", class_="company_description")
+            job_description_clean = (
+                remove_attributes(job_descr_div).prettify(formatter="html")
+                if job_descr_div
+                else ""
+            )
+            company_description_clean = (
+                remove_attributes(company_descr_section).prettify(formatter="html")
+                if company_descr_section
+                else ""
+            )
+            description_full = job_description_clean + company_description_clean
+            script_tag = soup.find("script", type="application/json")
+            if script_tag:
+                job_json = json.loads(script_tag.string)
+                job_url_val = job_json["model"]["saveJobURL"]
+                m = re.search(r"job_url=(.+)", job_url_val)
+                if m:
+                    job_url_direct = m.group(1)
+
+            if self.scraper_input.description_format == DescriptionFormat.MARKDOWN:
+                description_full = markdown_converter(description_full)
+
+        return description_full, job_url_direct
 
     def _get_cookies(self):
         data = "event_type=session&logged_in=false&number_of_retry=1&property=model%3AiPhone&property=os%3AiOS&property=locale%3Aen_us&property=app_build_number%3A4734&property=app_version%3A91.0&property=manufacturer%3AApple&property=timestamp%3A2024-01-12T12%3A04%3A42-06%3A00&property=screen_height%3A852&property=os_version%3A16.6.1&property=source%3Ainstall&property=screen_width%3A393&property=device_model%3AiPhone%2014%20Pro&property=brand%3AApple"
