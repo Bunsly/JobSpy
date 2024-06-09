@@ -185,3 +185,55 @@ def remove_attributes(tag):
     for attr in list(tag.attrs):
         del tag[attr]
     return tag
+
+
+def extract_salary(
+    salary_str,
+    lower_limit=1000,
+    upper_limit=700000,
+    hourly_threshold=350,
+    monthly_threshold=30000,
+):
+    if not salary_str:
+        return None, None, None, None
+
+    min_max_pattern = r"\$(\d+(?:,\d+)?(?:\.\d+)?)([kK]?)\s*[-—–]\s*(?:\$)?(\d+(?:,\d+)?(?:\.\d+)?)([kK]?)"
+
+    def to_int(s):
+        return int(float(s.replace(",", "")))
+
+    def convert_hourly_to_annual(hourly_wage):
+        return hourly_wage * 2080
+
+    def convert_monthly_to_annual(monthly_wage):
+        return monthly_wage * 12
+
+    match = re.search(min_max_pattern, salary_str)
+
+    if match:
+        min_salary = to_int(match.group(1))
+        max_salary = to_int(match.group(3))
+        # Handle 'k' suffix for min and max salaries independently
+        if "k" in match.group(2).lower() or "k" in match.group(4).lower():
+            min_salary *= 1000
+            max_salary *= 1000
+
+        # Convert to annual if less than the hourly threshold
+        if min_salary < hourly_threshold:
+            min_salary = convert_hourly_to_annual(min_salary)
+            if max_salary < hourly_threshold:
+                max_salary = convert_hourly_to_annual(max_salary)
+
+        elif min_salary < monthly_threshold:
+            min_salary = convert_monthly_to_annual(min_salary)
+            if max_salary < monthly_threshold:
+                max_salary = convert_monthly_to_annual(max_salary)
+
+        # Ensure salary range is within specified limits
+        if (
+            lower_limit <= min_salary <= upper_limit
+            and lower_limit <= max_salary <= upper_limit
+            and min_salary < max_salary
+        ):
+            return "yearly", min_salary, max_salary, "USD"
+    return None, None, None, None

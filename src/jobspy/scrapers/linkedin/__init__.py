@@ -69,7 +69,7 @@ class LinkedInScraper(Scraper):
         """
         self.scraper_input = scraper_input
         job_list: list[JobPost] = []
-        seen_urls = set()
+        seen_ids = set()
         page = scraper_input.offset // 10 * 10 if scraper_input.offset else 0
         request_count = 0
         seconds_old = (
@@ -133,25 +133,24 @@ class LinkedInScraper(Scraper):
                 return JobResponse(jobs=job_list)
 
             for job_card in job_cards:
-                job_url = None
                 href_tag = job_card.find("a", class_="base-card__full-link")
                 if href_tag and "href" in href_tag.attrs:
                     href = href_tag.attrs["href"].split("?")[0]
                     job_id = href.split("-")[-1]
-                    job_url = f"{self.base_url}/jobs/view/{job_id}"
 
-                if job_url in seen_urls:
-                    continue
-                seen_urls.add(job_url)
-                try:
-                    fetch_desc = scraper_input.linkedin_fetch_description
-                    job_post = self._process_job(job_card, job_url, fetch_desc)
-                    if job_post:
-                        job_list.append(job_post)
-                    if not continue_search():
-                        break
-                except Exception as e:
-                    raise LinkedInException(str(e))
+                    if job_id in seen_ids:
+                        continue
+                    seen_ids.add(job_id)
+
+                    try:
+                        fetch_desc = scraper_input.linkedin_fetch_description
+                        job_post = self._process_job(job_card, job_id, fetch_desc)
+                        if job_post:
+                            job_list.append(job_post)
+                        if not continue_search():
+                            break
+                    except Exception as e:
+                        raise LinkedInException(str(e))
 
             if continue_search():
                 time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
@@ -161,7 +160,7 @@ class LinkedInScraper(Scraper):
         return JobResponse(jobs=job_list)
 
     def _process_job(
-        self, job_card: Tag, job_url: str, full_descr: bool
+        self, job_card: Tag, job_id: str, full_descr: bool
     ) -> Optional[JobPost]:
         salary_tag = job_card.find("span", class_="job-search-card__salary-info")
 
@@ -208,16 +207,16 @@ class LinkedInScraper(Scraper):
                 date_posted = None
         job_details = {}
         if full_descr:
-            job_details = self._get_job_details(job_url)
+            job_details = self._get_job_details(job_id)
 
         return JobPost(
-            id=self._get_id(job_url),
+            id=job_id,
             title=title,
             company_name=company,
             company_url=company_url,
             location=location,
             date_posted=date_posted,
-            job_url=job_url,
+            job_url=f"{self.base_url}/jobs/view/{job_id}",
             compensation=compensation,
             job_type=job_details.get("job_type"),
             description=job_details.get("description"),
@@ -227,24 +226,16 @@ class LinkedInScraper(Scraper):
             job_function=job_details.get("job_function"),
         )
 
-    def _get_id(self, url: str):
-        """
-        Extracts the job id from the job url
-        :param url:
-        :return: str
-        """
-        if not url:
-            return None
-        return url.split("/")[-1]
-
-    def _get_job_details(self, job_page_url: str) -> dict:
+    def _get_job_details(self, job_id: str) -> dict:
         """
         Retrieves job description and other job details by going to the job page url
         :param job_page_url:
         :return: dict
         """
         try:
-            response = self.session.get(job_page_url, timeout=5)
+            response = self.session.get(
+                f"{self.base_url}/jobs-guest/jobs/api/jobPosting/{job_id}", timeout=5
+            )
             response.raise_for_status()
         except:
             return {}

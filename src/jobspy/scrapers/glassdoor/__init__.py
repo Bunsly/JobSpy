@@ -69,7 +69,7 @@ class GlassdoorScraper(Scraper):
         if location_type is None:
             logger.error("Glassdoor: location not parsed")
             return JobResponse(jobs=[])
-        all_jobs: list[JobPost] = []
+        job_list: list[JobPost] = []
         cursor = None
 
         range_start = 1 + (scraper_input.offset // self.jobs_per_page)
@@ -81,14 +81,14 @@ class GlassdoorScraper(Scraper):
                 jobs, cursor = self._fetch_jobs_page(
                     scraper_input, location_id, location_type, page, cursor
                 )
-                all_jobs.extend(jobs)
-                if not jobs or len(all_jobs) >= scraper_input.results_wanted:
-                    all_jobs = all_jobs[: scraper_input.results_wanted]
+                job_list.extend(jobs)
+                if not jobs or len(job_list) >= scraper_input.results_wanted:
+                    job_list = job_list[: scraper_input.results_wanted]
                     break
             except Exception as e:
                 logger.error(f"Glassdoor: {str(e)}")
                 break
-        return JobResponse(jobs=all_jobs)
+        return JobResponse(jobs=job_list)
 
     def _fetch_jobs_page(
         self,

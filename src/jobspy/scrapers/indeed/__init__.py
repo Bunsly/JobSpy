@@ -297,8 +297,8 @@ class IndeedScraper(Scraper):
         max_range = comp["range"].get("max")
         return Compensation(
             interval=interval,
-            min_amount=round(min_range, 2) if min_range is not None else None,
-            max_amount=round(max_range, 2) if max_range is not None else None,
+            min_amount=int(min_range) if min_range is not None else None,
+            max_amount=int(max_range) if max_range is not None else None,
             currency=job["compensation"]["currencyCode"],
         )
 
