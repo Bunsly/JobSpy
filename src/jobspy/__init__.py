@@ -5,7 +5,7 @@ from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .jobs import JobType, Location
-from .scrapers.utils import logger, set_logger_level
+from .scrapers.utils import logger, set_logger_level, extract_salary
 from .scrapers.indeed import IndeedScraper
 from .scrapers.ziprecruiter import ZipRecruiterScraper
 from .scrapers.glassdoor import GlassdoorScraper
@@ -118,6 +118,21 @@ def scrape_jobs(
             site_value, scraped_data = future.result()
             site_to_jobs_dict[site_value] = scraped_data
 
+    def convert_to_annual(job_data: dict):
+        if job_data["interval"] == "hourly":
+            job_data["min_amount"] *= 2080
+            job_data["max_amount"] *= 2080
+        if job_data["interval"] == "monthly":
+            job_data["min_amount"] *= 12
+            job_data["max_amount"] *= 12
+        if job_data["interval"] == "weekly":
+            job_data["min_amount"] *= 52
+            job_data["max_amount"] *= 52
+        if job_data["interval"] == "daily":
+            job_data["min_amount"] *= 260
+            job_data["max_amount"] *= 260
+        job_data["interval"] = "yearly"
+
     jobs_dfs: list[pd.DataFrame] = []
 
     for site, job_response in site_to_jobs_dict.items():
@@ -150,11 +165,22 @@ def scrape_jobs(
                 job_data["min_amount"] = compensation_obj.get("min_amount")
                 job_data["max_amount"] = compensation_obj.get("max_amount")
                 job_data["currency"] = compensation_obj.get("currency", "USD")
+                if (
+                    job_data["interval"]
+                    and job_data["interval"] != "yearly"
+                    and job_data["min_amount"]
+                    and job_data["max_amount"]
+                ):
+                    convert_to_annual(job_data)
+
             else:
-                job_data["interval"] = None
-                job_data["min_amount"] = None
-                job_data["max_amount"] = None
-                job_data["currency"] = None
+                if country_enum == Country.USA:
+                    (
+                        job_data["interval"],
+                        job_data["min_amount"],
+                        job_data["max_amount"],
+                        job_data["currency"],
+                    ) = extract_salary(job_data["description"])
 
             job_df = pd.DataFrame([job_data])
             jobs_dfs.append(job_df)
