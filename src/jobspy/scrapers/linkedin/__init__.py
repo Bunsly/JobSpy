@@ -19,7 +19,7 @@ from urllib.parse import urlparse, urlunparse, unquote
 
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import LinkedInException
-from ..utils import create_session
+from ..utils import create_session, remove_attributes
 from ...jobs import (
     JobPost,
     Location,
@@ -257,12 +257,6 @@ class LinkedInScraper(Scraper):
         )
         description = None
         if div_content is not None:
-
-            def remove_attributes(tag):
-                for attr in list(tag.attrs):
-                    del tag[attr]
-                return tag
-
             div_content = remove_attributes(div_content)
             description = div_content.prettify(formatter="html")
             if self.scraper_input.description_format == DescriptionFormat.MARKDOWN:

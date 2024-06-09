@@ -93,6 +93,7 @@ class TLSRotating(RotatingProxySession, tls_client.Session):
             else:
                 self.proxies = {}
         response = tls_client.Session.execute_request(self, *args, **kwargs)
+        response.ok = response.status_code in range(200, 400)
         return response
 
 
@@ -178,3 +179,9 @@ def currency_parser(cur_str):
         num = float(cur_str)
 
     return np.round(num, 2)
+
+
+def remove_attributes(tag):
+    for attr in list(tag.attrs):
+        del tag[attr]
+    return tag
