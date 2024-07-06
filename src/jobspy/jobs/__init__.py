@@ -243,6 +243,9 @@ class JobPost(BaseModel):
     emails: list[str] | None = None
     is_remote: bool | None = None
 
+    # linkedin specific
+    job_level: str | None = None
+
     # linkedin and indeed specific
     company_industry: str | None = None
 
