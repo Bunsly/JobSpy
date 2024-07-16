@@ -189,6 +189,7 @@ class GlassdoorScraper(Scraper):
         except:
             description = None
         company_url = f"{self.base_url}Overview/W-EI_IE{company_id}.htm"
+        company_logo = job_data["jobview"].get("overview", {}).get("squareLogoUrl", None)
         return JobPost(
             id=str(job_id),
             title=title,
@@ -201,6 +202,7 @@ class GlassdoorScraper(Scraper):
             is_remote=is_remote,
             description=description,
             emails=extract_emails_from_text(description) if description else None,
+            logo_photo_url=company_logo,
         )
 
     def _fetch_job_description(self, job_id):
