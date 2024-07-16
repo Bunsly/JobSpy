@@ -242,6 +242,7 @@ class JobPost(BaseModel):
     date_posted: date | None = None
     emails: list[str] | None = None
     is_remote: bool | None = None
+    listing_type: str | None = None
 
     # indeed specific
     company_addresses: str | None = None

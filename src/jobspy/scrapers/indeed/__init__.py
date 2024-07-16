@@ -176,7 +176,7 @@ class IndeedScraper(Scraper):
                 keys.append("DSQF7")
 
             if keys:
-                keys_str = '", "'.join(keys)  # Prepare your keys string
+                keys_str = '", "'.join(keys)
                 filters_str = f"""
                 filters: {{
                   composite: {{
@@ -353,7 +353,6 @@ class IndeedScraper(Scraper):
           jobSearch(
             {what}
             {location}
-            includeSponsoredResults: NONE
             limit: 100
             sort: DATE
             {cursor}
@@ -365,6 +364,9 @@ class IndeedScraper(Scraper):
             results {{
               trackingKey
               job {{
+                source {{
+                  name
+                }}
                 key
                 title
                 datePublished
