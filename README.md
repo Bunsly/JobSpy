@@ -78,7 +78,7 @@ Optional
 │
 ├── proxies (list): 
 |    in format ['user:pass@host:port', 'localhost']
-|    each job board will round robin through the proxies
+|    each job board scraper will round robin through the proxies
 │
 ├── is_remote (bool)
 │
