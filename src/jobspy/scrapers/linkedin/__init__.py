@@ -219,7 +219,7 @@ class LinkedInScraper(Scraper):
             job_url=f"{self.base_url}/jobs/view/{job_id}",
             compensation=compensation,
             job_type=job_details.get("job_type"),
-            job_level=job_details.get("job_level"),
+            job_level=job_details.get("job_level", "").lower(),
             company_industry=job_details.get("company_industry"),
             description=job_details.get("description"),
             job_url_direct=job_details.get("job_url_direct"),
@@ -351,7 +351,7 @@ class LinkedInScraper(Scraper):
                 job_level = job_level_span.get_text(strip=True)
 
         return job_level
-    
+
     @staticmethod
     def _parse_company_industry(soup_industry: BeautifulSoup) -> str | None:
         """
@@ -373,7 +373,7 @@ class LinkedInScraper(Scraper):
             if industry_span:
                 industry = industry_span.get_text(strip=True)
 
-        return industry    
+        return industry
 
     def _parse_job_url_direct(self, soup: BeautifulSoup) -> str | None:
         """

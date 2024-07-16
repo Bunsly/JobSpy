@@ -244,6 +244,7 @@ class IndeedScraper(Scraper):
                 .replace("Iv1", "")
                 .replace("_", " ")
                 .title()
+                .strip()
                 if employer_details.get("industry")
                 else None
             ),
