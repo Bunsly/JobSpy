@@ -208,6 +208,7 @@ def scrape_jobs(
             "max_amount",
             "currency",
             "is_remote",
+            "job_level",
             "job_function",
             "listing_type",
             "emails",

@@ -219,6 +219,8 @@ class LinkedInScraper(Scraper):
             job_url=f"{self.base_url}/jobs/view/{job_id}",
             compensation=compensation,
             job_type=job_details.get("job_type"),
+            job_level=job_details.get("job_level"),
+            company_industry=job_details.get("company_industry"),
             description=job_details.get("description"),
             job_url_direct=job_details.get("job_url_direct"),
             emails=extract_emails_from_text(job_details.get("description")),
@@ -266,6 +268,8 @@ class LinkedInScraper(Scraper):
                 job_function = job_function_span.text.strip()
         return {
             "description": description,
+            "job_level": self._parse_job_level(soup),
+            "company_industry": self._parse_company_industry(soup),
             "job_type": self._parse_job_type(soup),
             "job_url_direct": self._parse_job_url_direct(soup),
             "logo_photo_url": soup.find("img", {"class": "artdeco-entity-image"}).get(
@@ -324,6 +328,52 @@ class LinkedInScraper(Scraper):
                 employment_type = employment_type.replace("-", "")
 
         return [get_enum_from_job_type(employment_type)] if employment_type else []
+
+    @staticmethod
+    def _parse_job_level(soup_job_level: BeautifulSoup) -> str | None:
+        """
+        Gets the job level from job page
+        :param soup_job_level:
+        :return: str
+        """
+        h3_tag = soup_job_level.find(
+            "h3",
+            class_="description__job-criteria-subheader",
+            string=lambda text: "Seniority level" in text,
+        )
+        job_level = None
+        if h3_tag:
+            job_level_span = h3_tag.find_next_sibling(
+                "span",
+                class_="description__job-criteria-text description__job-criteria-text--criteria",
+            )
+            if job_level_span:
+                job_level = job_level_span.get_text(strip=True)
+
+        return job_level
+    
+    @staticmethod
+    def _parse_company_industry(soup_industry: BeautifulSoup) -> str | None:
+        """
+        Gets the company industry from job page
+        :param soup_industry:
+        :return: str
+        """
+        h3_tag = soup_industry.find(
+            "h3",
+            class_="description__job-criteria-subheader",
+            string=lambda text: "Industries" in text,
+        )
+        industry = None
+        if h3_tag:
+            industry_span = h3_tag.find_next_sibling(
+                "span",
+                class_="description__job-criteria-text description__job-criteria-text--criteria",
+            )
+            if industry_span:
+                industry = industry_span.get_text(strip=True)
+
+        return industry    
 
     def _parse_job_url_direct(self, soup: BeautifulSoup) -> str | None:
         """
