@@ -189,7 +189,15 @@ class GlassdoorScraper(Scraper):
         except:
             description = None
         company_url = f"{self.base_url}Overview/W-EI_IE{company_id}.htm"
-        company_logo = job_data["jobview"].get("overview", {}).get("squareLogoUrl", None)
+        company_logo = (
+            job_data["jobview"].get("overview", {}).get("squareLogoUrl", None)
+        )
+        listing_type = (
+            job_data["jobview"]
+            .get("header", {})
+            .get("adOrderSponsorshipLevel", "")
+            .lower()
+        )
         return JobPost(
             id=str(job_id),
             title=title,
@@ -203,6 +211,7 @@ class GlassdoorScraper(Scraper):
             description=description,
             emails=extract_emails_from_text(description) if description else None,
             logo_photo_url=company_logo,
+            listing_type=listing_type,
         )
 
     def _fetch_job_description(self, job_id):

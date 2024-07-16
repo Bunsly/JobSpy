@@ -135,6 +135,7 @@ class ZipRecruiterScraper(Scraper):
         self.seen_urls.add(job_url)
 
         description = job.get("job_description", "").strip()
+        listing_type = job.get("buyer_type", "")
         description = (
             markdown_converter(description)
             if self.scraper_input.description_format == DescriptionFormat.MARKDOWN
@@ -175,6 +176,7 @@ class ZipRecruiterScraper(Scraper):
             description=description_full if description_full else description,
             emails=extract_emails_from_text(description) if description else None,
             job_url_direct=job_url_direct,
+            listing_type=listing_type,
         )
 
     def _get_descr(self, job_url):

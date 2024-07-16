@@ -209,6 +209,7 @@ def scrape_jobs(
             "currency",
             "is_remote",
             "job_function",
+            "listing_type",
             "emails",
             "description",
             "company_url",
