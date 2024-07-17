@@ -158,13 +158,13 @@ Linkedin & Indeed specific
 
 Indeed specific
 ├── company_country (str)
-└── company_addresses (str)
-└── company_employees_label (str)
-└── company_revenue_label (str)
-└── company_description (str)
-└── ceo_name (str)
-└── ceo_photo_url (str)
-└── logo_photo_url (str)
+├── company_addresses (str)
+├── company_employees_label (str)
+├── company_revenue_label (str)
+├── company_description (str)
+├── ceo_name (str)
+├── ceo_photo_url (str)
+├── logo_photo_url (str)
 └── banner_photo_url (str)
 ```
 
