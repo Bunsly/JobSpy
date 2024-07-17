@@ -226,7 +226,7 @@ class IndeedScraper(Scraper):
                 country=job.get("location", {}).get("countryCode"),
             ),
             job_type=job_type,
-            compensation=self._get_compensation(job),
+            compensation=self._get_compensation(job["compensation"]),
             date_posted=date_posted,
             job_url=job_url,
             job_url_direct=(
@@ -281,14 +281,19 @@ class IndeedScraper(Scraper):
         return job_types
 
     @staticmethod
-    def _get_compensation(job: dict) -> Compensation | None:
+    def _get_compensation(compensation: dict) -> Compensation | None:
         """
         Parses the job to get compensation
         :param job:
-        :param job:
         :return: compensation object
         """
-        comp = job["compensation"]["baseSalary"]
+        if not compensation["baseSalary"] and not compensation["estimated"]:
+            return None
+        comp = (
+            compensation["baseSalary"]
+            if compensation["baseSalary"]
+            else compensation["estimated"]["baseSalary"]
+        )
         if not comp:
             return None
         interval = IndeedScraper._get_compensation_interval(comp["unitOfWork"])
@@ -300,7 +305,11 @@ class IndeedScraper(Scraper):
             interval=interval,
             min_amount=int(min_range) if min_range is not None else None,
             max_amount=int(max_range) if max_range is not None else None,
-            currency=job["compensation"]["currencyCode"],
+            currency=(
+                compensation["estimated"]["currencyCode"]
+                if compensation["estimated"]
+                else compensation["currencyCode"]
+            ),
         )
 
     @staticmethod
@@ -388,6 +397,18 @@ class IndeedScraper(Scraper):
                   }}
                 }}
                 compensation {{
+                  estimated {{
+                    currencyCode
+                    baseSalary {{
+                      unitOfWork
+                      range {{
+                        ... on Range {{
+                          min
+                          max
+                        }}
+                      }}
+                    }}
+                  }}
                   baseSalary {{
                     unitOfWork
                     range {{
