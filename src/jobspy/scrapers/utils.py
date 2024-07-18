@@ -10,7 +10,7 @@ import numpy as np
 from markdownify import markdownify as md
 from requests.adapters import HTTPAdapter, Retry
 
-from ..jobs import JobType
+from ..jobs import CompensationInterval, JobType
 
 logger = logging.getLogger("JobSpy")
 logger.propagate = False
@@ -193,6 +193,7 @@ def extract_salary(
     upper_limit=700000,
     hourly_threshold=350,
     monthly_threshold=30000,
+    enforce_annual_salary=False,
 ):
     if not salary_str:
         return None, None, None, None
@@ -220,20 +221,30 @@ def extract_salary(
 
         # Convert to annual if less than the hourly threshold
         if min_salary < hourly_threshold:
-            min_salary = convert_hourly_to_annual(min_salary)
+            interval = CompensationInterval.HOURLY.value
+            annual_min_salary = convert_hourly_to_annual(min_salary)
             if max_salary < hourly_threshold:
-                max_salary = convert_hourly_to_annual(max_salary)
+                annual_max_salary = convert_hourly_to_annual(max_salary)
 
         elif min_salary < monthly_threshold:
-            min_salary = convert_monthly_to_annual(min_salary)
+            interval = CompensationInterval.MONTHLY.value
+            annual_min_salary = convert_monthly_to_annual(min_salary)
             if max_salary < monthly_threshold:
-                max_salary = convert_monthly_to_annual(max_salary)
+                annual_max_salary = convert_monthly_to_annual(max_salary)
+
+        else:
+            interval = CompensationInterval.YEARLY.value
+            annual_min_salary = min_salary
+            annual_max_salary = max_salary
 
         # Ensure salary range is within specified limits
         if (
-            lower_limit <= min_salary <= upper_limit
-            and lower_limit <= max_salary <= upper_limit
-            and min_salary < max_salary
+            lower_limit <= annual_min_salary <= upper_limit
+            and lower_limit <= annual_max_salary <= upper_limit
+            and annual_min_salary < annual_max_salary
         ):
-            return "yearly", min_salary, max_salary, "USD"
+            if enforce_annual_salary:
+                return interval, annual_min_salary, annual_max_salary, "USD"
+            else:
+                return interval, min_salary, max_salary, "USD"
     return None, None, None, None

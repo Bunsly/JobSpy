@@ -10,7 +10,7 @@ from .scrapers.indeed import IndeedScraper
 from .scrapers.ziprecruiter import ZipRecruiterScraper
 from .scrapers.glassdoor import GlassdoorScraper
 from .scrapers.linkedin import LinkedInScraper
-from .scrapers import ScraperInput, Site, JobResponse, Country
+from .scrapers import SalarySource, ScraperInput, Site, JobResponse, Country
 from .scrapers.exceptions import (
     LinkedInException,
     IndeedException,
@@ -36,6 +36,7 @@ def scrape_jobs(
     linkedin_company_ids: list[int] | None = None,
     offset: int | None = 0,
     hours_old: int = None,
+    enforce_annual_salary: bool = True,
     verbose: int = 2,
     **kwargs,
 ) -> pd.DataFrame:
@@ -165,7 +166,8 @@ def scrape_jobs(
                 job_data["min_amount"] = compensation_obj.get("min_amount")
                 job_data["max_amount"] = compensation_obj.get("max_amount")
                 job_data["currency"] = compensation_obj.get("currency", "USD")
-                if (
+                job_data["salary_source"] = SalarySource.DIRECT_DATA.value
+                if enforce_annual_salary and (
                     job_data["interval"]
                     and job_data["interval"] != "yearly"
                     and job_data["min_amount"]
@@ -180,7 +182,9 @@ def scrape_jobs(
                         job_data["min_amount"],
                         job_data["max_amount"],
                         job_data["currency"],
-                    ) = extract_salary(job_data["description"])
+                    ) = extract_salary(job_data["description"], enforce_annual_salary=enforce_annual_salary)
+                    job_data["salary_source"] = SalarySource.DESCRIPTION.value
+
 
             job_df = pd.DataFrame([job_data])
             jobs_dfs.append(job_df)
