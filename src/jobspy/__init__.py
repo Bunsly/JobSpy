@@ -36,7 +36,7 @@ def scrape_jobs(
     linkedin_company_ids: list[int] | None = None,
     offset: int | None = 0,
     hours_old: int = None,
-    enforce_annual_salary: bool = True,
+    enforce_annual_salary: bool = False,
     verbose: int = 2,
     **kwargs,
 ) -> pd.DataFrame:
@@ -182,10 +182,15 @@ def scrape_jobs(
                         job_data["min_amount"],
                         job_data["max_amount"],
                         job_data["currency"],
-                    ) = extract_salary(job_data["description"], enforce_annual_salary=enforce_annual_salary)
+                    ) = extract_salary(
+                        job_data["description"],
+                        enforce_annual_salary=enforce_annual_salary,
+                    )
                     job_data["salary_source"] = SalarySource.DESCRIPTION.value
 
-
+            job_data["salary_source"] = (
+                job_data["salary_source"] if job_data["min_amount"] else None
+            )
             job_df = pd.DataFrame([job_data])
             jobs_dfs.append(job_df)
 
@@ -207,6 +212,7 @@ def scrape_jobs(
             "location",
             "job_type",
             "date_posted",
+            "salary_source",
             "interval",
             "min_amount",
             "max_amount",

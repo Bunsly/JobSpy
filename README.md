@@ -110,6 +110,9 @@ Optional
 |
 ├── country_indeed (str): 
 |    filters the country on Indeed & Glassdoor (see below for correct spelling)
+|
+├── enforce_annual_salary (bool): 
+|    converts wages to annual salary
 ```
 
 ```
@@ -130,42 +133,42 @@ Optional
 
 ```plaintext
 JobPost
-├── title (str)
-├── company (str)
-├── company_url (str)
-├── job_url (str)
-├── location (object)
-│   ├── country (str)
-│   ├── city (str)
-│   ├── state (str)
-├── description (str)
-├── job_type (str): fulltime, parttime, internship, contract
-├── job_function (str)
-├── compensation (object)
-│   ├── interval (str): yearly, monthly, weekly, daily, hourly
-│   ├── min_amount (int)
-│   ├── max_amount (int)
-│   └── currency (enum)
-├── date_posted (date)
-├── emails (str)
-└── is_remote (bool)
+├── title
+├── company
+├── company_url
+├── job_url
+├── location
+│   ├── country
+│   ├── city
+│   ├── state
+├── description
+├── job_type: fulltime, parttime, internship, contract
+├── job_function
+│   ├── interval: yearly, monthly, weekly, daily, hourly
+│   ├── min_amount
+│   ├── max_amount
+│   ├── currency
+│   └── salary_source: direct_data, description (parsed from posting)
+├── date_posted
+├── emails
+└── is_remote
 
 Linkedin specific
-└── job_level (str)
+└── job_level
 
 Linkedin & Indeed specific
-└── company_industry (str)
+└── company_industry
 
 Indeed specific
-├── company_country (str)
-├── company_addresses (str)
-├── company_employees_label (str)
-├── company_revenue_label (str)
-├── company_description (str)
-├── ceo_name (str)
-├── ceo_photo_url (str)
-├── logo_photo_url (str)
-└── banner_photo_url (str)
+├── company_country
+├── company_addresses
+├── company_employees_label
+├── company_revenue_label
+├── company_description
+├── ceo_name
+├── ceo_photo_url
+├── logo_photo_url
+└── banner_photo_url
 ```
 
 ## Supported Countries for Job Searching
