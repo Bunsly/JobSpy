@@ -4,8 +4,10 @@ import pandas as pd
 
 def test_indeed():
     result = scrape_jobs(
-        site_name="indeed", search_term="software engineer", country_indeed="usa"
+        site_name="indeed",
+        search_term="engineer",
+        results_wanted=5,
     )
     assert (
-        isinstance(result, pd.DataFrame) and not result.empty
+        isinstance(result, pd.DataFrame) and len(result) == 5
     ), "Result should be a non-empty DataFrame"
