@@ -2,7 +2,7 @@ from ..jobspy import scrape_jobs
 import pandas as pd
 
 
-def test_glasdoor():
+def test_glassdoor():
     result = scrape_jobs(
         site_name="glassdoor",
         search_term="engineer",
