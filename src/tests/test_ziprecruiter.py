@@ -8,5 +8,5 @@ def test_ziprecruiter():
     )
 
     assert (
-        isinstance(result, pd.DataFrame) and not result.empty
+        isinstance(result, pd.DataFrame) and len(result) == 5
     ), "Result should be a non-empty DataFrame"
