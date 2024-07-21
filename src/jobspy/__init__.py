@@ -189,7 +189,9 @@ def scrape_jobs(
                     job_data["salary_source"] = SalarySource.DESCRIPTION.value
 
             job_data["salary_source"] = (
-                job_data["salary_source"] if job_data["min_amount"] else None
+                job_data["salary_source"]
+                if "min_amount" in job_data and job_data["min_amount"]
+                else None
             )
             job_df = pd.DataFrame([job_data])
             jobs_dfs.append(job_df)
