@@ -17,10 +17,13 @@ class Site(Enum):
     INDEED = "indeed"
     ZIP_RECRUITER = "zip_recruiter"
     GLASSDOOR = "glassdoor"
+    MONSTER = "monster"
+
 
 class SalarySource(Enum):
     DIRECT_DATA = "direct_data"
     DESCRIPTION = "description"
+
 
 class ScraperInput(BaseModel):
     site_type: list[Site]
