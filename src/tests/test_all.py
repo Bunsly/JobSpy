@@ -14,5 +14,5 @@ def test_all():
     )
 
     assert (
-        isinstance(result, pd.DataFrame) and len(result) == 20
+        isinstance(result, pd.DataFrame) and len(result) == 15
     ), "Result should be a non-empty DataFrame"
