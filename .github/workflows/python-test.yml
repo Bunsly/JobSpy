@@ -19,4 +19,4 @@ jobs:
           pip install poetry
           poetry install
       - name: Run tests
-        run: poetry run pytest src/tests/
+        run: poetry run pytest src/tests/test_all.py
