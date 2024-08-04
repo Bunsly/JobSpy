@@ -92,7 +92,7 @@ class Country(Enum):
     JAPAN = ("japan", "jp")
     KUWAIT = ("kuwait", "kw")
     LUXEMBOURG = ("luxembourg", "lu")
-    MALAYSIA = ("malaysia", "malaysia")
+    MALAYSIA = ("malaysia", "malaysia:my", "com")
     MEXICO = ("mexico", "mx", "com.mx")
     MOROCCO = ("morocco", "ma")
     NETHERLANDS = ("netherlands", "nl", "nl")
