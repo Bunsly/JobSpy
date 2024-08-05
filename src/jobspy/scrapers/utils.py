@@ -198,6 +198,7 @@ def extract_salary(
     if not salary_str:
         return None, None, None, None
 
+    annual_max_salary = None
     min_max_pattern = r"\$(\d+(?:,\d+)?(?:\.\d+)?)([kK]?)\s*[-—–]\s*(?:\$)?(\d+(?:,\d+)?(?:\.\d+)?)([kK]?)"
 
     def to_int(s):
@@ -238,6 +239,8 @@ def extract_salary(
             annual_max_salary = max_salary
 
         # Ensure salary range is within specified limits
+        if not annual_max_salary:
+            return None, None, None, None
         if (
             lower_limit <= annual_min_salary <= upper_limit
             and lower_limit <= annual_max_salary <= upper_limit
