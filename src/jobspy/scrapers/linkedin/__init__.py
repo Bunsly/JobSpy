@@ -236,7 +236,7 @@ class LinkedInScraper(Scraper):
         """
         try:
             response = self.session.get(
-                f"{self.base_url}/jobs-guest/jobs/api/jobPosting/{job_id}", timeout=5
+                f"{self.base_url}/jobs/view/{job_id}", timeout=5
             )
             response.raise_for_status()
         except:
