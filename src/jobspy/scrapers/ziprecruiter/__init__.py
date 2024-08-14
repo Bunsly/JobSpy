@@ -200,7 +200,7 @@ class ZipRecruiterScraper(Scraper):
             script_tag = soup.find("script", type="application/json")
             if script_tag:
                 job_json = json.loads(script_tag.string)
-                job_url_val = job_json["model"]["saveJobURL"]
+                job_url_val = job_json["model"].get("saveJobURL", "")
                 m = re.search(r"job_url=(.+)", job_url_val)
                 if m:
                     job_url_direct = m.group(1)
