@@ -37,7 +37,7 @@ jobs = scrape_jobs(
     hours_old=72, # (only Linkedin/Indeed is hour specific, others round up to days old)
     country_indeed='USA',  # only needed for indeed / glassdoor
     
-    # linkedin_fetch_description=True # get full description , direct job url , company industry and job level (seniority level) for linkedin (slower)
+    # linkedin_fetch_description=True # get more info such as full description, direct job url for linkedin (slower)
     # proxies=["208.195.175.46:65095", "208.195.175.45:65095", "localhost"],
     
 )
