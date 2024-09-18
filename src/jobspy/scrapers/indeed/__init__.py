@@ -364,8 +364,8 @@ class IndeedScraper(Scraper):
             {what}
             {location}
             limit: 100
-            sort: DATE
             {cursor}
+            sort: RELEVANCE
             {filters}
           ) {{
             pageInfo {{

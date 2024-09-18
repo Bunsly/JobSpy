@@ -216,10 +216,8 @@ You can specify the following countries when searching on Indeed (use the exact 
 ## Frequently Asked Questions
 
 ---
-
-**Q: Encountering issues with your queries?**  
-**A:** Try reducing the number of `results_wanted` and/or broadening the filters. If problems
-persist, [submit an issue](https://github.com/Bunsly/JobSpy/issues).
+**Q: Why is Indeed giving unrelated roles?**  
+**A:** Indeed is searching each one of your terms e.g. software intern, it searches software OR intern. Try search_term='"software intern"' in quotes for stricter searching
 
 ---
 
@@ -228,5 +226,11 @@ persist, [submit an issue](https://github.com/Bunsly/JobSpy/issues).
 
 - Wait some time between scrapes (site-dependent).
 - Try using the proxies param to change your IP address.
+
+---
+
+**Q: Encountering issues with your queries?**  
+**A:** Try reducing the number of `results_wanted` and/or broadening the filters. If problems
+persist, [submit an issue](https://github.com/Bunsly/JobSpy/issues).
 
 ---
