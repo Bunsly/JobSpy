@@ -93,6 +93,7 @@ class Country(Enum):
     KUWAIT = ("kuwait", "kw")
     LUXEMBOURG = ("luxembourg", "lu")
     MALAYSIA = ("malaysia", "malaysia:my", "com")
+    MALTA = ("malta", "malta:mt", "mt")
     MEXICO = ("mexico", "mx", "com.mx")
     MOROCCO = ("morocco", "ma")
     NETHERLANDS = ("netherlands", "nl", "nl")
