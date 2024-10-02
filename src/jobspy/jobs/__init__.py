@@ -118,7 +118,7 @@ class Country(Enum):
     SWITZERLAND = ("switzerland", "ch", "de:ch")
     TAIWAN = ("taiwan", "tw")
     THAILAND = ("thailand", "th")
-    TURKEY = ("turkey", "tr")
+    TURKEY = ("türkiye,turkey", "tr")
     UKRAINE = ("ukraine", "ua")
     UNITEDARABEMIRATES = ("united arab emirates", "ae")
     UK = ("uk,united kingdom", "uk:gb", "co.uk")
