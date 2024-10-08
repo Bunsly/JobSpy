@@ -79,6 +79,9 @@ Optional
 ├── proxies (list): 
 |    in format ['user:pass@host:port', 'localhost']
 |    each job board scraper will round robin through the proxies
+|
+├── ca_cert (str)
+|    path to CA Certificate file for proxies
 │
 ├── is_remote (bool)
 │
