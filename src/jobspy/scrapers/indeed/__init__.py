@@ -32,13 +32,13 @@ from ...jobs import (
 
 
 class IndeedScraper(Scraper):
-    def __init__(self, proxies: list[str] | str | None = None):
+    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None):
         """
         Initializes IndeedScraper with the Indeed API url
         """
         super().__init__(Site.INDEED, proxies=proxies)
 
-        self.session = create_session(proxies=self.proxies, is_tls=False)
+        self.session = create_session(proxies=self.proxies, ca_cert=ca_cert, is_tls=False)
         self.scraper_input = None
         self.jobs_per_page = 100
         self.num_workers = 10
