@@ -100,6 +100,7 @@ class TLSRotating(RotatingProxySession, tls_client.Session):
 def create_session(
     *,
     proxies: dict | str | None = None,
+    ca_cert: str | None = None,
     is_tls: bool = True,
     has_retry: bool = False,
     delay: int = 1,
@@ -118,6 +119,9 @@ def create_session(
             delay=delay,
             clear_cookies=clear_cookies,
         )
+
+    if ca_cert:
+        session.verify = ca_cert
 
     return session
 

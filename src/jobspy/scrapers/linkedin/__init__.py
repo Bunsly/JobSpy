@@ -44,13 +44,14 @@ class LinkedInScraper(Scraper):
     band_delay = 4
     jobs_per_page = 25
 
-    def __init__(self, proxies: list[str] | str | None = None):
+    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None):
         """
         Initializes LinkedInScraper with the LinkedIn job search url
         """
-        super().__init__(Site.LINKEDIN, proxies=proxies)
+        super().__init__(Site.LINKEDIN, proxies=proxies, ca_cert=ca_cert)
         self.session = create_session(
             proxies=self.proxies,
+            ca_cert=ca_cert,
             is_tls=False,
             has_retry=True,
             delay=5,

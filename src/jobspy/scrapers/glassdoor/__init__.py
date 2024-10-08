@@ -34,12 +34,12 @@ from ...jobs import (
 
 
 class GlassdoorScraper(Scraper):
-    def __init__(self, proxies: list[str] | str | None = None):
+    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None):
         """
         Initializes GlassdoorScraper with the Glassdoor job search url
         """
         site = Site(Site.GLASSDOOR)
-        super().__init__(site, proxies=proxies)
+        super().__init__(site, proxies=proxies, ca_cert=ca_cert)
 
         self.base_url = None
         self.country = None
@@ -59,7 +59,7 @@ class GlassdoorScraper(Scraper):
         self.scraper_input.results_wanted = min(900, scraper_input.results_wanted)
         self.base_url = self.scraper_input.country.get_glassdoor_url()
 
-        self.session = create_session(proxies=self.proxies, is_tls=True, has_retry=True)
+        self.session = create_session(proxies=self.proxies, ca_cert=self.ca_cert, is_tls=True, has_retry=True)
         token = self._get_csrf_token()
         self.headers["gd-csrf-token"] = token if token else self.fallback_token
 

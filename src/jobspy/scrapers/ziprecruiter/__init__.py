@@ -41,14 +41,14 @@ class ZipRecruiterScraper(Scraper):
     base_url = "https://www.ziprecruiter.com"
     api_url = "https://api.ziprecruiter.com"
 
-    def __init__(self, proxies: list[str] | str | None = None):
+    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None):
         """
         Initializes ZipRecruiterScraper with the ZipRecruiter job search url
         """
         super().__init__(Site.ZIP_RECRUITER, proxies=proxies)
 
         self.scraper_input = None
-        self.session = create_session(proxies=proxies)
+        self.session = create_session(proxies=proxies, ca_cert=ca_cert)
         self._get_cookies()
 
         self.delay = 5
