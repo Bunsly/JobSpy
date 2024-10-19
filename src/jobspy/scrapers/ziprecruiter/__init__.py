@@ -18,13 +18,14 @@ from concurrent.futures import ThreadPoolExecutor
 
 from bs4 import BeautifulSoup
 
+from .constants import headers
 from .. import Scraper, ScraperInput, Site
 from ..utils import (
-    logger,
     extract_emails_from_text,
     create_session,
     markdown_converter,
     remove_attributes,
+    create_logger,
 )
 from ...jobs import (
     JobPost,
@@ -36,12 +37,16 @@ from ...jobs import (
     DescriptionFormat,
 )
 
+logger = create_logger("ZipRecruiter")
+
 
 class ZipRecruiterScraper(Scraper):
     base_url = "https://www.ziprecruiter.com"
     api_url = "https://api.ziprecruiter.com"
 
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None):
+    def __init__(
+        self, proxies: list[str] | str | None = None, ca_cert: str | None = None
+    ):
         """
         Initializes ZipRecruiterScraper with the ZipRecruiter job search url
         """
@@ -49,6 +54,7 @@ class ZipRecruiterScraper(Scraper):
 
         self.scraper_input = None
         self.session = create_session(proxies=proxies, ca_cert=ca_cert)
+        self.session.headers.update(headers)
         self._get_cookies()
 
         self.delay = 5
@@ -71,7 +77,7 @@ class ZipRecruiterScraper(Scraper):
                 break
             if page > 1:
                 time.sleep(self.delay)
-            logger.info(f"ZipRecruiter search page: {page}")
+            logger.info(f"search page: {page} / {max_pages}")
             jobs_on_page, continue_token = self._find_jobs_in_page(
                 scraper_input, continue_token
             )
@@ -97,9 +103,7 @@ class ZipRecruiterScraper(Scraper):
         if continue_token:
             params["continue_from"] = continue_token
         try:
-            res = self.session.get(
-                f"{self.api_url}/jobs-app/jobs", headers=self.headers, params=params
-            )
+            res = self.session.get(f"{self.api_url}/jobs-app/jobs", params=params)
             if res.status_code not in range(200, 400):
                 if res.status_code == 429:
                     err = "429 Response - Blocked by ZipRecruiter for too many requests"
@@ -160,7 +164,7 @@ class ZipRecruiterScraper(Scraper):
         description_full, job_url_direct = self._get_descr(job_url)
 
         return JobPost(
-            id=str(job["listing_key"]),
+            id=f'zr-{job["listing_key"]}',
             title=title,
             company_name=company,
             location=location,
@@ -180,7 +184,7 @@ class ZipRecruiterScraper(Scraper):
         )
 
     def _get_descr(self, job_url):
-        res = self.session.get(job_url, headers=self.headers, allow_redirects=True)
+        res = self.session.get(job_url, allow_redirects=True)
         description_full = job_url_direct = None
         if res.ok:
             soup = BeautifulSoup(res.text, "html.parser")
@@ -213,7 +217,7 @@ class ZipRecruiterScraper(Scraper):
     def _get_cookies(self):
         data = "event_type=session&logged_in=false&number_of_retry=1&property=model%3AiPhone&property=os%3AiOS&property=locale%3Aen_us&property=app_build_number%3A4734&property=app_version%3A91.0&property=manufacturer%3AApple&property=timestamp%3A2024-01-12T12%3A04%3A42-06%3A00&property=screen_height%3A852&property=os_version%3A16.6.1&property=source%3Ainstall&property=screen_width%3A393&property=device_model%3AiPhone%2014%20Pro&property=brand%3AApple"
         url = f"{self.api_url}/jobs-app/event"
-        self.session.post(url, data=data, headers=self.headers)
+        self.session.post(url, data=data)
 
     @staticmethod
     def _get_job_type_enum(job_type_str: str) -> list[JobType] | None:
@@ -241,14 +245,3 @@ class ZipRecruiterScraper(Scraper):
         if scraper_input.distance:
             params["radius"] = scraper_input.distance
         return {k: v for k, v in params.items() if v is not None}
-
-    headers = {
-        "Host": "api.ziprecruiter.com",
-        "accept": "*/*",
-        "x-zr-zva-override": "100000000;vid:ZT1huzm_EQlDTVEc",
-        "x-pushnotificationid": "0ff4983d38d7fc5b3370297f2bcffcf4b3321c418f5c22dd152a0264707602a0",
-        "x-deviceid": "D77B3A92-E589-46A4-8A39-6EF6F1D86006",
-        "user-agent": "Job Search/87.0 (iPhone; CPU iOS 16_6_1 like Mac OS X)",
-        "authorization": "Basic YTBlZjMyZDYtN2I0Yy00MWVkLWEyODMtYTI1NDAzMzI0YTcyOg==",
-        "accept-language": "en-US,en;q=0.9",
-    }

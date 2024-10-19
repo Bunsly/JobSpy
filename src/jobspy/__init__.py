@@ -5,7 +5,7 @@ from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .jobs import JobType, Location
-from .scrapers.utils import logger, set_logger_level, extract_salary
+from .scrapers.utils import set_logger_level, extract_salary, create_logger
 from .scrapers.indeed import IndeedScraper
 from .scrapers.ziprecruiter import ZipRecruiterScraper
 from .scrapers.glassdoor import GlassdoorScraper
@@ -102,7 +102,7 @@ def scrape_jobs(
         scraped_data: JobResponse = scraper.scrape(scraper_input)
         cap_name = site.value.capitalize()
         site_name = "ZipRecruiter" if cap_name == "Zip_recruiter" else cap_name
-        logger.info(f"{site_name} finished scraping")
+        create_logger(site_name).info(f"finished scraping")
         return site.value, scraped_data
 
     site_to_jobs_dict = {}
@@ -228,15 +228,12 @@ def scrape_jobs(
             "emails",
             "description",
             "company_url",
+            "logo_photo_url",
             "company_url_direct",
             "company_addresses",
             "company_num_employees",
             "company_revenue",
             "company_description",
-            "logo_photo_url",
-            "banner_photo_url",
-            "ceo_name",
-            "ceo_photo_url",
         ]
 
         # Step 3: Ensure all desired columns are present, adding missing ones as empty

@@ -168,10 +168,7 @@ Indeed specific
 ├── company_employees_label
 ├── company_revenue_label
 ├── company_description
-├── ceo_name
-├── ceo_photo_url
-├── logo_photo_url
-└── banner_photo_url
+└── logo_photo_url
 ```
 
 ## Supported Countries for Job Searching

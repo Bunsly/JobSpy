@@ -256,8 +256,6 @@ class JobPost(BaseModel):
     company_num_employees: str | None = None
     company_revenue: str | None = None
     company_description: str | None = None
-    ceo_name: str | None = None
-    ceo_photo_url: str | None = None
     logo_photo_url: str | None = None
     banner_photo_url: str | None = None
 

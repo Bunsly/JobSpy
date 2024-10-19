@@ -10,15 +10,15 @@ from __future__ import annotations
 import math
 from typing import Tuple
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, Future
 
+from .constants import job_search_query, api_headers
 from .. import Scraper, ScraperInput, Site
 from ..utils import (
     extract_emails_from_text,
     get_enum_from_job_type,
     markdown_converter,
-    logger,
     create_session,
+    create_logger,
 )
 from ...jobs import (
     JobPost,
@@ -30,15 +30,21 @@ from ...jobs import (
     DescriptionFormat,
 )
 
+logger = create_logger("Indeed")
+
 
 class IndeedScraper(Scraper):
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None):
+    def __init__(
+        self, proxies: list[str] | str | None = None, ca_cert: str | None = None
+    ):
         """
         Initializes IndeedScraper with the Indeed API url
         """
         super().__init__(Site.INDEED, proxies=proxies)
 
-        self.session = create_session(proxies=self.proxies, ca_cert=ca_cert, is_tls=False)
+        self.session = create_session(
+            proxies=self.proxies, ca_cert=ca_cert, is_tls=False
+        )
         self.scraper_input = None
         self.jobs_per_page = 100
         self.num_workers = 10
@@ -57,7 +63,7 @@ class IndeedScraper(Scraper):
         self.scraper_input = scraper_input
         domain, self.api_country_code = self.scraper_input.country.indeed_domain_value
         self.base_url = f"https://{domain}.indeed.com"
-        self.headers = self.api_headers.copy()
+        self.headers = api_headers.copy()
         self.headers["indeed-co"] = self.scraper_input.country.indeed_domain_value
         job_list = []
         page = 1
@@ -65,17 +71,19 @@ class IndeedScraper(Scraper):
         cursor = None
         offset_pages = math.ceil(self.scraper_input.offset / 100)
         for _ in range(offset_pages):
-            logger.info(f"Indeed skipping search page: {page}")
+            logger.info(f"skipping search page: {page}")
             __, cursor = self._scrape_page(cursor)
             if not __:
-                logger.info(f"Indeed found no jobs on page: {page}")
+                logger.info(f"found no jobs on page: {page}")
                 break
 
         while len(self.seen_urls) < scraper_input.results_wanted:
-            logger.info(f"Indeed search page: {page}")
+            logger.info(
+                f"search page: {page} / {math.ceil(scraper_input.results_wanted / 100)}"
+            )
             jobs, cursor = self._scrape_page(cursor)
             if not jobs:
-                logger.info(f"Indeed found no jobs on page: {page}")
+                logger.info(f"found no jobs on page: {page}")
                 break
             job_list += jobs
             page += 1
@@ -95,7 +103,7 @@ class IndeedScraper(Scraper):
             if self.scraper_input.search_term
             else ""
         )
-        query = self.job_search_query.format(
+        query = job_search_query.format(
             what=(f'what: "{search_term}"' if search_term else ""),
             location=(
                 f'location: {{where: "{self.scraper_input.location}", radius: {self.scraper_input.distance}, radiusUnit: MILES}}'
@@ -109,28 +117,29 @@ class IndeedScraper(Scraper):
         payload = {
             "query": query,
         }
-        api_headers = self.api_headers.copy()
-        api_headers["indeed-co"] = self.api_country_code
+        api_headers_temp = api_headers.copy()
+        api_headers_temp["indeed-co"] = self.api_country_code
         response = self.session.post(
             self.api_url,
-            headers=api_headers,
+            headers=api_headers_temp,
             json=payload,
             timeout=10,
         )
-        if response.status_code != 200:
+        if not response.ok:
             logger.info(
-                f"Indeed responded with status code: {response.status_code} (submit GitHub issue if this appears to be a bug)"
+                f"responded with status code: {response.status_code} (submit GitHub issue if this appears to be a bug)"
             )
             return jobs, new_cursor
         data = response.json()
         jobs = data["data"]["jobSearch"]["results"]
         new_cursor = data["data"]["jobSearch"]["pageInfo"]["nextCursor"]
 
-        with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
-            job_results: list[Future] = [
-                executor.submit(self._process_job, job["job"]) for job in jobs
-            ]
-        job_list = [result.result() for result in job_results if result.result()]
+        job_list = []
+        for job in jobs:
+            processed_job = self._process_job(job["job"])
+            if processed_job:
+                job_list.append(processed_job)
+
         return job_list, new_cursor
 
     def _build_filters(self):
@@ -212,7 +221,7 @@ class IndeedScraper(Scraper):
         employer_details = employer.get("employerDetails", {}) if employer else {}
         rel_url = job["employer"]["relativeCompanyPageUrl"] if job["employer"] else None
         return JobPost(
-            id=str(job["key"]),
+            id=f'in-{job["key"]}',
             title=job["title"],
             description=description,
             company_name=job["employer"].get("name") if job.get("employer") else None,
@@ -251,15 +260,8 @@ class IndeedScraper(Scraper):
             company_num_employees=employer_details.get("employeesLocalizedLabel"),
             company_revenue=employer_details.get("revenueLocalizedLabel"),
             company_description=employer_details.get("briefDescription"),
-            ceo_name=employer_details.get("ceoName"),
-            ceo_photo_url=employer_details.get("ceoPhotoUrl"),
             logo_photo_url=(
                 employer["images"].get("squareLogoUrl")
-                if employer and employer.get("images")
-                else None
-            ),
-            banner_photo_url=(
-                employer["images"].get("headerImageUrl")
                 if employer and employer.get("images")
                 else None
             ),
@@ -347,112 +349,3 @@ class IndeedScraper(Scraper):
             return CompensationInterval[mapped_interval]
         else:
             raise ValueError(f"Unsupported interval: {interval}")
-
-    api_headers = {
-        "Host": "apis.indeed.com",
-        "content-type": "application/json",
-        "indeed-api-key": "161092c2017b5bbab13edb12461a62d5a833871e7cad6d9d475304573de67ac8",
-        "accept": "application/json",
-        "indeed-locale": "en-US",
-        "accept-language": "en-US,en;q=0.9",
-        "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Indeed App 193.1",
-        "indeed-app-info": "appv=193.1; appid=com.indeed.jobsearch; osv=16.6.1; os=ios; dtype=phone",
-    }
-    job_search_query = """
-        query GetJobData {{
-          jobSearch(
-            {what}
-            {location}
-            limit: 100
-            {cursor}
-            sort: RELEVANCE
-            {filters}
-          ) {{
-            pageInfo {{
-              nextCursor
-            }}
-            results {{
-              trackingKey
-              job {{
-                source {{
-                  name
-                }}
-                key
-                title
-                datePublished
-                dateOnIndeed
-                description {{
-                  html
-                }}
-                location {{
-                  countryName
-                  countryCode
-                  admin1Code
-                  city
-                  postalCode
-                  streetAddress
-                  formatted {{
-                    short
-                    long
-                  }}
-                }}
-                compensation {{
-                  estimated {{
-                    currencyCode
-                    baseSalary {{
-                      unitOfWork
-                      range {{
-                        ... on Range {{
-                          min
-                          max
-                        }}
-                      }}
-                    }}
-                  }}
-                  baseSalary {{
-                    unitOfWork
-                    range {{
-                      ... on Range {{
-                        min
-                        max
-                      }}
-                    }}
-                  }}
-                  currencyCode
-                }}
-                attributes {{
-                  key
-                  label
-                }}
-                employer {{
-                  relativeCompanyPageUrl
-                  name
-                  dossier {{
-                      employerDetails {{
-                        addresses
-                        industry
-                        employeesLocalizedLabel
-                        revenueLocalizedLabel
-                        briefDescription
-                        ceoName
-                        ceoPhotoUrl
-                      }}
-                      images {{
-                            headerImageUrl
-                            squareLogoUrl
-                      }}
-                      links {{
-                        corporateWebsite
-                    }}
-                  }}
-                }}
-                recruit {{
-                  viewJobUrl
-                  detailedSalary
-                  workSchedule
-                }}
-              }}
-            }}
-          }}
-        }}
-        """
