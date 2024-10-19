@@ -12,15 +12,18 @@ from requests.adapters import HTTPAdapter, Retry
 
 from ..jobs import CompensationInterval, JobType
 
-logger = logging.getLogger("JobSpy")
-logger.propagate = False
-if not logger.handlers:
-    logger.setLevel(logging.INFO)
-    console_handler = logging.StreamHandler()
-    format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    formatter = logging.Formatter(format)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+
+def create_logger(name: str):
+    logger = logging.getLogger(f"JobSpy:{name}")
+    logger.propagate = False
+    if not logger.handlers:
+        logger.setLevel(logging.INFO)
+        console_handler = logging.StreamHandler()
+        format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+        formatter = logging.Formatter(format)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+    return logger
 
 
 class RotatingProxySession:
@@ -138,7 +141,9 @@ def set_logger_level(verbose: int = 2):
     level_name = {2: "INFO", 1: "WARNING", 0: "ERROR"}.get(verbose, "INFO")
     level = getattr(logging, level_name.upper(), None)
     if level is not None:
-        logger.setLevel(level)
+        for logger_name in logging.root.manager.loggerDict:
+            if logger_name.startswith("JobSpy:"):
+                logging.getLogger(logger_name).setLevel(level)
     else:
         raise ValueError(f"Invalid log level: {level_name}")
 
@@ -199,6 +204,10 @@ def extract_salary(
     monthly_threshold=30000,
     enforce_annual_salary=False,
 ):
+    """
+    Extracts salary information from a string and returns the salary interval, min and max salary values, and currency.
+    (TODO: Needs test cases as the regex is complicated and may not cover all edge cases)
+    """
     if not salary_str:
         return None, None, None, None
 

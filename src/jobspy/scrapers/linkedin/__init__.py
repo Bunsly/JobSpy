@@ -7,6 +7,7 @@ This module contains routines to scrape LinkedIn.
 
 from __future__ import annotations
 
+import math
 import time
 import random
 import regex as re
@@ -17,9 +18,10 @@ from bs4.element import Tag
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urlunparse, unquote
 
+from .constants import headers
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import LinkedInException
-from ..utils import create_session, remove_attributes
+from ..utils import create_session, remove_attributes, create_logger
 from ...jobs import (
     JobPost,
     Location,
@@ -30,12 +32,13 @@ from ...jobs import (
     DescriptionFormat,
 )
 from ..utils import (
-    logger,
     extract_emails_from_text,
     get_enum_from_job_type,
     currency_parser,
     markdown_converter,
 )
+
+logger = create_logger("LinkedIn")
 
 
 class LinkedInScraper(Scraper):
@@ -44,7 +47,9 @@ class LinkedInScraper(Scraper):
     band_delay = 4
     jobs_per_page = 25
 
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None):
+    def __init__(
+        self, proxies: list[str] | str | None = None, ca_cert: str | None = None
+    ):
         """
         Initializes LinkedInScraper with the LinkedIn job search url
         """
@@ -57,7 +62,7 @@ class LinkedInScraper(Scraper):
             delay=5,
             clear_cookies=True,
         )
-        self.session.headers.update(self.headers)
+        self.session.headers.update(headers)
         self.scraper_input = None
         self.country = "worldwide"
         self.job_url_direct_regex = re.compile(r'(?<=\?url=)[^"]+')
@@ -71,17 +76,19 @@ class LinkedInScraper(Scraper):
         self.scraper_input = scraper_input
         job_list: list[JobPost] = []
         seen_ids = set()
-        page = scraper_input.offset // 10 * 10 if scraper_input.offset else 0
+        start = scraper_input.offset // 10 * 10 if scraper_input.offset else 0
         request_count = 0
         seconds_old = (
             scraper_input.hours_old * 3600 if scraper_input.hours_old else None
         )
         continue_search = (
-            lambda: len(job_list) < scraper_input.results_wanted and page < 1000
+            lambda: len(job_list) < scraper_input.results_wanted and start < 1000
         )
         while continue_search():
             request_count += 1
-            logger.info(f"LinkedIn search page: {request_count}")
+            logger.info(
+                f"search page: {request_count} / {math.ceil(scraper_input.results_wanted / 10)}"
+            )
             params = {
                 "keywords": scraper_input.search_term,
                 "location": scraper_input.location,
@@ -93,7 +100,7 @@ class LinkedInScraper(Scraper):
                     else None
                 ),
                 "pageNum": 0,
-                "start": page,
+                "start": start,
                 "f_AL": "true" if scraper_input.easy_apply else None,
                 "f_C": (
                     ",".join(map(str, scraper_input.linkedin_company_ids))
@@ -155,7 +162,7 @@ class LinkedInScraper(Scraper):
 
             if continue_search():
                 time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
-                page += len(job_list)
+                start += len(job_list)
 
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
@@ -211,7 +218,7 @@ class LinkedInScraper(Scraper):
             job_details = self._get_job_details(job_id)
 
         return JobPost(
-            id=job_id,
+            id=f"li-{job_id}",
             title=title,
             company_name=company,
             company_url=company_url,
@@ -267,15 +274,19 @@ class LinkedInScraper(Scraper):
             )
             if job_function_span:
                 job_function = job_function_span.text.strip()
+
+        logo_photo_url = (
+            logo_image.get("data-delayed-url")
+            if (logo_image := soup.find("img", {"class": "artdeco-entity-image"}))
+            else None
+        )
         return {
             "description": description,
             "job_level": self._parse_job_level(soup),
             "company_industry": self._parse_company_industry(soup),
             "job_type": self._parse_job_type(soup),
             "job_url_direct": self._parse_job_url_direct(soup),
-            "logo_photo_url": soup.find("img", {"class": "artdeco-entity-image"}).get(
-                "data-delayed-url"
-            ),
+            "logo_photo_url": logo_photo_url,
             "job_function": job_function,
         }
 
@@ -402,12 +413,3 @@ class LinkedInScraper(Scraper):
             JobType.CONTRACT: "C",
             JobType.TEMPORARY: "T",
         }.get(job_type_enum, "")
-
-    headers = {
-        "authority": "www.linkedin.com",
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "accept-language": "en-US,en;q=0.9",
-        "cache-control": "max-age=0",
-        "upgrade-insecure-requests": "1",
-        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    }

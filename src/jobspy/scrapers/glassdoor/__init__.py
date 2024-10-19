@@ -14,13 +14,13 @@ from typing import Optional, Tuple
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from .constants import fallback_token, query_template, headers
 from .. import Scraper, ScraperInput, Site
-from ..utils import extract_emails_from_text
+from ..utils import extract_emails_from_text, create_logger
 from ..exceptions import GlassdoorException
 from ..utils import (
     create_session,
     markdown_converter,
-    logger,
 )
 from ...jobs import (
     JobPost,
@@ -32,9 +32,13 @@ from ...jobs import (
     DescriptionFormat,
 )
 
+logger = create_logger("Glassdoor")
+
 
 class GlassdoorScraper(Scraper):
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None):
+    def __init__(
+        self, proxies: list[str] | str | None = None, ca_cert: str | None = None
+    ):
         """
         Initializes GlassdoorScraper with the Glassdoor job search url
         """
@@ -59,9 +63,12 @@ class GlassdoorScraper(Scraper):
         self.scraper_input.results_wanted = min(900, scraper_input.results_wanted)
         self.base_url = self.scraper_input.country.get_glassdoor_url()
 
-        self.session = create_session(proxies=self.proxies, ca_cert=self.ca_cert, is_tls=True, has_retry=True)
+        self.session = create_session(
+            proxies=self.proxies, ca_cert=self.ca_cert, is_tls=True, has_retry=True
+        )
         token = self._get_csrf_token()
-        self.headers["gd-csrf-token"] = token if token else self.fallback_token
+        headers["gd-csrf-token"] = token if token else fallback_token
+        self.session.headers.update(headers)
 
         location_id, location_type = self._get_location(
             scraper_input.location, scraper_input.is_remote
@@ -76,7 +83,7 @@ class GlassdoorScraper(Scraper):
         tot_pages = (scraper_input.results_wanted // self.jobs_per_page) + 2
         range_end = min(tot_pages, self.max_pages + 1)
         for page in range(range_start, range_end):
-            logger.info(f"Glassdoor search page: {page}")
+            logger.info(f"search page: {page} / {range_end-1}")
             try:
                 jobs, cursor = self._fetch_jobs_page(
                     scraper_input, location_id, location_type, page, cursor
@@ -107,7 +114,6 @@ class GlassdoorScraper(Scraper):
             payload = self._add_payload(location_id, location_type, page_num, cursor)
             response = self.session.post(
                 f"{self.base_url}/graph",
-                headers=self.headers,
                 timeout_seconds=15,
                 data=payload,
             )
@@ -148,9 +154,7 @@ class GlassdoorScraper(Scraper):
         """
         Fetches csrf token needed for API by visiting a generic page
         """
-        res = self.session.get(
-            f"{self.base_url}/Job/computer-science-jobs.htm", headers=self.headers
-        )
+        res = self.session.get(f"{self.base_url}/Job/computer-science-jobs.htm")
         pattern = r'"token":\s*"([^"]+)"'
         matches = re.findall(pattern, res.text)
         token = None
@@ -199,7 +203,7 @@ class GlassdoorScraper(Scraper):
             .lower()
         )
         return JobPost(
-            id=str(job_id),
+            id=f"gd-{job_id}",
             title=title,
             company_url=company_url if company_id else None,
             company_name=company_name,
@@ -243,7 +247,7 @@ class GlassdoorScraper(Scraper):
                 """,
             }
         ]
-        res = requests.post(url, json=body, headers=self.headers)
+        res = requests.post(url, json=body, headers=headers)
         if res.status_code != 200:
             return None
         data = res.json()[0]
@@ -256,7 +260,7 @@ class GlassdoorScraper(Scraper):
         if not location or is_remote:
             return "11047", "STATE"  # remote options
         url = f"{self.base_url}/findPopularLocationAjax.htm?maxLocationsToReturn=10&term={location}"
-        res = self.session.get(url, headers=self.headers)
+        res = self.session.get(url)
         if res.status_code != 200:
             if res.status_code == 429:
                 err = f"429 Response - Blocked by Glassdoor for too many requests"
@@ -310,7 +314,7 @@ class GlassdoorScraper(Scraper):
                 "fromage": fromage,
                 "sort": "date",
             },
-            "query": self.query_template,
+            "query": query_template,
         }
         if self.scraper_input.job_type:
             payload["variables"]["filterParams"].append(
@@ -358,188 +362,3 @@ class GlassdoorScraper(Scraper):
         for cursor_data in pagination_cursors:
             if cursor_data["pageNumber"] == page_num:
                 return cursor_data["cursor"]
-
-    fallback_token = "Ft6oHEWlRZrxDww95Cpazw:0pGUrkb2y3TyOpAIqF2vbPmUXoXVkD3oEGDVkvfeCerceQ5-n8mBg3BovySUIjmCPHCaW0H2nQVdqzbtsYqf4Q:wcqRqeegRUa9MVLJGyujVXB7vWFPjdaS1CtrrzJq-ok"
-    headers = {
-        "authority": "www.glassdoor.com",
-        "accept": "*/*",
-        "accept-language": "en-US,en;q=0.9",
-        "apollographql-client-name": "job-search-next",
-        "apollographql-client-version": "4.65.5",
-        "content-type": "application/json",
-        "origin": "https://www.glassdoor.com",
-        "referer": "https://www.glassdoor.com/",
-        "sec-ch-ua": '"Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99"',
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"macOS"',
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
-    }
-    query_template = """
-            query JobSearchResultsQuery(
-                $excludeJobListingIds: [Long!], 
-                $keyword: String, 
-                $locationId: Int, 
-                $locationType: LocationTypeEnum, 
-                $numJobsToShow: Int!, 
-                $pageCursor: String, 
-                $pageNumber: Int, 
-                $filterParams: [FilterParams], 
-                $originalPageUrl: String, 
-                $seoFriendlyUrlInput: String, 
-                $parameterUrlInput: String, 
-                $seoUrl: Boolean
-            ) {
-                jobListings(
-                    contextHolder: {
-                        searchParams: {
-                            excludeJobListingIds: $excludeJobListingIds, 
-                            keyword: $keyword, 
-                            locationId: $locationId, 
-                            locationType: $locationType, 
-                            numPerPage: $numJobsToShow, 
-                            pageCursor: $pageCursor, 
-                            pageNumber: $pageNumber, 
-                            filterParams: $filterParams, 
-                            originalPageUrl: $originalPageUrl, 
-                            seoFriendlyUrlInput: $seoFriendlyUrlInput, 
-                            parameterUrlInput: $parameterUrlInput, 
-                            seoUrl: $seoUrl, 
-                            searchType: SR
-                        }
-                    }
-                ) {
-                    companyFilterOptions {
-                        id
-                        shortName
-                        __typename
-                    }
-                    filterOptions
-                    indeedCtk
-                    jobListings {
-                        ...JobView
-                        __typename
-                    }
-                    jobListingSeoLinks {
-                        linkItems {
-                            position
-                            url
-                            __typename
-                        }
-                        __typename
-                    }
-                    jobSearchTrackingKey
-                    jobsPageSeoData {
-                        pageMetaDescription
-                        pageTitle
-                        __typename
-                    }
-                    paginationCursors {
-                        cursor
-                        pageNumber
-                        __typename
-                    }
-                    indexablePageForSeo
-                    searchResultsMetadata {
-                        searchCriteria {
-                            implicitLocation {
-                                id
-                                localizedDisplayName
-                                type
-                                __typename
-                            }
-                            keyword
-                            location {
-                                id
-                                shortName
-                                localizedShortName
-                                localizedDisplayName
-                                type
-                                __typename
-                            }
-                            __typename
-                        }
-                        helpCenterDomain
-                        helpCenterLocale
-                        jobSerpJobOutlook {
-                            occupation
-                            paragraph
-                            __typename
-                        }
-                        showMachineReadableJobs
-                        __typename
-                    }
-                    totalJobsCount
-                    __typename
-                }
-            }
-
-            fragment JobView on JobListingSearchResult {
-                jobview {
-                    header {
-                        adOrderId
-                        advertiserType
-                        adOrderSponsorshipLevel
-                        ageInDays
-                        divisionEmployerName
-                        easyApply
-                        employer {
-                            id
-                            name
-                            shortName
-                            __typename
-                        }
-                        employerNameFromSearch
-                        goc
-                        gocConfidence
-                        gocId
-                        jobCountryId
-                        jobLink
-                        jobResultTrackingKey
-                        jobTitleText
-                        locationName
-                        locationType
-                        locId
-                        needsCommission
-                        payCurrency
-                        payPeriod
-                        payPeriodAdjustedPay {
-                            p10
-                            p50
-                            p90
-                            __typename
-                        }
-                        rating
-                        salarySource
-                        savedJobId
-                        sponsored
-                        __typename
-                    }
-                    job {
-                        description
-                        importConfigId
-                        jobTitleId
-                        jobTitleText
-                        listingId
-                        __typename
-                    }
-                    jobListingAdminDetails {
-                        cpcVal
-                        importConfigId
-                        jobListingId
-                        jobSourceId
-                        userEligibleForAdminJobDetails
-                        __typename
-                    }
-                    overview {
-                        shortName
-                        squareLogoUrl
-                        __typename
-                    }
-                    __typename
-                }
-                __typename
-            }
-    """
