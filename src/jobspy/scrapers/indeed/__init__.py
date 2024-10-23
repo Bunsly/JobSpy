@@ -69,15 +69,8 @@ class IndeedScraper(Scraper):
         page = 1
 
         cursor = None
-        offset_pages = math.ceil(self.scraper_input.offset / 100)
-        for _ in range(offset_pages):
-            logger.info(f"skipping search page: {page}")
-            __, cursor = self._scrape_page(cursor)
-            if not __:
-                logger.info(f"found no jobs on page: {page}")
-                break
 
-        while len(self.seen_urls) < scraper_input.results_wanted:
+        while len(self.seen_urls) < scraper_input.results_wanted + scraper_input.offset:
             logger.info(
                 f"search page: {page} / {math.ceil(scraper_input.results_wanted / 100)}"
             )
@@ -87,7 +80,12 @@ class IndeedScraper(Scraper):
                 break
             job_list += jobs
             page += 1
-        return JobResponse(jobs=job_list[: scraper_input.results_wanted])
+        return JobResponse(
+            jobs=job_list[
+                scraper_input.offset : scraper_input.offset
+                + scraper_input.results_wanted
+            ]
+        )
 
     def _scrape_page(self, cursor: str | None) -> Tuple[list[JobPost], str | None]:
         """
