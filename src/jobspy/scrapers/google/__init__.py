@@ -34,12 +34,11 @@ class GoogleJobsScraper(Scraper):
         self, proxies: list[str] | str | None = None, ca_cert: str | None = None
     ):
         """
-        Initializes GlassdoorScraper with the Glassdoor job search url
+        Initializes Google Scraper with the Goodle jobs search url
         """
         site = Site(Site.GOOGLE)
         super().__init__(site, proxies=proxies, ca_cert=ca_cert)
 
-        self.base_url = None
         self.country = None
         self.session = None
         self.scraper_input = None
@@ -50,13 +49,12 @@ class GoogleJobsScraper(Scraper):
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
-        Scrapes Glassdoor for jobs with scraper_input criteria.
+        Scrapes Google for jobs with scraper_input criteria.
         :param scraper_input: Information about job search criteria.
         :return: JobResponse containing a list of jobs.
         """
         self.scraper_input = scraper_input
         self.scraper_input.results_wanted = min(900, scraper_input.results_wanted)
-        self.base_url = self.scraper_input.country.get_glassdoor_url()
 
         self.session = create_session(
             proxies=self.proxies, ca_cert=self.ca_cert, is_tls=False, has_retry=True
