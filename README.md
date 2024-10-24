@@ -63,8 +63,8 @@ zip_recruiter Software Developer                 TEKsystems        Phoenix      
 ```plaintext
 Optional
 ├── site_name (list|str): 
-|    linkedin, zip_recruiter, indeed, glassdoor 
-|    (default is all four)
+|    linkedin, zip_recruiter, indeed, glassdoor, google
+|    (default is all)
 │
 ├── search_term (str)
 │
@@ -173,9 +173,9 @@ Indeed specific
 
 ## Supported Countries for Job Searching
 
-### **LinkedIn**
+### **LinkedIn / Google**
 
-LinkedIn searches globally & uses only the `location` parameter. 
+LinkedIn & Google searches globally & uses only the `location` parameter. 
 
 ### **ZipRecruiter**
 
