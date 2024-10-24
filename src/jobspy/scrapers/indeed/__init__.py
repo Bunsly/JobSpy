@@ -72,7 +72,7 @@ class IndeedScraper(Scraper):
 
         while len(self.seen_urls) < scraper_input.results_wanted + scraper_input.offset:
             logger.info(
-                f"search page: {page} / {math.ceil(scraper_input.results_wanted / 100)}"
+                f"search page: {page} / {math.ceil(scraper_input.results_wanted / self.jobs_per_page)}"
             )
             jobs, cursor = self._scrape_page(cursor)
             if not jobs:
@@ -258,7 +258,7 @@ class IndeedScraper(Scraper):
             company_num_employees=employer_details.get("employeesLocalizedLabel"),
             company_revenue=employer_details.get("revenueLocalizedLabel"),
             company_description=employer_details.get("briefDescription"),
-            logo_photo_url=(
+            company_logo=(
                 employer["images"].get("squareLogoUrl")
                 if employer and employer.get("images")
                 else None

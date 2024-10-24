@@ -264,3 +264,22 @@ def extract_salary(
             else:
                 return interval, min_salary, max_salary, "USD"
     return None, None, None, None
+
+
+def extract_job_type(description: str):
+    if not description:
+        return []
+
+    keywords = {
+        JobType.FULL_TIME: r"full\s?time",
+        JobType.PART_TIME: r"part\s?time",
+        JobType.INTERNSHIP: r"internship",
+        JobType.CONTRACT: r"contract",
+    }
+
+    listing_types = []
+    for key, pattern in keywords.items():
+        if re.search(pattern, description, re.IGNORECASE):
+            listing_types.append(key)
+
+    return listing_types if listing_types else None

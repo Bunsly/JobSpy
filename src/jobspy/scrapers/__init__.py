@@ -17,10 +17,13 @@ class Site(Enum):
     INDEED = "indeed"
     ZIP_RECRUITER = "zip_recruiter"
     GLASSDOOR = "glassdoor"
+    GOOGLE = "google"
+
 
 class SalarySource(Enum):
     DIRECT_DATA = "direct_data"
     DESCRIPTION = "description"
+
 
 class ScraperInput(BaseModel):
     site_type: list[Site]
@@ -42,7 +45,9 @@ class ScraperInput(BaseModel):
 
 
 class Scraper(ABC):
-    def __init__(self, site: Site, proxies: list[str] | None = None, ca_cert: str | None = None):
+    def __init__(
+        self, site: Site, proxies: list[str] | None = None, ca_cert: str | None = None
+    ):
         self.site = site
         self.proxies = proxies
         self.ca_cert = ca_cert

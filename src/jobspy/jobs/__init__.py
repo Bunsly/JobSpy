@@ -256,7 +256,7 @@ class JobPost(BaseModel):
     company_num_employees: str | None = None
     company_revenue: str | None = None
     company_description: str | None = None
-    logo_photo_url: str | None = None
+    company_logo: str | None = None
     banner_photo_url: str | None = None
 
     # linkedin only atm

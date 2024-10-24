@@ -9,7 +9,7 @@ work with us.*
 
 ## Features
 
-- Scrapes job postings from **LinkedIn**, **Indeed**, **Glassdoor**, & **ZipRecruiter** simultaneously
+- Scrapes job postings from **LinkedIn**, **Indeed**, **Glassdoor**, **Google**, & **ZipRecruiter** simultaneously
 - Aggregates the job postings in a Pandas DataFrame
 - Proxies support
 
@@ -30,9 +30,9 @@ import csv
 from jobspy import scrape_jobs
 
 jobs = scrape_jobs(
-    site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor"],
+    site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor", "google"],
     search_term="software engineer",
-    location="Dallas, TX",
+    location="San Francisco, CA",
     results_wanted=20,
     hours_old=72, # (only Linkedin/Indeed is hour specific, others round up to days old)
     country_indeed='USA',  # only needed for indeed / glassdoor
@@ -80,9 +80,6 @@ Optional
 |    in format ['user:pass@host:port', 'localhost']
 |    each job board scraper will round robin through the proxies
 |
-├── ca_cert (str)
-|    path to CA Certificate file for proxies
-│
 ├── is_remote (bool)
 │
 ├── results_wanted (int): 
@@ -116,6 +113,9 @@ Optional
 |
 ├── enforce_annual_salary (bool): 
 |    converts wages to annual salary
+|
+├── ca_cert (str)
+|    path to CA Certificate file for proxies
 ```
 
 ```
@@ -168,7 +168,7 @@ Indeed specific
 ├── company_employees_label
 ├── company_revenue_label
 ├── company_description
-└── logo_photo_url
+└── company_logo
 ```
 
 ## Supported Countries for Job Searching
