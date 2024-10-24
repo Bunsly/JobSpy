@@ -2,7 +2,7 @@
 jobspy.scrapers.google
 ~~~~~~~~~~~~~~~~~~~
 
-This module contains routines to scrape Glassdoor.
+This module contains routines to scrape Google.
 """
 
 from __future__ import annotations
