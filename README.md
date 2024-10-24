@@ -2,8 +2,6 @@
 
 **JobSpy** is a simple, yet comprehensive, job scraping library.
 
-**Not technical?** Try out the web scraping tool on our site at [usejobspy.com](https://usejobspy.com).
-
 *Looking to build a data-focused software product?* **[Book a call](https://bunsly.com/)** *to
 work with us.*
 
