@@ -9,6 +9,7 @@ from .scrapers.utils import set_logger_level, extract_salary, create_logger
 from .scrapers.indeed import IndeedScraper
 from .scrapers.ziprecruiter import ZipRecruiterScraper
 from .scrapers.glassdoor import GlassdoorScraper
+from .scrapers.google import GoogleJobsScraper
 from .scrapers.linkedin import LinkedInScraper
 from .scrapers import SalarySource, ScraperInput, Site, JobResponse, Country
 from .scrapers.exceptions import (
@@ -16,6 +17,7 @@ from .scrapers.exceptions import (
     IndeedException,
     ZipRecruiterException,
     GlassdoorException,
+    GoogleJobsException,
 )
 
 
@@ -50,6 +52,7 @@ def scrape_jobs(
         Site.INDEED: IndeedScraper,
         Site.ZIP_RECRUITER: ZipRecruiterScraper,
         Site.GLASSDOOR: GlassdoorScraper,
+        Site.GOOGLE: GoogleJobsScraper,
     }
     set_logger_level(verbose)
 
@@ -223,12 +226,12 @@ def scrape_jobs(
             "is_remote",
             "job_level",
             "job_function",
-            "company_industry",
             "listing_type",
             "emails",
             "description",
+            "company_industry",
             "company_url",
-            "logo_photo_url",
+            "company_logo",
             "company_url_direct",
             "company_addresses",
             "company_num_employees",

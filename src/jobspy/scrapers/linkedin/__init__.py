@@ -232,7 +232,7 @@ class LinkedInScraper(Scraper):
             description=job_details.get("description"),
             job_url_direct=job_details.get("job_url_direct"),
             emails=extract_emails_from_text(job_details.get("description")),
-            logo_photo_url=job_details.get("logo_photo_url"),
+            company_logo=job_details.get("company_logo"),
             job_function=job_details.get("job_function"),
         )
 
@@ -275,7 +275,7 @@ class LinkedInScraper(Scraper):
             if job_function_span:
                 job_function = job_function_span.text.strip()
 
-        logo_photo_url = (
+        company_logo = (
             logo_image.get("data-delayed-url")
             if (logo_image := soup.find("img", {"class": "artdeco-entity-image"}))
             else None
@@ -286,7 +286,7 @@ class LinkedInScraper(Scraper):
             "company_industry": self._parse_company_industry(soup),
             "job_type": self._parse_job_type(soup),
             "job_url_direct": self._parse_job_url_direct(soup),
-            "logo_photo_url": logo_photo_url,
+            "company_logo": company_logo,
             "job_function": job_function,
         }
 

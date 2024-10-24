@@ -214,7 +214,7 @@ class GlassdoorScraper(Scraper):
             is_remote=is_remote,
             description=description,
             emails=extract_emails_from_text(description) if description else None,
-            logo_photo_url=company_logo,
+            company_logo=company_logo,
             listing_type=listing_type,
         )
 
