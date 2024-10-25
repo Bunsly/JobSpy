@@ -24,6 +24,7 @@ from .scrapers.exceptions import (
 def scrape_jobs(
     site_name: str | list[str] | Site | list[Site] | None = None,
     search_term: str | None = None,
+    google_search_term: str | None = None,
     location: str | None = None,
     distance: int | None = 50,
     is_remote: bool = False,
@@ -86,6 +87,7 @@ def scrape_jobs(
         site_type=get_site_type(),
         country=country_enum,
         search_term=search_term,
+        google_search_term=google_search_term,
         location=location,
         distance=distance,
         is_remote=is_remote,
@@ -216,8 +218,8 @@ def scrape_jobs(
             "title",
             "company",
             "location",
-            "job_type",
             "date_posted",
+            "job_type",
             "salary_source",
             "interval",
             "min_amount",
@@ -248,6 +250,8 @@ def scrape_jobs(
         jobs_df = jobs_df[desired_order]
 
         # Step 4: Sort the DataFrame as required
-        return jobs_df.sort_values(by=["site", "date_posted"], ascending=[True, False])
+        return jobs_df.sort_values(
+            by=["site", "date_posted"], ascending=[True, False]
+        ).reset_index(drop=True)
     else:
         return pd.DataFrame()
