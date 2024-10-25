@@ -68,7 +68,7 @@ Optional
 ├── search_term (str)
 |
 ├── google_search_term (str)
-|     search term for google jobs, treat it like regular google search. This is the only parameter for google
+|     search term for google jobs. This is is only param for filtering google jobs.
 │
 ├── location (str)
 │
