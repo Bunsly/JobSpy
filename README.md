@@ -226,7 +226,9 @@ You can specify the following countries when searching on Indeed (use the exact 
 
 Example of a good query
 
+```py
 search_term='"software engineering intern" summer java 2025 -tax -marketing'
+```
 
 This searches the description/title and must include summer, java, 2025, software engineering intern exactly, no tax, no marketing.
 
