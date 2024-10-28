@@ -219,7 +219,16 @@ You can specify the following countries when searching on Indeed (use the exact 
 
 ---
 **Q: Why is Indeed giving unrelated roles?**  
-**A:** Indeed is searching each one of your terms e.g. software intern, it searches software OR intern. Try search_term='"software intern"' in quotes for stricter searching
+**A:** Indeed searches the description too.
+
+- use - to remove words
+- "" for exact match
+
+Example of a good query
+
+search_term='"software engineering intern" summer java 2025 -tax -marketing'
+
+This searches the description/title and must include summer, java, 2025, software engineering intern exactly, no tax, no marketing.
 
 ---
 
