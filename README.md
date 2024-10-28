@@ -8,8 +8,8 @@ work with us.*
 ## Features
 
 - Scrapes job postings from **LinkedIn**, **Indeed**, **Glassdoor**, **Google**, & **ZipRecruiter** simultaneously
-- Aggregates the job postings in a Pandas DataFrame
-- Proxies support
+- Aggregates the job postings in a dataframe
+- Proxies support to bypass blocking
 
 ![jobspy](https://github.com/cullenwatson/JobSpy/assets/78247585/ec7ef355-05f6-4fd3-8161-a817e31c5c57)
 
@@ -33,12 +33,11 @@ jobs = scrape_jobs(
     google_search_term="software engineer jobs near San Francisco, CA since yesterday",
     location="San Francisco, CA",
     results_wanted=20,
-    hours_old=72, # (only Linkedin/Indeed is hour specific, others round up to days old)
-    country_indeed='USA',  # only needed for indeed / glassdoor
+    hours_old=72,
+    country_indeed='USA',
     
-    # linkedin_fetch_description=True # get more info such as full description, direct job url for linkedin (slower)
+    # linkedin_fetch_description=True # gets more info such as description, direct job url (slower)
     # proxies=["208.195.175.46:65095", "208.195.175.45:65095", "localhost"],
-    
 )
 print(f"Found {len(jobs)} jobs")
 print(jobs.head())
@@ -227,10 +226,10 @@ You can specify the following countries when searching on Indeed (use the exact 
 Example of a good Indeed query
 
 ```py
-search_term='"software engineering intern" summer (java OR python OR c++) 2025 -tax -marketing',
+search_term='"engineering intern" software summer (java OR python OR c++) 2025 -tax -marketing'
 ```
 
-This searches the description/title and must include summer, 2025, one of the languages, software engineering intern exactly, no tax, no marketing.
+This searches the description/title and must include software, summer, 2025, one of the languages, engineering intern exactly, no tax, no marketing.
 
 ---
 
