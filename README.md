@@ -224,13 +224,13 @@ You can specify the following countries when searching on Indeed (use the exact 
 - use - to remove words
 - "" for exact match
 
-Example of a good query
+Example of a good Indeed query
 
 ```py
-search_term='"software engineering intern" summer java 2025 -tax -marketing'
+search_term='"software engineering intern" summer (java OR python OR c++) 2025 -tax -marketing',
 ```
 
-This searches the description/title and must include summer, java, 2025, software engineering intern exactly, no tax, no marketing.
+This searches the description/title and must include summer, 2025, one of the languages, software engineering intern exactly, no tax, no marketing.
 
 ---
 
