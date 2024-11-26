@@ -201,12 +201,6 @@ This searches the description/title and must include software, summer, 2025, one
 
 ---
 
-**Q: Encountering issues with your queries?**  
-**A:** Try reducing the number of `results_wanted` and/or broadening the filters. If problems
-persist, [submit an issue](https://github.com/Bunsly/JobSpy/issues).
-
----
-
 ### JobPost Schema
 
 ```plaintext
