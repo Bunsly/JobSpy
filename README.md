@@ -87,7 +87,7 @@ Optional
 |    number of job results to retrieve for each site specified in 'site_name'
 │
 ├── easy_apply (bool): 
-|    filters for jobs that are hosted on the job board site
+|    filters for jobs that are hosted on the job board site (LinkedIn easy apply filter no longer works)
 │
 ├── description_format (str): 
 |    markdown, html (Format type of the job descriptions. Default is markdown.)
