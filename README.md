@@ -246,3 +246,42 @@ This searches the description/title and must include software, summer, 2025, one
 persist, [submit an issue](https://github.com/Bunsly/JobSpy/issues).
 
 ---
+
+### JobPost Schema
+
+```plaintext
+JobPost
+├── title
+├── company
+├── company_url
+├── job_url
+├── location
+│   ├── country
+│   ├── city
+│   ├── state
+├── description
+├── job_type: fulltime, parttime, internship, contract
+├── job_function
+│   ├── interval: yearly, monthly, weekly, daily, hourly
+│   ├── min_amount
+│   ├── max_amount
+│   ├── currency
+│   └── salary_source: direct_data, description (parsed from posting)
+├── date_posted
+├── emails
+└── is_remote
+
+Linkedin specific
+└── job_level
+
+Linkedin & Indeed specific
+└── company_industry
+
+Indeed specific
+├── company_country
+├── company_addresses
+├── company_employees_label
+├── company_revenue_label
+├── company_description
+└── company_logo
+```
