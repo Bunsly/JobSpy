@@ -1,33 +1,47 @@
 name: Publish Python 🐍 distributions 📦 to PyPI
-on: push
+on:
+  pull_request:
+    types:
+      - closed
 
 jobs:
   build-n-publish:
     name: Build and publish Python 🐍 distributions 📦 to PyPI
     runs-on: ubuntu-latest
 
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
+      - name: Install dependencies
+        run: pip install toml
+
+      - name: Increment version
+        run: python increment_version.py
+
+      - name: Commit version increment
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add pyproject.toml
+          git commit -m 'Increment version'
+
+      - name: Push changes
+        run: git push
+
       - name: Install poetry
-        run: >-
-          python3 -m
-          pip install
-          poetry
-          --user
+        run: pip install poetry --user
 
       - name: Build distribution 📦
-        run: >-
-          python3 -m
-          poetry
-          build
+        run: poetry build
 
       - name: Publish distribution 📦 to PyPI
-        if: startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
