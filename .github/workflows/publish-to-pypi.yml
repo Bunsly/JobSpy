@@ -4,6 +4,9 @@ on:
     types:
       - closed
 
+permissions:
+  contents: write
+
 jobs:
   build-n-publish:
     name: Build and publish Python 🐍 distributions 📦 to PyPI
