@@ -232,7 +232,7 @@ class GoogleJobsScraper(Scraper):
     def _find_job_info_initial_page(html_text: str):
         pattern = (
             f'520084652":('
-            + r"\[(?:[^\[\]]|\[(?:[^\[\]]|\[(?:[^\[\]]|\[[^\[\]]*\])*\])*\])*\])"
+            + r"\[.*?\]\s*])\s*}\s*]\s*]\s*]\s*]\s*]"
         )
         results = []
         matches = re.finditer(pattern, html_text)
