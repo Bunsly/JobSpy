@@ -8,3 +8,5 @@
 *.pyc
 .env
 dist
+jobs.csv
+.vscode/launch.json

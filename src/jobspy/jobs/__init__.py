@@ -87,7 +87,7 @@ class Country(Enum):
     INDIA = ("india", "in", "co.in")
     INDONESIA = ("indonesia", "id")
     IRELAND = ("ireland", "ie", "ie")
-    ISRAEL = ("israel", "il")
+    ISRAEL = ("israel", "il","com")
     ITALY = ("italy", "it", "it")
     JAPAN = ("japan", "jp")
     KUWAIT = ("kuwait", "kw")
