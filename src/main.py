@@ -1,8 +1,10 @@
 import csv
-from jobspy import scrape_jobs
+
+from jobspy import scrape_jobs 
 
 jobs = scrape_jobs(
-    site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor", "google"],
+    # site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor", "google"],
+    site_name=["glassdoor"],
     search_term="software engineer",
     google_search_term="software engineer jobs near Tel Aviv Israel since yesterday",
     location="Tel Aviv, israel",
