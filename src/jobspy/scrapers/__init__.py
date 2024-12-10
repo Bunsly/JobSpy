@@ -31,6 +31,7 @@ class ScraperInput(BaseModel):
     google_search_term: str | None = None
 
     location: str | None = None
+    locations: list[str] | None = None
     country: Country | None = Country.USA
     distance: int | None = None
     is_remote: bool = False

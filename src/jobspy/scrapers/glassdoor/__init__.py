@@ -7,12 +7,15 @@ This module contains routines to scrape Glassdoor.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import re
 import json
 import requests
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from jobspy.scrapers.glassdoor.GlassDoorLocation import GlassDoorLocationResponse, get_location_id, get_location_type
 
 from .constants import fallback_token, query_template, headers
 from .. import Scraper, ScraperInput, Site
@@ -33,7 +36,6 @@ from ...jobs import (
 )
 
 logger = create_logger("Glassdoor")
-
 
 class GlassdoorScraper(Scraper):
     def __init__(
@@ -69,32 +71,17 @@ class GlassdoorScraper(Scraper):
         token = self._get_csrf_token()
         headers["gd-csrf-token"] = token if token else fallback_token
         self.session.headers.update(headers)
-
-        location_id, location_type = self._get_location(
-            scraper_input.location, scraper_input.is_remote
-        )
-        if location_type is None:
-            logger.error("Glassdoor: location not parsed")
-            return JobResponse(jobs=[])
-        job_list: list[JobPost] = []
-        cursor = None
-
-        range_start = 1 + (scraper_input.offset // self.jobs_per_page)
-        tot_pages = (scraper_input.results_wanted // self.jobs_per_page) + 2
-        range_end = min(tot_pages, self.max_pages + 1)
-        for page in range(range_start, range_end):
-            logger.info(f"search page: {page} / {range_end-1}")
-            try:
-                jobs, cursor = self._fetch_jobs_page(
-                    scraper_input, location_id, location_type, page, cursor
-                )
-                job_list.extend(jobs)
-                if not jobs or len(job_list) >= scraper_input.results_wanted:
-                    job_list = job_list[: scraper_input.results_wanted]
-                    break
-            except Exception as e:
-                logger.error(f"Glassdoor: {str(e)}")
-                break
+        job_list: list[JobPost] = [];
+        for location in scraper_input.locations:
+            glassDoorLocatiions = self._get_locations(
+                location, scraper_input.is_remote
+            )
+            for glassDoorLocatiion in glassDoorLocatiions:
+                locationType = get_location_type(glassDoorLocatiion);
+                locationId = get_location_id(glassDoorLocatiion);
+                jobs_temp = self.get_jobs(scraper_input,locationId,locationType);
+                if (jobs_temp is not None and len(jobs_temp) > 1):
+                    job_list.extend(jobs_temp)
         return JobResponse(jobs=job_list)
 
     def _fetch_jobs_page(
@@ -149,6 +136,38 @@ class GlassdoorScraper(Scraper):
         return jobs, self.get_cursor_for_page(
             res_json["data"]["jobListings"]["paginationCursors"], page_num + 1
         )
+
+    def get_jobs(self, scraper_input, location_id: int, location_type: str) -> List[JobPost]:
+        """
+        Private method to fetch jobs from a specific page and return as a list.
+        """
+        try:
+            if location_type is None:
+                logger.error("Glassdoor: location not parsed")
+                return JobResponse(jobs=[])
+            job_list: list[JobPost] = []
+            cursor = None
+
+            range_start = 1 + (scraper_input.offset // self.jobs_per_page)
+            tot_pages = (scraper_input.results_wanted // self.jobs_per_page) + 2
+            range_end = min(tot_pages, self.max_pages + 1)
+            for page in range(range_start, range_end):
+                logger.info(f"search page: {page} / {range_end-1}")
+                try:
+                    jobs, cursor = self._fetch_jobs_page(
+                        scraper_input, location_id, location_type, page, cursor
+                    )
+                    job_list.extend(jobs)
+                    if not jobs or len(job_list) >= scraper_input.results_wanted:
+                        job_list = job_list[: scraper_input.results_wanted]
+                        break
+                except Exception as e:
+                    logger.error(f"Glassdoor: {str(e)}")
+                    break
+            return job_list
+        except Exception as e:
+            logger.error(f"Failed to fetch jobs from page {page}: {str(e)}")
+            return []  # Return an empty list in case of failure
 
     def _get_csrf_token(self):
         """
@@ -274,6 +293,7 @@ class GlassdoorScraper(Scraper):
         items = res.json()
 
         if not items:
+            logger.error(f"location not found in Glassdoor:  {location}")
             raise ValueError(f"Location '{location}' not found on Glassdoor")
         location_type = items[0]["locationType"]
         if location_type == "C":
@@ -282,7 +302,40 @@ class GlassdoorScraper(Scraper):
             location_type = "STATE"
         elif location_type == "N":
             location_type = "COUNTRY"
+        
         return int(items[0]["locationId"]), location_type
+    
+        # Example string 'Tel Aviv, Israel'
+    def get_city_from_location(self, location:str) -> str:        
+        return location.split(',')[0].strip()   # Replace space with %2 to get "Tel%2Aviv"
+
+    def _get_locations(self, location: str, is_remote: bool) -> List[GlassDoorLocationResponse]:
+        if not location or is_remote:
+            return "11047", "STATE"  # remote options
+        url = f"{self.base_url}/findPopularLocationAjax.htm?maxLocationsToReturn=10&term={location}"
+        res = self.session.get(url)
+        if res.status_code != 200:
+            if res.status_code == 429:
+                err = f"429 Response - Blocked by Glassdoor for too many requests"
+                logger.error(err)
+                return None, None
+            else:
+                err = f"Glassdoor response status code {res.status_code}"
+                err += f" - {res.text}"
+                logger.error(f"Glassdoor response status code {res.status_code}")
+                return None, None
+        formatted_city = self.get_city_from_location(location)
+        items: List[GlassDoorLocationResponse] = [
+            GlassDoorLocationResponse(**item) for item in res.json()]
+        # Filter items based on the processed city name
+        items = [
+            item for item in items if item.label is not None and formatted_city in item.label
+        ]
+        if not items:
+            logger.error(f"location not found in Glassdoor:  {location}")
+            # raise ValueError(f"Location '{location}' not found on Glassdoor")
+        
+        return items;
 
     def _add_payload(
         self,

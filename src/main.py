@@ -7,9 +7,10 @@ jobs = scrape_jobs(
     site_name=["glassdoor"],
     search_term="software engineer",
     google_search_term="software engineer jobs near Tel Aviv Israel since yesterday",
-    location="Tel Aviv, israel",
-    results_wanted=20,
-    hours_old=72,
+    location="Central, Israel",
+    locations=["Tel Aviv, Israel","Ramat Gan, Israel","Central, Israel","Rehovot ,Israel"],
+    results_wanted=200,
+    hours_old=200,
     country_indeed='israel',
     
     # linkedin_fetch_description=True # gets more info such as description, direct job url (slower)
