@@ -2,10 +2,8 @@ from __future__ import annotations
 from datetime import datetime
 
 import pandas as pd
-from typing import List, Tuple
+from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-from pymongo import MongoClient, UpdateOne
 
 from .jobs import JobPost, JobType, Location
 from .scrapers.utils import set_logger_level, extract_salary, create_logger
@@ -22,14 +20,6 @@ from .scrapers.exceptions import (
     GlassdoorException,
     GoogleJobsException,
 )
-# Connect to MongoDB server
-client = MongoClient("mongodb://localhost:27017/")
-
-# Access a database (it will be created automatically if it doesn't exist)
-db = client["jobs_database"]
-
-# Access a collection
-jobs_collection = db["jobs"]
 
 def scrape_jobs(
     site_name: str | list[str] | Site | list[Site] | None = None,
@@ -112,59 +102,23 @@ def scrape_jobs(
         offset=offset,
         hours_old=hours_old,
     )
-
-    # def insert_jobs(jobs: List[JobPost], collection):
-    #     # Convert JobPost objects to dictionaries
-    #     # job_dicts = [job.model_dump() for job in jobs]
-    #     job_dicts = [job.model_dump(exclude={"date_posted"}) for job in jobs]
-    #     collection.insert_many(job_dicts)
-    #     print(f"Inserted {len(job_dicts)} jobs into MongoDB.")
-    def insert_jobs(jobs: List[JobPost], collection):
-        """
-        Perform bulk upserts for a list of JobPost objects into a MongoDB collection.
-        Only insert new jobs and return the list of newly inserted jobs.
-        """
-        operations = []
-        new_jobs = []  # List to store the new jobs inserted into MongoDB
-
-        for job in jobs:
-            job_dict = job.model_dump(exclude={"date_posted"})
-            operations.append(
-                UpdateOne(
-                    {"id": job.id},  # Match by `id`
-                    {"$setOnInsert": job_dict},  # Only set fields if the job is being inserted (not updated)
-                    upsert=True  # Insert if not found, but do not update if already exists
-                )
-            )
-
-        if operations:
-            # Execute all operations in bulk
-            result = collection.bulk_write(operations)
-            print(f"Matched: {result.matched_count}, Upserts: {result.upserted_count}, Modified: {result.modified_count}")
-
-            # Get the newly inserted jobs (those that were upserted)
-            # The `upserted_count` corresponds to how many new documents were inserted
-            for i, job in enumerate(jobs):
-                if result.upserted_count > 0 and i < result.upserted_count:
-                    new_jobs.append(job)
-                    print(f"New Job ID: {job.id}, Label: {job.label}")
-
-        return new_jobs
     
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
         scraper = scraper_class(proxies=proxies, ca_cert=ca_cert)
         scraped_data: JobResponse = scraper.scrape(scraper_input)
-        insert_jobs(scraped_data.jobs, jobs_collection)
         cap_name = site.value.capitalize()
         site_name = "ZipRecruiter" if cap_name == "Zip_recruiter" else cap_name
         create_logger(site_name).info(f"finished scraping")
         return site.value, scraped_data
 
     site_to_jobs_dict = {}
-
+    merged_jobs:list[JobPost] = []
     def worker(site):
         site_val, scraped_info = scrape_site(site)
+            # Add the scraped jobs to the merged list
+        merged_jobs.extend(scraped_info.jobs)  # Assuming scraped_info has 'jobs' as a list
+    
         return site_val, scraped_info
 
     with ThreadPoolExecutor() as executor:
@@ -175,7 +129,8 @@ def scrape_jobs(
         for future in as_completed(future_to_site):
             site_value, scraped_data = future.result()
             site_to_jobs_dict[site_value] = scraped_data
-
+    
+    return merged_jobs
     def convert_to_annual(job_data: dict):
         if job_data["interval"] == "hourly":
             job_data["min_amount"] *= 2080
