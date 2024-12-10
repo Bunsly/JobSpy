@@ -73,10 +73,11 @@ class GlassdoorScraper(Scraper):
         self.session.headers.update(headers)
         job_list: list[JobPost] = [];
         for location in scraper_input.locations:
-            glassDoorLocatiions = self._get_locations(
+            glassDoorLocatiions: List[GlassDoorLocationResponse] = self._get_locations(
                 location, scraper_input.is_remote
             )
             for glassDoorLocatiion in glassDoorLocatiions:
+                logger.info(f"Location: {glassDoorLocatiion.longName}")
                 locationType = get_location_type(glassDoorLocatiion);
                 locationId = get_location_id(glassDoorLocatiion);
                 jobs_temp = self.get_jobs(scraper_input,locationId,locationType);
@@ -198,7 +199,7 @@ class GlassdoorScraper(Scraper):
         location_type = job["header"].get("locationType", "")
         age_in_days = job["header"].get("ageInDays")
         is_remote, location = False, None
-        date_diff = (datetime.now() - timedelta(days=age_in_days)).date()
+        date_diff = (datetime.now() - timedelta(days=age_in_days))
         date_posted = date_diff if age_in_days is not None else None
 
         if location_type == "S":
@@ -226,7 +227,8 @@ class GlassdoorScraper(Scraper):
             title=title,
             company_url=company_url if company_id else None,
             company_name=company_name,
-            date_posted=date_posted,
+            date_posted=date_posted.date(),
+            datetime_posted=date_posted,
             job_url=job_url,
             location=location,
             compensation=compensation,

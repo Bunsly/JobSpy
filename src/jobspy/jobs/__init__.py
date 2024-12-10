@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import Field
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 from pydantic import BaseModel
 
@@ -240,7 +241,8 @@ class JobPost(BaseModel):
 
     job_type: list[JobType] | None = None
     compensation: Compensation | None = None
-    date_posted: date | None = None
+    date_posted: date | None
+    datetime_posted: datetime | None = None
     emails: list[str] | None = None
     is_remote: bool | None = None
     listing_type: str | None = None
@@ -261,6 +263,10 @@ class JobPost(BaseModel):
 
     # linkedin only atm
     job_function: str | None = None
+
+    class Config:
+        # Exclude `date_posted` in model dumps
+        exclude = {"date_posted"}
 
 
 class JobResponse(BaseModel):
