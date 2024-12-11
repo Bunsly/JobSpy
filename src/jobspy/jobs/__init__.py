@@ -88,7 +88,7 @@ class Country(Enum):
     INDIA = ("india", "in", "co.in")
     INDONESIA = ("indonesia", "id")
     IRELAND = ("ireland", "ie", "ie")
-    ISRAEL = ("israel", "il","com")
+    ISRAEL = ("israel", "il", "com")
     ITALY = ("italy", "it", "it")
     JAPAN = ("japan", "jp")
     KUWAIT = ("kuwait", "kw")
@@ -165,8 +165,20 @@ class Country(Enum):
                 return country
         valid_countries = [country.value for country in cls]
         raise ValueError(
-            f"Invalid country string: '{country_str}'. Valid countries are: {', '.join([country[0] for country in valid_countries])}"
+            f"Invalid country string: '{country_str}'. Valid countries are: {
+                ', '.join([country[0] for country in valid_countries])}"
         )
+
+    def to_dict(self):
+        return {
+            "name": self.value[0].split(",")
+        }
+
+    @staticmethod
+    def from_dict(data):
+        if not data:
+            return None
+        return Country[data["name"]]
 
 
 class Location(BaseModel):
@@ -194,6 +206,19 @@ class Location(BaseModel):
             else:
                 location_parts.append(country_name.title())
         return ", ".join(location_parts)
+
+    def model_dump(self):
+        # Convert the model into a dictionary and serialize the country enum
+        data = super().model_dump()
+        if self.country:
+            data['country'] = self.country.to_dict()
+        return data
+
+    @staticmethod
+    def model_load(data):
+        if 'country' in data:
+            data['country'] = Country.from_dict(data['country'])
+        return Location(**data)
 
 
 class CompensationInterval(Enum):
@@ -264,9 +289,18 @@ class JobPost(BaseModel):
     # linkedin only atm
     job_function: str | None = None
 
-    class Config:
-        # Exclude `date_posted` in model dumps
-        exclude = {"date_posted"}
+    def model_dump(self, exclude: set = None):
+        # Use `Location`'s custom serialization logic
+        data = super().model_dump(exclude=exclude)
+        if self.location:
+            data['location'] = self.location.model_dump()
+        return data
+
+    @staticmethod
+    def model_load(data):
+        if 'location' in data:
+            data['location'] = Location.model_load(data['location'])
+        return JobPost(**data)
 
 
 class JobResponse(BaseModel):

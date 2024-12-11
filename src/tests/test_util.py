@@ -1,9 +1,6 @@
 from datetime import datetime, date
 from typing import List
-
-from telegram import Location
-
-from jobspy.jobs import Country, JobPost
+from jobspy.jobs import Country, JobPost, Location
 # Creating some test job posts
 
 

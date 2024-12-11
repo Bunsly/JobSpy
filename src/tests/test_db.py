@@ -16,8 +16,8 @@ class DatabaseTests:
         Inserts a mock job into the database using JobRepository.
         """
         job = createMockJob()
-        self.jobRepository.insert_or_update_job(job)
-        print("Job inserted successfully.")
+        self.jobRepository.insert_job(job)
+        print(f"Job inserted successfully.{job.id}")
 
 
 if __name__ == '__main__':

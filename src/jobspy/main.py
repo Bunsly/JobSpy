@@ -22,13 +22,11 @@ async def main():
     )
     print(f"Found {len(jobs)} jobs")
 
-    for job in jobs:
-        jobRepository.insert_or_update_job(job)
+    new_jobs = jobRepository.insertManyIfNotFound(jobs)
 
-    # new_jobs = jobRepository.insertManyIfNotFound(jobs, jobs_collection)
+    for new_job in new_jobs:
+        await telegramBot.send_job(new_job)
 
-    # for new_job in new_jobs:
-    #     await telegramBot.send_job(new_job)
-    # Run the async main function
+# Run the async main function
 if __name__ == "__main__":
     asyncio.run(main())

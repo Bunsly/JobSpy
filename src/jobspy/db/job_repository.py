@@ -16,23 +16,12 @@ class JobRepository:
         # Access a collection
         self.collection = self.db["jobs"]
 
-    def insert_or_update_job(self, job: JobPost):
+    def insert_job(self, job: JobPost):
         # Convert JobPost to dictionary
         job_dict = job.model_dump(exclude={"date_posted"})
-
-        # Check if the job already exists by its ID
-        if job.id:
-            # If it exists, update the `updated_at` field and other fields
-            # job_dict['updated_at'] = datetime.utcnow()  # Set updated time to current time
-            self.collection.update_one(
-                {'_id': job.id},
-                {'$set': job_dict}
-            )
-            print(f"Updated job with ID {job.id}.")
-        else:
-            # If it doesn't exist, insert a new job with the current `created_at` and `updated_at`
-            self.collection.insert_one(job_dict)
-            print(f"Inserted new job with title {job.title}.")
+        # If it doesn't exist, insert a new job with the current `created_at` and `updated_at`
+        self.collection.insert_one(job_dict)
+        print(f"Inserted new job with title {job.title}.")
 
     def insertManyIfNotFound(self, jobs: List[JobPost]) -> List[JobPost]:
         """
