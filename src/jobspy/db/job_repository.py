@@ -1,4 +1,3 @@
-from http import client
 import os
 from typing import List
 from pymongo import MongoClient, UpdateOne
@@ -13,7 +12,7 @@ class JobRepository:
         # Connect to MongoDB server
         self.client = MongoClient(self.mongoUri)
         # Access a database (it will be created automatically if it doesn't exist)
-        self.db = client["jobs_database"]
+        self.db = self.client["jobs_database"]
         # Access a collection
         self.collection = self.db["jobs"]
 
