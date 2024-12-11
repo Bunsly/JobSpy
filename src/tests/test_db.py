@@ -1,5 +1,9 @@
+import os
+from dotenv import load_dotenv
 from jobspy.db.job_repository import JobRepository
 from tests.test_util import createMockJob
+
+load_dotenv()
 
 
 class DatabaseTests:
@@ -9,7 +13,7 @@ class DatabaseTests:
         This block ensures that the script runs the test only when executed directly,
         not when imported as a module.
         """
-        self.jobRepository = JobRepository()
+        self.jobRepository = JobRepository(os.getenv("MONGO_DB_NAME") + "dev")
 
     def insert_job(self):
         """

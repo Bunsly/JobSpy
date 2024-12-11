@@ -1,25 +1,30 @@
 import os
 from typing import List
+from dotenv import load_dotenv
 from pymongo import MongoClient, UpdateOne
 
 from jobspy.jobs import JobPost
 
+load_dotenv()
+
 
 class JobRepository:
 
-    def __init__(self):
+    def __init__(self, database_name: str = None):
         self.mongoUri = os.getenv("MONGO_URI")
-        # Connect to MongoDB server
+        if not self.mongoUri:
+            raise ValueError("MONGO_URI environment variable is not set")
         self.client = MongoClient(self.mongoUri)
-        # Access a database (it will be created automatically if it doesn't exist)
-        self.db = self.client["jobs_database"]
-        # Access a collection
+        if database_name is None:
+            database_name = os.getenv("MONGO_DB_NAME")
+            if not database_name:
+                raise ValueError(
+                    "MONGO_DB_NAME environment variable is not set")
+        self.db = self.client[database_name]
         self.collection = self.db["jobs"]
 
     def insert_job(self, job: JobPost):
-        # Convert JobPost to dictionary
         job_dict = job.model_dump(exclude={"date_posted"})
-        # If it doesn't exist, insert a new job with the current `created_at` and `updated_at`
         self.collection.insert_one(job_dict)
         print(f"Inserted new job with title {job.title}.")
 
