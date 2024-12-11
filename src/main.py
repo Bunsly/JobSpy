@@ -88,7 +88,6 @@ async def main():
     print(f"Found {len(jobs)} jobs")
 
     new_jobs = insert_jobs(jobs, jobs_collection)
-    await send_job_to_telegram(jobs[0])
 
     for new_job in new_jobs:
         await send_job_to_telegram(new_job)
