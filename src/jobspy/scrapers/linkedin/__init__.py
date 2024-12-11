@@ -91,7 +91,7 @@ class LinkedInScraper(Scraper):
             )
             params = {
                 "keywords": scraper_input.search_term,
-                "location": scraper_input.location,
+                "location": ",".join(scraper_input.locations),
                 "distance": scraper_input.distance,
                 "f_WT": 2 if scraper_input.is_remote else None,
                 "f_JT": (
@@ -224,6 +224,7 @@ class LinkedInScraper(Scraper):
             company_url=company_url,
             location=location,
             date_posted=date_posted,
+            datetime_posted=date_posted,
             job_url=f"{self.base_url}/jobs/view/{job_id}",
             compensation=compensation,
             job_type=job_details.get("job_type"),
