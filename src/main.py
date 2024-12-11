@@ -1,5 +1,6 @@
 import asyncio
-import csv
+import os
+from dotenv import load_dotenv
 from typing import List
 
 from pymongo import MongoClient, UpdateOne
@@ -7,10 +8,14 @@ from telegram import Bot
 
 from jobspy import scrape_jobs
 from jobspy.jobs import JobPost 
-TELEGRAM_API_TOKEN = 
-CHAT_ID = 
+# Load the .env file
+load_dotenv()
+
+TELEGRAM_API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+MONGO_URI = os.getenv("MONGO_URI")
 # Connect to MongoDB server
-client = MongoClient("mongodb://localhost:27017/")
+client = MongoClient(MONGO_URI)
 # Access a database (it will be created automatically if it doesn't exist)
 db = client["jobs_database"]
 # Access a collection
@@ -83,6 +88,7 @@ async def main():
     print(f"Found {len(jobs)} jobs")
 
     new_jobs = insert_jobs(jobs, jobs_collection)
+    await send_job_to_telegram(jobs[0])
 
     for new_job in new_jobs:
         await send_job_to_telegram(new_job)
