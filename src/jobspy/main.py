@@ -25,7 +25,7 @@ async def main():
     new_jobs = jobRepository.insertManyIfNotFound(jobs)
 
     for new_job in new_jobs:
-        await telegramBot.send_job(new_job)
+        await telegramBot.sendJob(new_job)
 
 # Run the async main function
 if __name__ == "__main__":

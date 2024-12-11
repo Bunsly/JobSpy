@@ -14,7 +14,7 @@ class TelegramBot:
         self.chatId = os.getenv("TELEGRAM_CHAT_ID")
         self.bot = Bot(token=self._api_token)
 
-    async def send_job(self, job: JobPost):
+    async def sendJob(self, job: JobPost):
         """
         Send JobPost details to Telegram chat.
         """
@@ -22,7 +22,7 @@ class TelegramBot:
             f"Job ID: {job.id}\n" \
             f"Job Title: {job.title}\n" \
             f"Company: {job.company_name}\n" \
-            f"Location: {job.location}\n" \
+            f"Location: {job.location.display_location()}\n" \
             f"Link: {job.job_url}\n"
         try:
             await self.bot.sendMessage(chat_id=self.chatId, text=message)
