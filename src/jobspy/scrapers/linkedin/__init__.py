@@ -17,7 +17,8 @@ from datetime import datetime
 from bs4.element import Tag
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urlunparse, unquote
-
+from requests.exceptions import RetryError, RequestException
+from urllib3.exceptions import MaxRetryError
 from .constants import headers
 from .. import Scraper, ScraperInput, Site
 from ..exceptions import LinkedInException
@@ -82,87 +83,105 @@ class LinkedInScraper(Scraper):
             scraper_input.hours_old * 3600 if scraper_input.hours_old else None
         )
         continue_search = (
-            lambda: len(job_list) < scraper_input.results_wanted and start < 1000
+            lambda: len(
+                job_list) < scraper_input.results_wanted and start < 1000
         )
-        while continue_search():
-            request_count += 1
-            logger.info(
-                f"search page: {request_count} / {math.ceil(scraper_input.results_wanted / 10)}"
-            )
-            params = {
-                "keywords": scraper_input.search_term,
-                "location": ",".join(scraper_input.locations),
-                "distance": scraper_input.distance,
-                "f_WT": 2 if scraper_input.is_remote else None,
-                "f_JT": (
-                    self.job_type_code(scraper_input.job_type)
-                    if scraper_input.job_type
-                    else None
-                ),
-                "pageNum": 0,
-                "start": start,
-                "f_AL": "true" if scraper_input.easy_apply else None,
-                "f_C": (
-                    ",".join(map(str, scraper_input.linkedin_company_ids))
-                    if scraper_input.linkedin_company_ids
-                    else None
-                ),
-            }
-            if seconds_old is not None:
-                params["f_TPR"] = f"r{seconds_old}"
-
-            params = {k: v for k, v in params.items() if v is not None}
-            try:
-                response = self.session.get(
-                    f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search?",
-                    params=params,
-                    timeout=10,
+        for location in scraper_input.locations:
+            logger.info(f"start searching for location: {location}")
+            while continue_search():
+                request_count += 1
+                logger.info(
+                    f"search page: {
+                        request_count} / {math.ceil(scraper_input.results_wanted / 10)}"
                 )
-                if response.status_code not in range(200, 400):
-                    if response.status_code == 429:
-                        err = (
-                            f"429 Response - Blocked by LinkedIn for too many requests"
-                        )
+                params = {
+                    "keywords": scraper_input.search_term,
+                    "location": location,
+                    "distance": scraper_input.distance,
+                    "f_WT": 2 if scraper_input.is_remote else None,
+                    "f_JT": (
+                        self.job_type_code(scraper_input.job_type)
+                        if scraper_input.job_type
+                        else None
+                    ),
+                    "pageNum": 0,
+                    "start": start,
+                    "f_AL": "true" if scraper_input.easy_apply else None,
+                    "f_C": (
+                        ",".join(map(str, scraper_input.linkedin_company_ids))
+                        if scraper_input.linkedin_company_ids
+                        else None
+                    ),
+                }
+                if seconds_old is not None:
+                    params["f_TPR"] = f"r{seconds_old}"
+
+                params = {k: v for k, v in params.items() if v is not None}
+                try:
+                    response = self.session.get(
+                        f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search?",
+                        params=params,
+                        timeout=10,
+                    )
+                    if response.status_code not in range(200, 400):
+                        if response.status_code == 429:
+                            err = (
+                                f"429 Response - Blocked by LinkedIn for too many requests"
+                            )
+                        else:
+                            err = f"LinkedIn response status code {
+                                response.status_code}"
+                            err += f" - {response.text}"
+                        logger.error(err)
+                        return JobResponse(jobs=job_list)
+                except MaxRetryError as e:
+                    """Raised when the maximum number of retries is exceeded."""
+                    logger.error(f"RetryError: {str(e)}")
+                    logger.error(f"MaxRetryError for location: {location}")
+                    break
+                except RetryError as e:
+                    """Custom retries logic failed"""
+                    logger.error(f"RetryError: {str(e)}")
+                    logger.error(f"RetryError for location: {location}")
+                    break
+                except Exception as e:
+                    if "Proxy responded with" in str(e):
+                        logger.error(f"LinkedIn: Bad proxy")
                     else:
-                        err = f"LinkedIn response status code {response.status_code}"
-                        err += f" - {response.text}"
-                    logger.error(err)
+                        logger.error(f"LinkedIn: {str(e)}")
                     return JobResponse(jobs=job_list)
-            except Exception as e:
-                if "Proxy responded with" in str(e):
-                    logger.error(f"LinkedIn: Bad proxy")
-                else:
-                    logger.error(f"LinkedIn: {str(e)}")
-                return JobResponse(jobs=job_list)
 
-            soup = BeautifulSoup(response.text, "html.parser")
-            job_cards = soup.find_all("div", class_="base-search-card")
-            if len(job_cards) == 0:
-                return JobResponse(jobs=job_list)
+                soup = BeautifulSoup(response.text, "html.parser")
+                job_cards = soup.find_all("div", class_="base-search-card")
+                if len(job_cards) == 0:
+                    break
 
-            for job_card in job_cards:
-                href_tag = job_card.find("a", class_="base-card__full-link")
-                if href_tag and "href" in href_tag.attrs:
-                    href = href_tag.attrs["href"].split("?")[0]
-                    job_id = href.split("-")[-1]
+                for job_card in job_cards:
+                    href_tag = job_card.find(
+                        "a", class_="base-card__full-link")
+                    if href_tag and "href" in href_tag.attrs:
+                        href = href_tag.attrs["href"].split("?")[0]
+                        job_id = href.split("-")[-1]
 
-                    if job_id in seen_ids:
-                        continue
-                    seen_ids.add(job_id)
+                        if job_id in seen_ids:
+                            continue
+                        seen_ids.add(job_id)
 
-                    try:
-                        fetch_desc = scraper_input.linkedin_fetch_description
-                        job_post = self._process_job(job_card, job_id, fetch_desc)
-                        if job_post:
-                            job_list.append(job_post)
-                        if not continue_search():
-                            break
-                    except Exception as e:
-                        raise LinkedInException(str(e))
+                        try:
+                            fetch_desc = scraper_input.linkedin_fetch_description
+                            job_post = self._process_job(
+                                job_card, job_id, fetch_desc)
+                            if job_post:
+                                job_list.append(job_post)
+                            if not continue_search():
+                                break
+                        except Exception as e:
+                            raise LinkedInException(str(e))
 
-            if continue_search():
-                time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
-                start += len(job_list)
+                if continue_search():
+                    time.sleep(random.uniform(
+                        self.delay, self.delay + self.band_delay))
+                    start += len(job_list)
 
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
@@ -170,12 +189,14 @@ class LinkedInScraper(Scraper):
     def _process_job(
         self, job_card: Tag, job_id: str, full_descr: bool
     ) -> Optional[JobPost]:
-        salary_tag = job_card.find("span", class_="job-search-card__salary-info")
+        salary_tag = job_card.find(
+            "span", class_="job-search-card__salary-info")
 
         compensation = None
         if salary_tag:
             salary_text = salary_tag.get_text(separator=" ").strip()
-            salary_values = [currency_parser(value) for value in salary_text.split("-")]
+            salary_values = [currency_parser(value)
+                             for value in salary_text.split("-")]
             salary_min = salary_values[0]
             salary_max = salary_values[1]
             currency = salary_text[0] if salary_text[0] != "$" else "USD"
@@ -196,9 +217,11 @@ class LinkedInScraper(Scraper):
             if company_a_tag and company_a_tag.has_attr("href")
             else ""
         )
-        company = company_a_tag.get_text(strip=True) if company_a_tag else "N/A"
+        company = company_a_tag.get_text(
+            strip=True) if company_a_tag else "N/A"
 
-        metadata_card = job_card.find("div", class_="base-search-card__metadata")
+        metadata_card = job_card.find(
+            "div", class_="base-search-card__metadata")
         location = self._get_location(metadata_card)
 
         datetime_tag = (
