@@ -68,26 +68,29 @@ class IndeedScraper(Scraper):
         job_list = []
         page = 1
 
-        cursor = None
+        for location in self.scraper_input.locations:
+            cursor = None
+            logger.info(f"start searching for location: {location}")
+            while len(self.seen_urls) < scraper_input.results_wanted + scraper_input.offset:
+                logger.info(
+                    f"search page: {
+                        page} / {math.ceil(scraper_input.results_wanted / self.jobs_per_page)}"
+                )
+                jobs, cursor = self._scrape_page(cursor, location)
+                if not jobs:
+                    logger.info(f"found no jobs on page: {page}")
+                    break
+                job_list += jobs
+                page += 1
 
-        while len(self.seen_urls) < scraper_input.results_wanted + scraper_input.offset:
-            logger.info(
-                f"search page: {page} / {math.ceil(scraper_input.results_wanted / self.jobs_per_page)}"
-            )
-            jobs, cursor = self._scrape_page(cursor)
-            if not jobs:
-                logger.info(f"found no jobs on page: {page}")
-                break
-            job_list += jobs
-            page += 1
         return JobResponse(
             jobs=job_list[
-                scraper_input.offset : scraper_input.offset
+                scraper_input.offset: scraper_input.offset
                 + scraper_input.results_wanted
             ]
         )
 
-    def _scrape_page(self, cursor: str | None) -> Tuple[list[JobPost], str | None]:
+    def _scrape_page(self, cursor: str | None, location: str) -> Tuple[list[JobPost], str | None]:
         """
         Scrapes a page of Indeed for jobs with scraper_input criteria
         :param cursor:
@@ -104,8 +107,9 @@ class IndeedScraper(Scraper):
         query = job_search_query.format(
             what=(f'what: "{search_term}"' if search_term else ""),
             location=(
-                f'location: {{where: "{self.scraper_input.location}", radius: {self.scraper_input.distance}, radiusUnit: MILES}}'
-                if self.scraper_input.location
+                f'location: {{where: "{location}", radius: {
+                    self.scraper_input.distance}, radiusUnit: MILES}}'
+                if location
                 else ""
             ),
             dateOnIndeed=self.scraper_input.hours_old,
@@ -125,7 +129,8 @@ class IndeedScraper(Scraper):
         )
         if not response.ok:
             logger.info(
-                f"responded with status code: {response.status_code} (submit GitHub issue if this appears to be a bug)"
+                f"responded with status code: {
+                    response.status_code} (submit GitHub issue if this appears to be a bug)"
             )
             return jobs, new_cursor
         data = response.json()
@@ -214,16 +219,20 @@ class IndeedScraper(Scraper):
 
         job_type = self._get_job_type(job["attributes"])
         timestamp_seconds = job["datePublished"] / 1000
-        date_posted = datetime.fromtimestamp(timestamp_seconds).strftime("%Y-%m-%d")
+        date_posted = datetime.fromtimestamp(
+            timestamp_seconds).strftime("%Y-%m-%d")
         employer = job["employer"].get("dossier") if job["employer"] else None
-        employer_details = employer.get("employerDetails", {}) if employer else {}
+        employer_details = employer.get(
+            "employerDetails", {}) if employer else {}
         rel_url = job["employer"]["relativeCompanyPageUrl"] if job["employer"] else None
         return JobPost(
             id=f'in-{job["key"]}',
             title=job["title"],
             description=description,
-            company_name=job["employer"].get("name") if job.get("employer") else None,
-            company_url=(f"{self.base_url}{rel_url}" if job["employer"] else None),
+            company_name=job["employer"].get(
+                "name") if job.get("employer") else None,
+            company_url=(f"{self.base_url}{
+                         rel_url}" if job["employer"] else None),
             company_url_direct=(
                 employer["links"]["corporateWebsite"] if employer else None
             ),
@@ -235,11 +244,14 @@ class IndeedScraper(Scraper):
             job_type=job_type,
             compensation=self._get_compensation(job["compensation"]),
             date_posted=date_posted,
+            datetime_posted=date_posted,
             job_url=job_url,
             job_url_direct=(
-                job["recruit"].get("viewJobUrl") if job.get("recruit") else None
+                job["recruit"].get("viewJobUrl") if job.get(
+                    "recruit") else None
             ),
-            emails=extract_emails_from_text(description) if description else None,
+            emails=extract_emails_from_text(
+                description) if description else None,
             is_remote=self._is_job_remote(job, description),
             company_addresses=(
                 employer_details["addresses"][0]
@@ -255,7 +267,8 @@ class IndeedScraper(Scraper):
                 if employer_details.get("industry")
                 else None
             ),
-            company_num_employees=employer_details.get("employeesLocalizedLabel"),
+            company_num_employees=employer_details.get(
+                "employeesLocalizedLabel"),
             company_revenue=employer_details.get("revenueLocalizedLabel"),
             company_description=employer_details.get("briefDescription"),
             company_logo=(
@@ -274,7 +287,8 @@ class IndeedScraper(Scraper):
         """
         job_types: list[JobType] = []
         for attribute in attributes:
-            job_type_str = attribute["label"].replace("-", "").replace(" ", "").lower()
+            job_type_str = attribute["label"].replace(
+                "-", "").replace(" ", "").lower()
             job_type = get_enum_from_job_type(job_type_str)
             if job_type:
                 job_types.append(job_type)
@@ -319,7 +333,8 @@ class IndeedScraper(Scraper):
         """
         remote_keywords = ["remote", "work from home", "wfh"]
         is_remote_in_attributes = any(
-            any(keyword in attr["label"].lower() for keyword in remote_keywords)
+            any(keyword in attr["label"].lower()
+                for keyword in remote_keywords)
             for attr in job["attributes"]
         )
         is_remote_in_description = any(

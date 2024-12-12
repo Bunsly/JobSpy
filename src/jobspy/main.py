@@ -10,7 +10,7 @@ async def main():
 
     jobs = scrape_jobs(
         # site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor", "google"],
-        site_name=["linkedin"],
+        site_name=["indeed"],
         search_term="software engineer",
         google_search_term="software engineer jobs near Tel Aviv Israel since yesterday",
         location="Central, Israel",

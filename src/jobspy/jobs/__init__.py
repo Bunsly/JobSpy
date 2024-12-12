@@ -290,10 +290,14 @@ class JobPost(BaseModel):
     job_function: str | None = None
 
     def model_dump(self, exclude: set = None):
-        # Use `Location`'s custom serialization logic
         data = super().model_dump(exclude=exclude)
+        # Use `Location`'s custom serialization logic
         if self.location:
-            data['location'] = self.location.model_dump()
+            data['location'] = self.location.display_location()
+
+        # Serialize `job_type` as a list of strings
+        if self.job_type:
+            data['job_type'] = [jt.value for jt in self.job_type]
         return data
 
     @staticmethod
