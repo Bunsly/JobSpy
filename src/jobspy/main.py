@@ -1,7 +1,17 @@
 import asyncio
+from enum import Enum
 from db.job_repository import JobRepository
 from jobspy import scrape_jobs
 from jobspy.telegram_bot import TelegramBot
+
+
+class Site(Enum):
+    LINKEDIN = "linkedin"
+    GOOZALI = "goozali"
+    INDEED = "indeed"
+    ZIP_RECRUITER = "zip_recruiter"
+    GLASSDOOR = "glassdoor"
+    GOOGLE = "google"
 
 
 async def main():
@@ -9,8 +19,8 @@ async def main():
     jobRepository = JobRepository()
 
     jobs = scrape_jobs(
-        # site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor", "google"],
-        site_name=["indeed"],
+        # site_name=[Site.LINKEDIN, Site.GOOZALI, Site.GLASSDOOR, Site.INDEED],
+        site_name=[Site.GOOZALI],
         search_term="software engineer",
         google_search_term="software engineer jobs near Tel Aviv Israel since yesterday",
         location="Central, Israel",

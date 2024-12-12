@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from jobspy.main import Site
+
 from ..jobs import (
     Enum,
     BaseModel,
@@ -10,14 +12,6 @@ from ..jobs import (
     Country,
     DescriptionFormat,
 )
-
-
-class Site(Enum):
-    LINKEDIN = "linkedin"
-    INDEED = "indeed"
-    ZIP_RECRUITER = "zip_recruiter"
-    GLASSDOOR = "glassdoor"
-    GOOGLE = "google"
 
 
 class SalarySource(Enum):
