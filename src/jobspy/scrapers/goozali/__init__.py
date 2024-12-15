@@ -7,6 +7,7 @@ This module contains routines to scrape Goozali.
 
 from __future__ import annotations
 
+
 from jobspy.scrapers import Scraper, ScraperInput
 from jobspy.scrapers.site import Site
 
@@ -42,14 +43,14 @@ class GoozaliScraper(Scraper):
         self.base_url = "https://airtable.com/v0.3/view/{view_id}/readSharedViewData"
 
     def _get_params(self, view_id: str) -> dict[str, str]:
-        access_policy = get_access_policy(view_id)
+        access_policy: str = get_access_policy(view_id)
         params = {
             "stringifiedObjectParams": stringifiedObjectParams,
             "request_id": request_id,
             "accessPolicy": access_policy
         }
 
-        return {k: v for k, v in params.items() if v is not None}
+        return params
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
