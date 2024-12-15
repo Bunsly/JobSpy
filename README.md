@@ -1,6 +1,7 @@
-# JobSeeker Bot
+# JobSeekerTG Bot
+<img src="https://github.com/user-attachments/assets/44a7be89-cfe3-4e4c-bb94-f6ca8e1b23db" width="400" height="400">
 
-JobSeeker is a Telegram bot that scrapes job postings from platforms like LinkedIn, Indeed, Glassdoor, and others (currently under development). It gathers job data based on title and location, reformats it into a structured format, and saves it to a MongoDB database. New job posts are automatically sent to a designated Telegram bot chat.
+JobSeekerTG is a Telegram bot that scrapes job postings from platforms like LinkedIn, Indeed, Glassdoor, and others (currently under development). It gathers job data based on title and location, reformats it into a structured format, and saves it to a MongoDB database. New job posts are automatically sent to a designated Telegram bot chat.
 
 This project is based on the [JobSpy](https://github.com/Bunsly/JobSpy) project. Credits to the original creator.
 
