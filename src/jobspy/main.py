@@ -1,17 +1,7 @@
 import asyncio
-from enum import Enum
-from db.job_repository import JobRepository
-from jobspy import scrape_jobs
+from jobspy import Site, scrape_jobs
+from jobspy.db.job_repository import JobRepository
 from jobspy.telegram_bot import TelegramBot
-
-
-class Site(Enum):
-    LINKEDIN = "linkedin"
-    GOOZALI = "goozali"
-    INDEED = "indeed"
-    ZIP_RECRUITER = "zip_recruiter"
-    GLASSDOOR = "glassdoor"
-    GOOGLE = "google"
 
 
 async def main():

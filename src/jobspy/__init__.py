@@ -1,9 +1,14 @@
 from __future__ import annotations
 from datetime import datetime
+from enum import Enum
 
 import pandas as pd
 from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from jobspy.scrapers.site import Site
+
+from .scrapers.goozali import GoozaliScraper
 
 from .jobs import JobPost, JobType, Location
 from .scrapers.utils import set_logger_level, extract_salary, create_logger
@@ -12,7 +17,7 @@ from .scrapers.ziprecruiter import ZipRecruiterScraper
 from .scrapers.glassdoor import GlassdoorScraper
 from .scrapers.google import GoogleJobsScraper
 from .scrapers.linkedin import LinkedInScraper
-from .scrapers import SalarySource, ScraperInput, Site, JobResponse, Country
+from .scrapers import SalarySource, ScraperInput, JobResponse, Country
 from .scrapers.exceptions import (
     LinkedInException,
     IndeedException,
@@ -20,6 +25,7 @@ from .scrapers.exceptions import (
     GlassdoorException,
     GoogleJobsException,
 )
+
 
 def scrape_jobs(
     site_name: str | list[str] | Site | list[Site] | None = None,
@@ -55,6 +61,7 @@ def scrape_jobs(
         Site.ZIP_RECRUITER: ZipRecruiterScraper,
         Site.GLASSDOOR: GlassdoorScraper,
         Site.GOOGLE: GoogleJobsScraper,
+        Site.GOOZALI: GoozaliScraper,
     }
     set_logger_level(verbose)
 
@@ -102,7 +109,7 @@ def scrape_jobs(
         offset=offset,
         hours_old=hours_old,
     )
-    
+
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
         scraper = scraper_class(proxies=proxies, ca_cert=ca_cert)
@@ -113,12 +120,14 @@ def scrape_jobs(
         return site.value, scraped_data
 
     site_to_jobs_dict = {}
-    merged_jobs:list[JobPost] = []
+    merged_jobs: list[JobPost] = []
+
     def worker(site):
         site_val, scraped_info = scrape_site(site)
-            # Add the scraped jobs to the merged list
-        merged_jobs.extend(scraped_info.jobs)  # Assuming scraped_info has 'jobs' as a list
-    
+        # Add the scraped jobs to the merged list
+        # Assuming scraped_info has 'jobs' as a list
+        merged_jobs.extend(scraped_info.jobs)
+
         return site_val, scraped_info
 
     with ThreadPoolExecutor() as executor:
@@ -129,8 +138,9 @@ def scrape_jobs(
         for future in as_completed(future_to_site):
             site_value, scraped_data = future.result()
             site_to_jobs_dict[site_value] = scraped_data
-    
+
     return merged_jobs
+
     def convert_to_annual(job_data: dict):
         if job_data["interval"] == "hourly":
             job_data["min_amount"] *= 2080
@@ -156,7 +166,8 @@ def scrape_jobs(
             job_data["site"] = site
             job_data["company"] = job_data["company_name"]
             job_data["job_type"] = (
-                ", ".join(job_type.value[0] for job_type in job_data["job_type"])
+                ", ".join(job_type.value[0]
+                          for job_type in job_data["job_type"])
                 if job_data["job_type"]
                 else None
             )
