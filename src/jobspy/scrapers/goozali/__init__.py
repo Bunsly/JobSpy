@@ -59,9 +59,9 @@ class GoozaliScraper(Scraper):
         return GoozaliResponse(**data)
 
     # Function to filter GoozaliRows based on hours old
-    def filter_rows_by_hours(rows: list[GoozaliRow], hours: int) -> list[GoozaliRow]:
+    def filter_rows_by_hours(self, rows: list[GoozaliRow], hours: int) -> list[GoozaliRow]:
         # Current time
-        now = datetime.utcnow()
+        now = datetime.datetime.now()
 
         # Calculate the time delta for the given hours
         time_delta = datetime.timedelta(hours=hours)
@@ -69,7 +69,7 @@ class GoozaliScraper(Scraper):
         # Filter rows
         filtered_rows = [
             row for row in rows
-            if now - datetime.strptime(row.createdTime, "%Y-%m-%dT%H:%M:%S.%fZ") <= time_delta
+            if now - row.createdTime <= time_delta
         ]
 
         return filtered_rows
@@ -78,17 +78,13 @@ class GoozaliScraper(Scraper):
         for column in columns:
             if (column.name == column_name):
                 return column
-    # def filter_rows_by_field_column(rows: list[GoozaliRow], field_column: Column) -> list[GoozaliRow]:
-    #     # Current time
-    #     now = datetime.utcnow()
 
-    #     # Calculate the time delta for the given hours
-    #     time_delta = datetime.timedelta(hours=hours)
+    # def filter_rows_by_column(rows: list[GoozaliRow], goozali_column: GoozaliColumn) -> list[GoozaliRow]:
 
     #     # Filter rows
     #     filtered_rows = [
     #         row for row in rows
-    #         if now - datetime.strptime(row.createdTime, "%Y-%m-%dT%H:%M:%S.%fZ") <= time_delta
+    #         if row.cellValuesByColumnId[goozali_column.id] == goozali_column.
     #     ]
 
     #     return filtered_rows
@@ -122,15 +118,12 @@ class GoozaliScraper(Scraper):
             # model the response with models
             goozali_response = self.mapper.map_response_to_goozali_response(
                 response=response)
-            # goozali_response: GoozaliResponse = self.map_respone_to_goozali_response(
-            #     response)
-            # create map columnId to Column object
-            field = self.find_column(
-                goozali_response.data.columns, "Field")
-
-            # filter result by Field like the web
             # filter by date
-            # filtered_rows_by_age = filter_rows_by_hours(
-            #     goozali_response.data.table.rows, scraper_input.hours_old)
+            filtered_rows_by_age = self.filter_rows_by_hours(
+                goozali_response.data.rows, scraper_input.hours_old)
+            # filter result by Field like the web
+            field_cloumn = self.find_column(
+                goozali_response.data.columns, "Field")
             # map to JobResponse Object
+
         return JobResponse(jobs=job_list)
