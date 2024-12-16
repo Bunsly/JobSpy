@@ -9,6 +9,7 @@ from __future__ import annotations
 
 
 from jobspy.scrapers import Scraper, ScraperInput
+from jobspy.scrapers.goozali.model.GoozaliPartRequest import GoozaliPartRequest
 from jobspy.scrapers.goozali.model.FullRequest import GoozaliFullRequest
 from jobspy.scrapers.site import Site
 
@@ -55,6 +56,7 @@ class GoozaliScraper(Scraper):
         seen_ids = set()
         for view_id in self.view_ids:
             full_request = GoozaliFullRequest(self.base_url)
+            part_request = GoozaliPartRequest(self.base_url)
             try:
                 response = self.session.get(
                     url=full_request.url,
