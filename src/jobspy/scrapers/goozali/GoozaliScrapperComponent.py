@@ -16,6 +16,12 @@ class GoozaliScrapperComponent:
         pass
 
     # Function to filter GoozaliRows based on hours old
+    def filter_rows_by_column_choice(self, rows: list[GoozaliRow], column: GoozaliColumn, column_choice: GoozaliColumnChoice) -> list[GoozaliRow]:
+        return [
+            row for row in rows
+            if row.cellValuesByColumnId[column.id] == column_choice.id
+        ]
+
     def filter_rows_by_hours(self, rows: list[GoozaliRow], hours: int) -> list[GoozaliRow]:
         # Current time
         now = datetime.now()

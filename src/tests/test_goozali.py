@@ -24,11 +24,16 @@ try:
 
     component = GoozaliScrapperComponent()
     hours_old = 200
-    field_cloumn = component.find_column(response_data.columns, "Field")
-    software_engineering_choice = component.find_choice_from_column(
-        field_cloumn, "Software Engineering")
-    filtered_rows_by_age = component.filter_rows_by_hours(
-        response_data.rows, hours_old)
+    column = component.find_column(response_data.columns, "Field")
+    column_choice = component.find_choice_from_column(
+        column, "Software Engineering")
+
+    filtered_rows_by_column_choice = component.filter_rows_by_column_choice(
+        response_data.rows, column, column_choice)
+    filtered_rows_by_age_and_column_choice = component.filter_rows_by_hours(
+        filtered_rows_by_column_choice, hours_old)
+
+    filtered_rows_by_age_and_column_choice
 except FileNotFoundError:
     print("The file was not found.")
 except json.JSONDecodeError:
