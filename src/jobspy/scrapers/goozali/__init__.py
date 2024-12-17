@@ -81,14 +81,15 @@ class GoozaliScraper(Scraper):
             goozali_response = self.mapper.map_response_to_goozali_response(
                 response=response)
             # suggestL create groupby field and then filter by hours
-            # filter result by Field like the web
-            field_cloumn = self.component.find_column(
+            # filter result by Field
+            column = self.component.find_column(
                 goozali_response.data.columns, "Field")
-            software_engineering_choice = self.component.find_choice_from_column(
-                field_cloumn, "Software Engineering")
-            # filter by date
-            filtered_rows_by_age = self.component.filter_rows_by_hours(
-                goozali_response.data.rows, scraper_input.hours_old)
+            column_choice = self.component.find_choice_from_column(
+                column, "Software Engineering")
+            filtered_rows_by_column_choice = self.component.filter_rows_by_column_choice(
+                goozali_response.data.rows, column, column_choice)
+            filtered_rows_by_age_and_column_choice = self.component.filter_rows_by_hours(
+                filtered_rows_by_column_choice, scraper_input.hours_old)
             # map to JobResponse Object
 
         return JobResponse(jobs=job_list)
