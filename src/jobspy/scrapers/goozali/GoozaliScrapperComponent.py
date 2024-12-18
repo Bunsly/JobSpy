@@ -1,5 +1,4 @@
-from datetime import datetime
-import json
+from datetime import datetime, timedelta
 
 from jobspy.scrapers.goozali.model import GoozaliRow
 from jobspy.scrapers.goozali.model.GoozaliColumn import GoozaliColumn
@@ -27,7 +26,7 @@ class GoozaliScrapperComponent:
         now = datetime.now()
 
         # Calculate the time delta for the given hours
-        time_delta = datetime.timedelta(hours=hours)
+        time_delta = timedelta(hours=hours)
 
         # Filter rows
         filtered_rows = [

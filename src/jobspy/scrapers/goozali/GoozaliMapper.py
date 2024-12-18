@@ -1,5 +1,6 @@
 import json
 
+from jobspy.jobs import JobPost
 from jobspy.scrapers.goozali.model import GoozaliColumnTypeOptions, GoozaliResponse, GoozaliRow
 from jobspy.scrapers.goozali.model.GoozaliColumn import GoozaliColumn
 from jobspy.scrapers.goozali.model.GoozaliColumnChoice import GoozaliColumnChoice
@@ -75,3 +76,7 @@ class GoozaliMapper:
 
         # Return a new GoozaliResponse with msg and the converted data
         return GoozaliResponse(msg=data['msg'], data=data_obj)
+
+    def map_goozali_response_to_job_post(self, row: GoozaliRow, columns: dict[str, GoozaliColumn]) -> JobPost:
+
+        return JobPost()

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Callable, TypeVar, List, Dict, Optional
 
 import re
 import logging
@@ -283,3 +284,40 @@ def extract_job_type(description: str):
             listing_types.append(key)
 
     return listing_types if listing_types else None
+
+
+K = TypeVar('K')  # Key type
+V = TypeVar('V')  # Value type
+
+
+def create_dict_by_key_and_value(
+    values: List[V],
+    key_mapper: Callable[[V], K],
+    value_mapper: Optional[Callable[[V], V]] = None
+) -> Dict[K, V]:
+    """
+    Create a dictionary by mapping keys and optionally mapping values.
+
+    :param values: List of input values
+    :param key_mapper: Function to map a value to a key
+    :param value_mapper: Optional function to map a value to a transformed value
+    :return: A dictionary with mapped keys and values
+    """
+    result = {}
+    for value in values:
+        key = key_mapper(value)
+        result[key] = value_mapper(value) if value_mapper else value
+    return result
+
+# Example usage:
+# values = [
+#     {"id": 1, "name": "Alice"},
+#     {"id": 2, "name": "Bob"},
+#     {"id": 3, "name": "Charlie"}
+# ]
+
+# Key mapper: Extract 'id' as the key
+# key_mapper = lambda x: x["id"]
+
+# Value mapper: Extract 'name' as the value
+# value_mapper = lambda x: x["name"]
