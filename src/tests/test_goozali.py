@@ -6,6 +6,7 @@ import pandas as pd
 from jobspy.jobs import JobPost
 from jobspy.scrapers.goozali.GoozaliMapper import GoozaliMapper
 from jobspy.scrapers.goozali.GoozaliScrapperComponent import GoozaliScrapperComponent
+from jobspy.scrapers.goozali.constants import extract_goozali_column_name
 from jobspy.scrapers.goozali.model import GoozaliColumn
 from jobspy.scrapers.goozali.model.GozaaliResponseData import GoozaliResponseData
 from jobspy.scrapers.utils import create_dict_by_key_and_value
@@ -35,10 +36,6 @@ try:
         response_data.rows, column, column_choice)
     filtered_rows_by_age_and_column_choice = component.filter_rows_by_hours(
         filtered_rows_by_column_choice, hours_old)
-
-    # Key mapper: Extract 'name' as the key
-    def extract_goozali_column_name(column): return column.name if isinstance(
-        column, GoozaliColumn) else None
     dict_column_name_to_column = create_dict_by_key_and_value(
         response_data.columns, extract_goozali_column_name)
     response: list[JobPost] = []
