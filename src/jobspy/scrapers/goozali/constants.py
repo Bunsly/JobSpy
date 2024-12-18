@@ -23,8 +23,7 @@ job_post_column_names = ["id",
                          "location",
                          "company_industry"]
 
+
 # Key mapper: Extract 'name' as the key
-
-
 def extract_goozali_column_name(column): return column.name if isinstance(
     column, GoozaliColumn) else None

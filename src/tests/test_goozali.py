@@ -36,7 +36,7 @@ try:
         response_data.rows, column, column_choice)
     filtered_rows_by_age_and_column_choice = component.filter_rows_by_hours(
         filtered_rows_by_column_choice, hours_old)
-    dict_column_name_to_column = create_dict_by_key_and_value(
+    dict_column_name_to_column: dict[str, GoozaliColumn] = create_dict_by_key_and_value(
         response_data.columns, extract_goozali_column_name)
     response: list[JobPost] = []
     for row in filtered_rows_by_age_and_column_choice:

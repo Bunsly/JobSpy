@@ -79,9 +79,9 @@ class GoozaliMapper:
         # Return a new GoozaliResponse with msg and the converted data
         return GoozaliResponse(msg=data['msg'], data=data_obj)
 
-    def get_value_by_job_post_Id(self, job_post_column: str, row: GoozaliRow, dict_column_name_to_columnZ):
+    def get_value_by_job_post_Id(self, job_post_column: str, row: GoozaliRow, dict_column_name_to_column: dict[str, GoozaliColumn]):
         goozali_column_name = job_post_column_to_goozali_column[job_post_column]
-        column = dict_column_name_to_columnZ[goozali_column_name]
+        column = dict_column_name_to_column[goozali_column_name]
         value = row.cellValuesByColumnId[column.id]
         if (job_post_column == "location"):
             # todo: fix it
@@ -92,7 +92,7 @@ class GoozaliMapper:
 
         return str(value)
 
-    def map_goozali_response_to_job_post(self, row: GoozaliRow, dict_column_name_to_column) -> JobPost:
+    def map_goozali_response_to_job_post(self, row: GoozaliRow, dict_column_name_to_column: dict[str, GoozaliColumn]) -> JobPost:
         temp = {}
         for col in job_post_column_names:
             value = self.get_value_by_job_post_Id(
