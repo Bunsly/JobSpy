@@ -84,8 +84,12 @@ class GoozaliMapper:
         column = dict_column_name_to_column[goozali_column_name]
         value = row.cellValuesByColumnId[column.id]
         if (job_post_column == "location"):
-            # todo: fix it
-            return Location(text="tel aviv")
+            location = Location(text="Not Found")
+            if type(value) is list:
+                location_text = column.typeOptions.choices[value[0]].name
+                location.text = location_text
+
+            return location
 
         if (job_post_column == "date_posted"):
             return datetime.fromisoformat(value.replace("Z", "")).date()
