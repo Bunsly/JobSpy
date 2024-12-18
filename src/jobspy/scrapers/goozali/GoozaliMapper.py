@@ -1,10 +1,12 @@
+from datetime import datetime
 import json
 
-from jobspy.jobs import JobPost
+from jobspy.jobs import JobPost, Location
 from jobspy.scrapers.goozali.model import GoozaliColumnTypeOptions, GoozaliResponse, GoozaliRow
 from jobspy.scrapers.goozali.model.GoozaliColumn import GoozaliColumn
 from jobspy.scrapers.goozali.model.GoozaliColumnChoice import GoozaliColumnChoice
 from jobspy.scrapers.goozali.model.GozaaliResponseData import GoozaliResponseData
+from .constants import job_post_column_to_goozali_column, job_post_column_names
 
 # Mapping function to convert parsed dictionary into GoozaliResponseData
 
@@ -77,6 +79,24 @@ class GoozaliMapper:
         # Return a new GoozaliResponse with msg and the converted data
         return GoozaliResponse(msg=data['msg'], data=data_obj)
 
-    def map_goozali_response_to_job_post(self, row: GoozaliRow, columns: dict[str, GoozaliColumn]) -> JobPost:
+    def get_value_by_job_post_Id(self, job_post_column: str, row: GoozaliRow, dict_column_name_to_columnZ):
+        goozali_column_name = job_post_column_to_goozali_column[job_post_column]
+        column = dict_column_name_to_columnZ[goozali_column_name]
+        value = row.cellValuesByColumnId[column.id]
+        if (job_post_column == "location"):
+            # todo: fix it
+            return Location(text="tel aviv")
 
-        return JobPost()
+        if (job_post_column == "date_posted"):
+            return datetime.fromisoformat(value.replace("Z", "")).date()
+
+        return str(value)
+
+    def map_goozali_response_to_job_post(self, row: GoozaliRow, dict_column_name_to_column) -> JobPost:
+        temp = {}
+        for col in job_post_column_names:
+            value = self.get_value_by_job_post_Id(
+                col, row, dict_column_name_to_column)
+            temp[col] = value
+
+        return JobPost.model_validate(temp)

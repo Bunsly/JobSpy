@@ -18,7 +18,6 @@ from jobspy.scrapers.goozali.model.GoozaliColumnChoice import GoozaliColumnChoic
 from jobspy.scrapers.site import Site
 
 from ..utils import create_session, create_logger
-from .constants import headers
 from ...jobs import (
     JobPost,
     JobResponse,

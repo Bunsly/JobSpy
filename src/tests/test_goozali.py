@@ -3,6 +3,7 @@ import os
 from jobspy import scrape_jobs
 import pandas as pd
 
+from jobspy.jobs import JobPost
 from jobspy.scrapers.goozali.GoozaliMapper import GoozaliMapper
 from jobspy.scrapers.goozali.GoozaliScrapperComponent import GoozaliScrapperComponent
 from jobspy.scrapers.goozali.model import GoozaliColumn
@@ -35,13 +36,18 @@ try:
     filtered_rows_by_age_and_column_choice = component.filter_rows_by_hours(
         filtered_rows_by_column_choice, hours_old)
 
-    # Key mapper: Extract 'id' as the key
-    def extract_goozali_column_id(column): return column.id if isinstance(
+    # Key mapper: Extract 'name' as the key
+    def extract_goozali_column_name(column): return column.name if isinstance(
         column, GoozaliColumn) else None
-    dict_column_id_to_column = create_dict_by_key_and_value(
-        response_data.columns, extract_goozali_column_id)
+    dict_column_name_to_column = create_dict_by_key_and_value(
+        response_data.columns, extract_goozali_column_name)
+    response: list[JobPost] = []
+    for row in filtered_rows_by_age_and_column_choice:
+        job_post = mapper.map_goozali_response_to_job_post(
+            row, dict_column_name_to_column)
+        response.append(job_post)
 
-    print("hello heloo")
+    print("kingggggg")
 except FileNotFoundError:
     print("The file was not found.")
 except json.JSONDecodeError:
