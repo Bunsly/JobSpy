@@ -6,7 +6,7 @@ import pandas as pd
 from jobspy.jobs import JobPost
 from jobspy.scrapers.goozali.GoozaliMapper import GoozaliMapper
 from jobspy.scrapers.goozali.GoozaliScrapperComponent import GoozaliScrapperComponent
-from jobspy.scrapers.goozali.constants import extract_goozali_column_name
+from jobspy.scrapers.goozali.constants import CHOICE_FIELD_KEY, extract_goozali_column_name, job_post_column_to_goozali_column
 from jobspy.scrapers.goozali.model import GoozaliColumn
 from jobspy.scrapers.goozali.model.GozaaliResponseData import GoozaliResponseData
 from jobspy.scrapers.utils import create_dict_by_key_and_value
@@ -28,9 +28,10 @@ try:
 
     component = GoozaliScrapperComponent()
     hours_old = 200
-    column = component.find_column(response_data.columns, "Field")
+    column = component.find_column(
+        response_data.columns, job_post_column_to_goozali_column["field"])
     column_choice = component.find_choice_from_column(
-        column, "Software Engineering")
+        column, CHOICE_FIELD_KEY)
 
     filtered_rows_by_column_choice = component.filter_rows_by_column_choice(
         response_data.rows, column, column_choice)
