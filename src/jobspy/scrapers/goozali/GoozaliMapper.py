@@ -2,10 +2,7 @@ from datetime import datetime
 import json
 
 from jobspy.jobs import JobPost, Location
-from jobspy.scrapers.goozali.model import GoozaliColumnTypeOptions, GoozaliResponse, GoozaliRow
-from jobspy.scrapers.goozali.model.GoozaliColumn import GoozaliColumn
-from jobspy.scrapers.goozali.model.GoozaliColumnChoice import GoozaliColumnChoice
-from jobspy.scrapers.goozali.model.GozaaliResponseData import GoozaliResponseData
+from jobspy.scrapers.goozali.model import GoozaliColumnTypeOptions, GoozaliResponse, GoozaliRow, GoozaliColumn, GoozaliColumnChoice, GoozaliResponseData
 from .constants import job_post_column_to_goozali_column, job_post_column_names
 
 # Mapping function to convert parsed dictionary into GoozaliResponseData

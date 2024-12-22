@@ -2,5 +2,8 @@ from .GoozaliRow import GoozaliRow
 from .GoozaliResponse import GoozaliResponse
 from .GoozaliColumn import GoozaliColumn
 from .GoozaliPartRequest import GoozaliPartRequest
-from .FullRequest import GoozaliFullRequest
+from .GoozaliFullRequest import GoozaliFullRequest
 from .GoozaliColumnTypeOptions import GoozaliColumnTypeOptions
+from .GoozaliFieldChoice import GoozaliFieldChoice
+from .GoozaliResponseData import GoozaliResponseData
+from .GoozaliColumnChoice import GoozaliColumnChoice

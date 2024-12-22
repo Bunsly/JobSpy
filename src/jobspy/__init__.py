@@ -1,6 +1,4 @@
 from __future__ import annotations
-from datetime import datetime
-from enum import Enum
 
 import pandas as pd
 from typing import Tuple
@@ -49,7 +47,7 @@ def scrape_jobs(
     hours_old: int = None,
     enforce_annual_salary: bool = False,
     verbose: int = 2,
-    **kwargs,
+    ** kwargs,
 ) -> pd.DataFrame:
     """
     Simultaneously scrapes job data from multiple job sites.
@@ -90,7 +88,6 @@ def scrape_jobs(
         return site_types
 
     country_enum = Country.from_string(country_indeed)
-
     scraper_input = ScraperInput(
         site_type=get_site_type(),
         country=country_enum,
@@ -107,7 +104,7 @@ def scrape_jobs(
         results_wanted=results_wanted,
         linkedin_company_ids=linkedin_company_ids,
         offset=offset,
-        hours_old=hours_old,
+        hours_old=hours_old
     )
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:

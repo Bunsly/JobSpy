@@ -35,7 +35,7 @@ async def main():
                        "Central, Israel", "Rehovot ,Israel"],
             results_wanted=200,
             hours_old=200,
-            country_indeed='israel',
+            country_indeed='israel'
         )
         logger.info(f"Found {len(jobs)} jobs")
         jobs = list(filter(filter_jobs_by_title_name, jobs))
