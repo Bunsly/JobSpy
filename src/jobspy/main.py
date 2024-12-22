@@ -7,8 +7,8 @@ from jobspy.scrapers.utils import create_logger
 from jobspy.telegram_bot import TelegramBot
 
 logger = create_logger("Main")
-filter_by_title: list[str] = ["test", "qa", "Lead", "Full Stack", "Fullstack", "Frontend"
-                              "data", "automation", "BI", "Principal"]
+filter_by_title: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end", "Front End", "DevOps", "Physical", "Staff"
+                              "data", "automation", "BI", "Principal", "Architect", "Android", "IT", "Machine Learning", "Student"]
 
 
 def filter_jobs_by_title_name(job):
@@ -30,7 +30,8 @@ async def main():
             site_name=[site],
             search_term="software engineer",
             google_search_term="software engineer jobs near Tel Aviv Israel since yesterday",
-            locations=["Ramat Gan, Israel"],
+            locations=["Tel Aviv, Israel", "Ramat Gan, Israel",
+                       "Central, Israel", "Rehovot ,Israel"],
             results_wanted=200,
             hours_old=200,
             country_indeed='israel',
