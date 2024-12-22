@@ -13,6 +13,8 @@ job_post_column_to_goozali_column = {
     "id": "Job ID"
 }
 
+CHOICE_FIELD_KEY = "Software Engineering"
+
 job_post_column_names = ["id",
                          "date_posted",
                          "field",

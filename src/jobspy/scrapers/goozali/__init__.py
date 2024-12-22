@@ -6,18 +6,16 @@ This module contains routines to scrape Goozali.
 """
 
 from __future__ import annotations
-import datetime
-import json
 
 
 from jobspy.scrapers import Scraper, ScraperInput
 from jobspy.scrapers.goozali.GoozaliMapper import GoozaliMapper
 from jobspy.scrapers.goozali.GoozaliScrapperComponent import GoozaliScrapperComponent
-from jobspy.scrapers.goozali.model import GoozaliRow, GoozaliColumn, GoozaliResponse, GoozaliPartRequest, GoozaliFullRequest
-from jobspy.scrapers.goozali.model.GoozaliColumnChoice import GoozaliColumnChoice
+from jobspy.scrapers.goozali.constants import CHOICE_FIELD_KEY, extract_goozali_column_name, job_post_column_to_goozali_column
+from jobspy.scrapers.goozali.model import GoozaliColumn, GoozaliPartRequest, GoozaliFullRequest
 from jobspy.scrapers.site import Site
 
-from ..utils import create_session, create_logger
+from ..utils import create_dict_by_key_and_value, create_session, create_logger
 from ...jobs import (
     JobPost,
     JobResponse,
@@ -82,13 +80,20 @@ class GoozaliScraper(Scraper):
             # suggestL create groupby field and then filter by hours
             # filter result by Field
             column = self.component.find_column(
-                goozali_response.data.columns, "Field")
+                goozali_response.data.columns, job_post_column_to_goozali_column["field"])
             column_choice = self.component.find_choice_from_column(
-                column, "Software Engineering")
+                column, CHOICE_FIELD_KEY)
             filtered_rows_by_column_choice = self.component.filter_rows_by_column_choice(
                 goozali_response.data.rows, column, column_choice)
             filtered_rows_by_age_and_column_choice = self.component.filter_rows_by_hours(
                 filtered_rows_by_column_choice, scraper_input.hours_old)
+            dict_column_name_to_column: dict[str, GoozaliColumn] = create_dict_by_key_and_value(
+                goozali_response.data.columns, extract_goozali_column_name)
+            response: list[JobPost] = []
             # map to JobResponse Object
+            for row in filtered_rows_by_age_and_column_choice:
+                job_post = self.mapper.map_goozali_response_to_job_post(
+                    row, dict_column_name_to_column)
+                response.append(job_post)
 
-        return JobResponse(jobs=job_list)
+            return JobResponse(jobs=job_list)

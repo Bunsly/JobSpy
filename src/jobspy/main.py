@@ -24,7 +24,7 @@ async def main():
     telegramBot = TelegramBot()
     jobRepository = JobRepository()
     # sites_to_scrap = [Site.LINKEDIN, Site.GLASSDOOR, Site.INDEED, Site.GOOZALI]
-    sites_to_scrap = [Site.GLASSDOOR]
+    sites_to_scrap = [Site.GOOZALI]
     for site in sites_to_scrap:
         jobs = scrape_jobs(
             site_name=[site],
