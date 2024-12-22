@@ -90,9 +90,15 @@ class GoozaliMapper:
                 location.text = location_text
 
             return location
+        if (job_post_column == "company_industry"):
+            if type(value) is list:
+                value = column.typeOptions.choices[value[0]].name
 
         if (job_post_column == "date_posted"):
             return datetime.fromisoformat(value.replace("Z", "")).date()
+
+        if (job_post_column == "field"):
+            value = column.typeOptions.choices[value].name
 
         return str(value)
 
