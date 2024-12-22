@@ -89,11 +89,10 @@ class GoozaliScraper(Scraper):
                 filtered_rows_by_column_choice, scraper_input.hours_old)
             dict_column_name_to_column: dict[str, GoozaliColumn] = create_dict_by_key_and_value(
                 goozali_response.data.columns, extract_goozali_column_name)
-            response: list[JobPost] = []
             # map to JobResponse Object
             for row in filtered_rows_by_age_and_column_choice:
                 job_post = self.mapper.map_goozali_response_to_job_post(
                     row, dict_column_name_to_column)
-                response.append(job_post)
+                job_list.append(job_post)
 
             return JobResponse(jobs=job_list)

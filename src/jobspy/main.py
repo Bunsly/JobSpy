@@ -8,13 +8,14 @@ from jobspy.telegram_bot import TelegramBot
 
 logger = create_logger("Main")
 filter_by_title: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end", "Front End", "DevOps", "Physical", "Staff"
-                              "data", "automation", "BI", "Principal", "Architect", "Android", "IT", "Machine Learning", "Student"]
+                              "data", "automation", "BI", "Principal", "Architect", "Android", "Machine Learning", "Student"]
 
 
-def filter_jobs_by_title_name(job):
+def filter_jobs_by_title_name(job: JobPost):
     for filter_title in filter_by_title:
         if re.search(filter_title, job.title, re.IGNORECASE):
-            logger.info(f"job filtered out by title: {job.id} , {job.title}")
+            logger.info(f"job filtered out by title: {job.id} , {
+                        job.title} , found {filter_title}")
             return False
 
     return True
