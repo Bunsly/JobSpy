@@ -71,6 +71,7 @@ class GoozaliScraper(Scraper):
                 return JobResponse(jobs=job_list)
         except Exception as e:
             logger.error(f"Exception: {str(e)}")
+            return JobResponse(jobs=job_list)
         # model the response with models
         goozali_response = self.mapper.map_response_to_goozali_response(
             response=response)

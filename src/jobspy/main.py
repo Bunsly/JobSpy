@@ -7,8 +7,8 @@ from jobspy.scrapers.utils import create_logger
 from jobspy.telegram_bot import TelegramBot
 
 logger = create_logger("Main")
-filter_by_title: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end", "Front End", "DevOps", "Physical", "Staff"
-                              "data", "automation", "BI", "Principal", "Architect", "Android", "Machine Learning", "Student"]
+filter_by_title: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end", "Front End", "DevOps", "Physical", "Staff",
+                              "automation", "BI", "Principal", "Architect", "Android", "Machine Learning", "Student", "Data Engineer"]
 
 
 def filter_jobs_by_title_name(job: JobPost):
@@ -25,25 +25,23 @@ async def main():
     telegramBot = TelegramBot()
     jobRepository = JobRepository()
     # sites_to_scrap = [Site.LINKEDIN, Site.GLASSDOOR, Site.INDEED, Site.GOOZALI]
-    sites_to_scrap = [Site.GOOZALI]
-    for site in sites_to_scrap:
-        jobs = scrape_jobs(
-            site_name=[site],
-            search_term="software engineer",
-            google_search_term="software engineer jobs near Tel Aviv Israel since yesterday",
-            locations=["Tel Aviv, Israel", "Ramat Gan, Israel",
-                       "Central, Israel", "Rehovot ,Israel"],
-            results_wanted=200,
-            hours_old=200,
-            country_indeed='israel'
-        )
-        logger.info(f"Found {len(jobs)} jobs")
-        jobs = list(filter(filter_jobs_by_title_name, jobs))
-
-        newJobs = jobRepository.insertManyIfNotFound(jobs)
-
-        for newJob in newJobs:
-            await telegramBot.sendJob(newJob)
+    sites_to_scrap = [Site.GLASSDOOR]
+    # sites_to_scrap = [Site.GOOZALI]
+    jobs = scrape_jobs(
+        site_name=sites_to_scrap,
+        search_term="software engineer",
+        google_search_term="software engineer jobs near Tel Aviv Israel since yesterday",
+        locations=["Tel Aviv, Israel", "Ramat Gan, Israel",
+                   "Central, Israel", "Rehovot ,Israel"],
+        results_wanted=200,
+        hours_old=48,
+        country_indeed='israel'
+    )
+    logger.info(f"Found {len(jobs)} jobs")
+    jobs = list(filter(filter_jobs_by_title_name, jobs))
+    newJobs = jobRepository.insertManyIfNotFound(jobs)
+    for newJob in newJobs:
+        await telegramBot.sendJob(newJob)
 
 # Run the async main function
 if __name__ == "__main__":

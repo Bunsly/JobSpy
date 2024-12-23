@@ -1,4 +1,5 @@
 from __future__ import annotations
+from threading import Lock
 
 import pandas as pd
 from typing import Tuple
@@ -118,23 +119,34 @@ def scrape_jobs(
 
     site_to_jobs_dict = {}
     merged_jobs: list[JobPost] = []
+    lock = Lock()
 
     def worker(site):
-        site_val, scraped_info = scrape_site(site)
-        # Add the scraped jobs to the merged list
-        # Assuming scraped_info has 'jobs' as a list
-        merged_jobs.extend(scraped_info.jobs)
+        logger = create_logger(f"Worker {site}")
+        logger.info("Starting")
+        try:
+            site_val, scraped_info = scrape_site(site)
+            with lock:
+                merged_jobs.extend(scraped_info.jobs)
+            logger.info("Finished")
+            return site_val, scraped_info
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            return None, None
 
-        return site_val, scraped_info
-
-    with ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        logger = create_logger("ThreadPoolExecutor")
         future_to_site = {
             executor.submit(worker, site): site for site in scraper_input.site_type
         }
-
+        # An iterator over the given futures that yields each as it completes.
         for future in as_completed(future_to_site):
-            site_value, scraped_data = future.result()
-            site_to_jobs_dict[site_value] = scraped_data
+            try:
+                site_value, scraped_data = future.result()
+                if site_value and scraped_data:
+                    site_to_jobs_dict[site_value] = scraped_data
+            except Exception as e:
+                logger.error(f"Future Error occurred: {e}")
 
     return merged_jobs
 
