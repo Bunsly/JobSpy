@@ -8,7 +8,7 @@ from jobspy.telegram_bot import TelegramBot
 
 logger = create_logger("Main")
 filter_by_title: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end", "Front End", "DevOps", "Physical", "Staff",
-                              "automation", "BI", "Principal", "Architect", "Android", "Machine Learning", "Student", "Data Engineer"]
+                              "automation", "BI", "Principal", "Architect", "Android", "Machine Learning", "Student", "Data Engineer", "DevSecOps"]
 
 
 def filter_jobs_by_title_name(job: JobPost):
