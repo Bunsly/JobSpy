@@ -111,9 +111,11 @@ class GlassdoorScraper(Scraper):
             )
             if response.status_code != 200:
                 exc_msg = f"bad response status code: {response.status_code}"
+                logger.error(f"GlassdoorException : {exc_msg}")
                 raise GlassdoorException(exc_msg)
             res_json = response.json()[0]
             if "errors" in res_json:
+                logger.error("Error encountered in API response")
                 raise ValueError("Error encountered in API response")
         except (
             requests.exceptions.ReadTimeout,
@@ -136,6 +138,7 @@ class GlassdoorScraper(Scraper):
                     if job_post:
                         jobs.append(job_post)
                 except Exception as exc:
+                    logger.error(f"Glassdoor generated an exception: {exc}")
                     raise GlassdoorException(
                         f"Glassdoor generated an exception: {exc}")
 
@@ -347,7 +350,8 @@ class GlassdoorScraper(Scraper):
             item for item in items if item.label is not None and formatted_city in item.label
         ]
         if not items:
-            logger.error(f"location not found in Glassdoor:  {location}")
+            logger.error(f"ValueError: Location '{
+                         location}' not found on Glassdoor")
             # raise ValueError(f"Location '{location}' not found on Glassdoor")
 
         return items
