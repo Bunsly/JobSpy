@@ -75,20 +75,9 @@ class JobRepository:
             pymongo.errors.BulkWriteError: If an error occurs during the bulk insert.
         """
         new_jobs = []
-        operations = [
-            UpdateOne({"id": job.id}, {"$setOnInsert": job.model_dump(
-                exclude={"date_posted"})}, upsert=True)
-            for job in jobs
-        ]
-
-        try:
-            result = self.collection.bulk_write(operations)
-            new_jobs = [jobs[i] for i in range(
-                result.inserted_count)] if result.inserted_count > 0 else []
-            print(f"Inserted Jobs: {len(new_jobs)}")
-
-        except pymongo.errors.BulkWriteError as e:
-            # Handle bulk write errors gracefully, e.g., log details
-            print(f"Bulk Insert Error: {e}")
+        result = self.collection.insert_many(jobs)
+        new_jobs = [jobs[i] for i, _ in enumerate(
+            result.inserted_ids) if result.inserted_ids]
+        print(f"Inserted Jobs: {len(new_jobs)}")
 
         return new_jobs
