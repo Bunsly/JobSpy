@@ -30,7 +30,6 @@ async def main():
     jobs = scrape_jobs(
         site_name=sites_to_scrap,
         search_term="software engineer",
-        google_search_term="software engineer jobs near Tel Aviv Israel since yesterday",
         locations=["Tel Aviv, Israel", "Ramat Gan, Israel",
                    "Central, Israel", "Rehovot ,Israel"],
         results_wanted=200,
