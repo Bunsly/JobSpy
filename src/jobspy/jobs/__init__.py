@@ -185,6 +185,7 @@ class Location(BaseModel):
     country: Country | str | None = None
     city: Optional[str] = None
     state: Optional[str] = None
+    text: str = None
 
     def display_location(self) -> str:
         location_parts = []
@@ -253,6 +254,12 @@ class DescriptionFormat(Enum):
 
 
 class JobPost(BaseModel):
+
+    # def __init__(self, obj):
+    #     super().__init__()
+    #     for key, value in obj.items():
+    #         setattr(self, key, value)
+
     id: str | None = None
     title: str
     company_name: str | None
@@ -271,6 +278,7 @@ class JobPost(BaseModel):
     emails: list[str] | None = None
     is_remote: bool | None = None
     listing_type: str | None = None
+    field: str | None = None
 
     # linkedin specific
     job_level: str | None = None

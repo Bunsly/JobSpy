@@ -3,8 +3,11 @@ from dotenv import load_dotenv
 from telegram import Bot
 
 from jobspy.jobs import JobPost
+from jobspy.scrapers.utils import create_logger
 
 load_dotenv()
+
+logger = create_logger("TelegramBot")
 
 
 class TelegramBot:
@@ -26,6 +29,7 @@ class TelegramBot:
             f"Link: {job.job_url}\n"
         try:
             await self.bot.sendMessage(chat_id=self.chatId, text=message)
-            print(f"Sent job to Telegram: {job.id}")
+            logger.info(f"Sent job to Telegram: {job.id}")
         except Exception as e:
-            print(f"Failed to send job to Telegram: {e}")
+            logger.error(f"Failed to send job to Telegram: {job.id}")
+            logger.error(f"Error: {e}")

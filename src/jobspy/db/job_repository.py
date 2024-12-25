@@ -2,6 +2,7 @@ import os
 from typing import List
 from dotenv import load_dotenv
 from pymongo import MongoClient, UpdateOne
+import pymongo
 
 from jobspy.jobs import JobPost
 

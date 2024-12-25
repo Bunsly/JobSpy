@@ -1,9 +1,13 @@
 from __future__ import annotations
-from datetime import datetime
+from threading import Lock
 
 import pandas as pd
 from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from jobspy.scrapers.site import Site
+
+from .scrapers.goozali import GoozaliScraper
 
 from .jobs import JobPost, JobType, Location
 from .scrapers.utils import set_logger_level, extract_salary, create_logger
@@ -12,7 +16,7 @@ from .scrapers.ziprecruiter import ZipRecruiterScraper
 from .scrapers.glassdoor import GlassdoorScraper
 from .scrapers.google import GoogleJobsScraper
 from .scrapers.linkedin import LinkedInScraper
-from .scrapers import SalarySource, ScraperInput, Site, JobResponse, Country
+from .scrapers import SalarySource, ScraperInput, JobResponse, Country
 from .scrapers.exceptions import (
     LinkedInException,
     IndeedException,
@@ -20,6 +24,7 @@ from .scrapers.exceptions import (
     GlassdoorException,
     GoogleJobsException,
 )
+
 
 def scrape_jobs(
     site_name: str | list[str] | Site | list[Site] | None = None,
@@ -43,7 +48,7 @@ def scrape_jobs(
     hours_old: int = None,
     enforce_annual_salary: bool = False,
     verbose: int = 2,
-    **kwargs,
+    ** kwargs,
 ) -> pd.DataFrame:
     """
     Simultaneously scrapes job data from multiple job sites.
@@ -55,6 +60,7 @@ def scrape_jobs(
         Site.ZIP_RECRUITER: ZipRecruiterScraper,
         Site.GLASSDOOR: GlassdoorScraper,
         Site.GOOGLE: GoogleJobsScraper,
+        Site.GOOZALI: GoozaliScraper,
     }
     set_logger_level(verbose)
 
@@ -83,7 +89,6 @@ def scrape_jobs(
         return site_types
 
     country_enum = Country.from_string(country_indeed)
-
     scraper_input = ScraperInput(
         site_type=get_site_type(),
         country=country_enum,
@@ -100,9 +105,9 @@ def scrape_jobs(
         results_wanted=results_wanted,
         linkedin_company_ids=linkedin_company_ids,
         offset=offset,
-        hours_old=hours_old,
+        hours_old=hours_old
     )
-    
+
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
         scraper = scraper_class(proxies=proxies, ca_cert=ca_cert)
@@ -113,151 +118,34 @@ def scrape_jobs(
         return site.value, scraped_data
 
     site_to_jobs_dict = {}
-    merged_jobs:list[JobPost] = []
-    def worker(site):
-        site_val, scraped_info = scrape_site(site)
-            # Add the scraped jobs to the merged list
-        merged_jobs.extend(scraped_info.jobs)  # Assuming scraped_info has 'jobs' as a list
-    
-        return site_val, scraped_info
+    merged_jobs: list[JobPost] = []
+    lock = Lock()
 
-    with ThreadPoolExecutor() as executor:
+    def worker(site):
+        logger = create_logger(f"Worker {site}")
+        logger.info("Starting")
+        try:
+            site_val, scraped_info = scrape_site(site)
+            with lock:
+                merged_jobs.extend(scraped_info.jobs)
+            logger.info("Finished")
+            return site_val, scraped_info
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            return None, None
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        logger = create_logger("ThreadPoolExecutor")
         future_to_site = {
             executor.submit(worker, site): site for site in scraper_input.site_type
         }
-
+        # An iterator over the given futures that yields each as it completes.
         for future in as_completed(future_to_site):
-            site_value, scraped_data = future.result()
-            site_to_jobs_dict[site_value] = scraped_data
-    
+            try:
+                site_value, scraped_data = future.result()
+                if site_value and scraped_data:
+                    site_to_jobs_dict[site_value] = scraped_data
+            except Exception as e:
+                logger.error(f"Future Error occurred: {e}")
+
     return merged_jobs
-    def convert_to_annual(job_data: dict):
-        if job_data["interval"] == "hourly":
-            job_data["min_amount"] *= 2080
-            job_data["max_amount"] *= 2080
-        if job_data["interval"] == "monthly":
-            job_data["min_amount"] *= 12
-            job_data["max_amount"] *= 12
-        if job_data["interval"] == "weekly":
-            job_data["min_amount"] *= 52
-            job_data["max_amount"] *= 52
-        if job_data["interval"] == "daily":
-            job_data["min_amount"] *= 260
-            job_data["max_amount"] *= 260
-        job_data["interval"] = "yearly"
-
-    jobs_dfs: list[pd.DataFrame] = []
-
-    for site, job_response in site_to_jobs_dict.items():
-        for job in job_response.jobs:
-            job_data = job.dict()
-            job_url = job_data["job_url"]
-            job_data["job_url_hyper"] = f'<a href="{job_url}">{job_url}</a>'
-            job_data["site"] = site
-            job_data["company"] = job_data["company_name"]
-            job_data["job_type"] = (
-                ", ".join(job_type.value[0] for job_type in job_data["job_type"])
-                if job_data["job_type"]
-                else None
-            )
-            job_data["emails"] = (
-                ", ".join(job_data["emails"]) if job_data["emails"] else None
-            )
-            if job_data["location"]:
-                job_data["location"] = Location(
-                    **job_data["location"]
-                ).display_location()
-
-            compensation_obj = job_data.get("compensation")
-            if compensation_obj and isinstance(compensation_obj, dict):
-                job_data["interval"] = (
-                    compensation_obj.get("interval").value
-                    if compensation_obj.get("interval")
-                    else None
-                )
-                job_data["min_amount"] = compensation_obj.get("min_amount")
-                job_data["max_amount"] = compensation_obj.get("max_amount")
-                job_data["currency"] = compensation_obj.get("currency", "USD")
-                job_data["salary_source"] = SalarySource.DIRECT_DATA.value
-                if enforce_annual_salary and (
-                    job_data["interval"]
-                    and job_data["interval"] != "yearly"
-                    and job_data["min_amount"]
-                    and job_data["max_amount"]
-                ):
-                    convert_to_annual(job_data)
-
-            else:
-                if country_enum == Country.USA:
-                    (
-                        job_data["interval"],
-                        job_data["min_amount"],
-                        job_data["max_amount"],
-                        job_data["currency"],
-                    ) = extract_salary(
-                        job_data["description"],
-                        enforce_annual_salary=enforce_annual_salary,
-                    )
-                    job_data["salary_source"] = SalarySource.DESCRIPTION.value
-
-            job_data["salary_source"] = (
-                job_data["salary_source"]
-                if "min_amount" in job_data and job_data["min_amount"]
-                else None
-            )
-            job_df = pd.DataFrame([job_data])
-            jobs_dfs.append(job_df)
-
-    if jobs_dfs:
-        # Step 1: Filter out all-NA columns from each DataFrame before concatenation
-        filtered_dfs = [df.dropna(axis=1, how="all") for df in jobs_dfs]
-
-        # Step 2: Concatenate the filtered DataFrames
-        jobs_df = pd.concat(filtered_dfs, ignore_index=True)
-
-        # Desired column order
-        desired_order = [
-            "id",
-            "site",
-            "job_url_hyper" if hyperlinks else "job_url",
-            "job_url_direct",
-            "title",
-            "company",
-            "location",
-            "date_posted",
-            "job_type",
-            "salary_source",
-            "interval",
-            "min_amount",
-            "max_amount",
-            "currency",
-            "is_remote",
-            "job_level",
-            "job_function",
-            "listing_type",
-            "emails",
-            "description",
-            "company_industry",
-            "company_url",
-            "company_logo",
-            "company_url_direct",
-            "company_addresses",
-            "company_num_employees",
-            "company_revenue",
-            "company_description",
-        ]
-
-        # Step 3: Ensure all desired columns are present, adding missing ones as empty
-        for column in desired_order:
-            if column not in jobs_df.columns:
-                jobs_df[column] = None  # Add missing columns as empty
-
-        # Reorder the DataFrame according to the desired order
-        jobs_df = jobs_df[desired_order]
-
-        # Step 4: Sort the DataFrame as required
-        return jobs_df.sort_values(
-            by=["site", "date_posted"], ascending=[True, False]
-        ).reset_index(drop=True)
-    else:
-        return pd.DataFrame()
