@@ -59,7 +59,8 @@ if __name__ == "__main__":
     tg_handler_all = TelegramAllHandler(sites=[Site.GOOZALI],
                                         locations=["Tel Aviv, Israel", "Ramat Gan, Israel",
                                                    "Central, Israel", "Rehovot ,Israel"],
-                                        title_filters=title_filters)
+                                        title_filters=title_filters,
+                                        search_term="software engineer")
     application.add_handler(CommandHandler("findAll", tg_handler_all.handle))
     # application.add_handler(CommandHandler("galssdoor", find_glassdoor))
     # application.add_handler(CommandHandler("linkedin", find_linkedin))
