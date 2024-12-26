@@ -1,2 +1,2 @@
-from .telegram_all_handler import TelegramAllHandler
-from .telegram_goozali_handler import TelegramGoozaliHandler
+from .telegram_default_handler import TelegramDefaultHandler
+from .telegram_indeed_handler import TelegramIndeedHandler

@@ -9,31 +9,32 @@ from src.jobspy.scrapers.utils import create_logger
 from src.telegram_bot import TelegramBot
 from src.telegram_handler.telegram_handler import TelegramHandler
 
-logger = create_logger("TelegramAllHandler")
 
-
-class TelegramAllHandler(TelegramHandler):
-    def __init__(self, sites: list[Site], locations: list[str], title_filters: list[str],search_term:str):
+class TelegramDefaultHandler(TelegramHandler):
+    def __init__(self, sites: list[Site], locations: list[str], title_filters: list[str], search_term: str):
         self.sites_to_scrap = sites
         self.locations = locations
         self.search_term = search_term
         self.title_filters = title_filters
         self.telegramBot = TelegramBot()
         self.jobRepository = JobRepository()
+        if len(sites) == 1:
+            self.logger = create_logger(f"Telegram{sites[0].name.title()}Handler")
+        else:
+            self.logger = create_logger("TelegramAllHandler")
 
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        logger.info("start handling")
+        self.logger.info("start handling")
         jobs = scrape_jobs(
             site_name=self.sites_to_scrap,
             search_term=self.search_term,
             locations=self.locations,
             results_wanted=200,
             hours_old=48,
-            country_indeed='israel',
             filter_by_title=self.title_filters
         )
-        logger.info(f"Found {len(jobs)} jobs")
+        self.logger.info(f"Found {len(jobs)} jobs")
         new_jobs = self.jobRepository.insertManyIfNotFound(jobs)
         for newJob in new_jobs:
             await self.telegramBot.sendJob(newJob)
-        logger.info("finished handling")
+        self.logger.info("finished handling")
