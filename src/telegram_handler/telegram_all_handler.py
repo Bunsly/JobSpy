@@ -7,11 +7,12 @@ from src.jobspy import Site, scrape_jobs
 from src.jobspy.db.job_repository import JobRepository
 from src.jobspy.scrapers.utils import create_logger
 from src.telegram_bot import TelegramBot
+from src.telegram_handler.telegram_handler import TelegramHandler
 
 logger = create_logger("TelegramAllHandler")
 
 
-class TelegramAllHandler:
+class TelegramAllHandler(TelegramHandler):
     def __init__(self, sites: list[Site], locations: list[str], title_filters: list[str]):
         self.sites_to_scrap = sites
         self.locations = locations
