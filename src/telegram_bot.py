@@ -1,9 +1,16 @@
 import os
 from dotenv import load_dotenv
-from telegram import Bot
-
-from .jobs import JobPost
-from .scrapers.utils import create_logger
+from telegram import Bot, Update
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    ConversationHandler,
+    MessageHandler,
+    filters,
+)
+from src.jobspy.jobs import JobPost
+from src.jobspy.scrapers.utils import create_logger
 
 load_dotenv()
 
@@ -21,8 +28,7 @@ class TelegramBot:
         """
         Send JobPost details to Telegram chat.
         """
-        message = f"New Job Posted:\n\n" \
-            f"Job ID: {job.id}\n" \
+        message = f"Job ID: {job.id}\n" \
             f"Job Title: {job.title}\n" \
             f"Company: {job.company_name}\n" \
             f"Location: {job.location.display_location()}\n" \

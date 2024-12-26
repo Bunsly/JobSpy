@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import re
 from threading import Lock
 
 import pandas as pd
@@ -48,8 +50,9 @@ def scrape_jobs(
     hours_old: int = None,
     enforce_annual_salary: bool = False,
     verbose: int = 2,
+    filter_by_title:list[str] = None,
     ** kwargs,
-) -> pd.DataFrame:
+) -> list[JobPost]:
     """
     Simultaneously scrapes job data from multiple job sites.
     :return: pandas dataframe containing job data
@@ -148,4 +151,13 @@ def scrape_jobs(
             except Exception as e:
                 logger.error(f"Future Error occurred: {e}")
 
-    return merged_jobs
+    def filter_jobs_by_title_name(job: JobPost):
+        for filter_title in filter_by_title:
+            if re.search(filter_title, job.title, re.IGNORECASE):
+                logger.info(f"job filtered out by title: {job.id} , {
+                job.title} , found {filter_title}")
+                return False
+
+        return True
+
+    return list(filter(filter_jobs_by_title_name, merged_jobs))
