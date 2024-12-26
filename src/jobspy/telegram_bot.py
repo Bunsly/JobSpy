@@ -1,7 +1,14 @@
 import os
 from dotenv import load_dotenv
-from telegram import Bot
-
+from telegram import Bot, Update
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    ConversationHandler,
+    MessageHandler,
+    filters,
+)
 from .jobs import JobPost
 from .scrapers.utils import create_logger
 
@@ -16,13 +23,16 @@ class TelegramBot:
         self._api_token = os.getenv("TELEGRAM_API_TOKEN")
         self.chatId = os.getenv("TELEGRAM_CHAT_ID")
         self.bot = Bot(token=self._api_token)
+        # Create the Application and pass it your bot's token.
+        self.application = Application.builder().token(self._api_token).build()
+        # Run the bot until the user presses Ctrl-C
+        self.application.run_polling(allowed_updates=Update.ALL_TYPES)
 
     async def sendJob(self, job: JobPost):
         """
         Send JobPost details to Telegram chat.
         """
-        message = f"New Job Posted:\n\n" \
-            f"Job ID: {job.id}\n" \
+        message = f"Job ID: {job.id}\n" \
             f"Job Title: {job.title}\n" \
             f"Company: {job.company_name}\n" \
             f"Location: {job.location.display_location()}\n" \

@@ -1,10 +1,15 @@
 import asyncio
+import os
 import re
+
+from telegram.ext import Application, CommandHandler
+
 from src.jobspy import Site, scrape_jobs
 from src.jobspy.db.job_repository import JobRepository
 from src.jobspy.jobs import JobPost
 from src.jobspy.scrapers.utils import create_logger
 from src.jobspy.telegram_bot import TelegramBot
+from src.jobspy.telegram_handler import TelegramHandler
 
 logger = create_logger("Main")
 filter_by_title: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end", "Front End", "DevOps", "Physical", "Staff",
@@ -24,6 +29,7 @@ def filter_jobs_by_title_name(job: JobPost):
 async def main():
     telegramBot = TelegramBot()
     jobRepository = JobRepository()
+    tg_handler = TelegramHandler()
     # sites_to_scrap = [Site.LINKEDIN, Site.GLASSDOOR, Site.INDEED, Site.GOOZALI]
     sites_to_scrap = [Site.GOOZALI]
     # sites_to_scrap = [Site.GOOZALI]
@@ -44,4 +50,12 @@ async def main():
 
 # Run the async main function
 if __name__ == "__main__":
-    asyncio.run(main())
+    # asyncio.run(main())
+    _api_token = os.getenv("TELEGRAM_API_TOKEN")
+    application = Application.builder().token(_api_token).build()
+    application.add_handler(CommandHandler("find", findAll))
+    application.add_handler(CommandHandler("galssdoor", find_glassdoor))
+    application.add_handler(CommandHandler("linkedin", find_linkedin))
+    application.add_handler(CommandHandler("indeed", find_indeed))
+    application.add_handler(CommandHandler("goozali", find_goozali))
+    tg_handler = TelegramHandler().handler()
