@@ -2,8 +2,8 @@ import os
 from dotenv import load_dotenv
 from telegram import Bot
 
-from jobspy.jobs import JobPost
-from jobspy.scrapers.utils import create_logger
+from .jobs import JobPost
+from .scrapers.utils import create_logger
 
 load_dotenv()
 

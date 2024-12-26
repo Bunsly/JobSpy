@@ -1,6 +1,6 @@
 from typing import Optional
 
-from jobspy.scrapers.goozali.model import GoozaliColumnTypeOptions
+from . import GoozaliColumnTypeOptions
 
 
 class GoozaliColumn:

@@ -1,4 +1,4 @@
-from jobspy.scrapers.goozali.model import GoozaliColumnChoice
+from . import GoozaliColumnChoice
 
 
 class GoozaliColumnTypeOptions:

@@ -1,10 +1,10 @@
 import asyncio
 import re
-from jobspy import Site, scrape_jobs
-from jobspy.db.job_repository import JobRepository
-from jobspy.jobs import JobPost
-from jobspy.scrapers.utils import create_logger
-from jobspy.telegram_bot import TelegramBot
+from src.jobspy import Site, scrape_jobs
+from src.jobspy.db.job_repository import JobRepository
+from src.jobspy.jobs import JobPost
+from src.jobspy.scrapers.utils import create_logger
+from src.jobspy.telegram_bot import TelegramBot
 
 logger = create_logger("Main")
 filter_by_title: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end", "Front End", "DevOps", "Physical", "Staff",
@@ -25,7 +25,7 @@ async def main():
     telegramBot = TelegramBot()
     jobRepository = JobRepository()
     # sites_to_scrap = [Site.LINKEDIN, Site.GLASSDOOR, Site.INDEED, Site.GOOZALI]
-    sites_to_scrap = [Site.LINKEDIN]
+    sites_to_scrap = [Site.GOOZALI]
     # sites_to_scrap = [Site.GOOZALI]
     jobs = scrape_jobs(
         site_name=sites_to_scrap,

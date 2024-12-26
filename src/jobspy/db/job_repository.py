@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from pymongo import MongoClient, UpdateOne
 import pymongo
 
-from jobspy.jobs import JobPost
+from ..jobs import JobPost
 
 load_dotenv()
 

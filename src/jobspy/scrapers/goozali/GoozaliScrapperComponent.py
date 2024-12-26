@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
-from jobspy.scrapers.goozali.model import GoozaliRow, GoozaliColumn, GoozaliColumnChoice
-from jobspy.scrapers.utils import create_logger
+from .model import GoozaliRow, GoozaliColumn, GoozaliColumnChoice
+from ..utils import create_logger
 
 # Mapping function to convert parsed dictionary into GoozaliResponseData
 

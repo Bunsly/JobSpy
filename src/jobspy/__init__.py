@@ -5,7 +5,7 @@ import pandas as pd
 from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from jobspy.scrapers.site import Site
+from .scrapers.site import Site
 
 from .scrapers.goozali import GoozaliScraper
 

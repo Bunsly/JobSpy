@@ -9,11 +9,11 @@ from __future__ import annotations
 
 
 from .. import Scraper, ScraperInput
-from jobspy.scrapers.goozali.GoozaliMapper import GoozaliMapper
-from jobspy.scrapers.goozali.GoozaliScrapperComponent import GoozaliScrapperComponent
-from jobspy.scrapers.goozali.constants import extract_goozali_column_name, job_post_column_to_goozali_column
-from jobspy.scrapers.goozali.model import GoozaliColumn, GoozaliFieldChoice, GoozaliPartRequest, GoozaliFullRequest
-from jobspy.scrapers.site import Site
+from .GoozaliMapper import GoozaliMapper
+from .GoozaliScrapperComponent import GoozaliScrapperComponent
+from .constants import extract_goozali_column_name, job_post_column_to_goozali_column
+from .model import GoozaliColumn, GoozaliFieldChoice, GoozaliPartRequest, GoozaliFullRequest
+from ..site import Site
 
 from ..utils import create_dict_by_key_and_value, create_session, create_logger
 from ...jobs import (

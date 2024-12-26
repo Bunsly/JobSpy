@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from jobspy.scrapers.site import Site
-
+from .site import Site
 from ..jobs import (
     Enum,
     BaseModel,

@@ -15,7 +15,7 @@ from typing import List, Optional, Tuple
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from jobspy.scrapers.glassdoor.GlassDoorLocation import GlassDoorLocationResponse, get_location_id, get_location_type
+from .GlassDoorLocation import GlassDoorLocationResponse, get_location_id, get_location_type
 
 from .constants import fallback_token, query_template, headers
 from .. import Scraper, ScraperInput, Site

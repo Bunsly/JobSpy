@@ -1,4 +1,4 @@
-from jobspy.scrapers.goozali.model import GoozaliColumn
+from .model import GoozaliColumn
 
 
 job_post_column_to_goozali_column = {

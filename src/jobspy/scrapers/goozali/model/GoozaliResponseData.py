@@ -1,4 +1,4 @@
-from jobspy.scrapers.goozali.model import GoozaliRow, GoozaliColumn
+from . import GoozaliRow, GoozaliColumn
 
 
 class GoozaliResponseData:
