@@ -44,7 +44,6 @@ class TelegramBot:
             logger.error(f"Failed to send job to Telegram: {job.id}")
             logger.error(f"Error: {e}")
 
-
     async def send_test_message(self):
         """
         Send Test Message to Telegram chat.
@@ -65,15 +64,14 @@ class TelegramBot:
             logger.error("Failed o send test message to Telegram")
             logger.error(f"Error: {e}")
 
-
-    async def set_message_reaction(self, message_id: int, emoji_reaction: str):
+    async def set_message_reaction(self, message_id: int, emoji_reaction: ReactionEmoji):
         """
         Send Test Message to Telegram chat.
         """
         try:
             await self.bot.set_message_reaction(chat_id=self.chatId, message_id=message_id,
-                                                reaction=ReactionEmoji[emoji_reaction])
-            logger.info("Sent test message to Telegram")
+                                                reaction=emoji_reaction)
+            logger.info(f"Reaction set to message: {message_id}")
         except Exception as e:
-            logger.error("Failed to send test message to Telegram")
+            logger.error(f"Failed to set Reaction to message: {message_id}")
             logger.error(f"Error: {e}")

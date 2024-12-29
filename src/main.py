@@ -6,7 +6,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 from src.jobspy import Site
 from src.jobspy.scrapers.utils import create_logger
 from src.telegram_handler import TelegramIndeedHandler, TelegramDefaultHandler
-from src.telegram_handler.telegram_callback_handler import TelegramCallHandler
+from src.telegram_handler.button_callback.telegram_callback_handler import TelegramCallHandler
 
 logger = create_logger("Main")
 title_filters: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end",
