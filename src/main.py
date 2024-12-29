@@ -6,6 +6,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 from src.jobspy import Site
 from src.jobspy.scrapers.utils import create_logger
 from src.telegram_handler import TelegramIndeedHandler, TelegramDefaultHandler
+from src.telegram_handler.telegram_callback_handler import TelegramCallHandler
 
 logger = create_logger("Main")
 title_filters: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end",
@@ -19,6 +20,7 @@ if __name__ == "__main__":
     search_term = "software engineer"
     locations = ["Tel Aviv, Israel", "Ramat Gan, Israel", "Central, Israel", "Rehovot ,Israel"]
     application = Application.builder().token(_api_token).build()
+    tg_callback_handler = TelegramCallHandler()
     tg_handler_all = TelegramDefaultHandler(sites=[Site.LINKEDIN, Site.GLASSDOOR, Site.INDEED, Site.GOOZALI],
                                             locations=locations,
                                             title_filters=title_filters,
@@ -47,6 +49,6 @@ if __name__ == "__main__":
                                               title_filters=title_filters,
                                               search_term=search_term)
     application.add_handler(CommandHandler(Site.INDEED.value, tg_handler_indeed.handle))
-    application.add_handler(CallbackQueryHandler(tg_handler_linkedin.button))
+    application.add_handler(CallbackQueryHandler(tg_callback_handler.button_callback))
     logger.info("Run polling from telegram")
     application.run_polling(allowed_updates=Update.ALL_TYPES)

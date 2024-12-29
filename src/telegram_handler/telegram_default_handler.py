@@ -23,15 +23,6 @@ class TelegramDefaultHandler(TelegramHandler):
         else:
             self.logger = create_logger("TelegramAllHandler")
 
-    async def button(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """Parses the CallbackQuery and updates the message text."""
-        query = update.callback_query
-
-        # CallbackQueries need to be answered, even if no notification to the user is needed
-        # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
-        await query.answer()
-        await self.telegram_bot.set_message_reaction(query.message.message_id, query.data)
-
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.logger.info("start handling")
         jobs = scrape_jobs(
