@@ -16,12 +16,21 @@ class TelegramDefaultHandler(TelegramHandler):
         self.locations = locations
         self.search_term = search_term
         self.title_filters = title_filters
-        self.telegramBot = TelegramBot()
+        self.telegram_bot = TelegramBot()
         self.jobRepository = JobRepository()
         if len(sites) == 1:
             self.logger = create_logger(f"Telegram{sites[0].name.title()}Handler")
         else:
             self.logger = create_logger("TelegramAllHandler")
+
+    async def button(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Parses the CallbackQuery and updates the message text."""
+        query = update.callback_query
+
+        # CallbackQueries need to be answered, even if no notification to the user is needed
+        # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
+        await query.answer()
+        await self.telegram_bot.set_message_reaction(query.message.message_id, query.data)
 
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.logger.info("start handling")
@@ -36,5 +45,5 @@ class TelegramDefaultHandler(TelegramHandler):
         self.logger.info(f"Found {len(jobs)} jobs")
         new_jobs = self.jobRepository.insertManyIfNotFound(jobs)
         for newJob in new_jobs:
-            await self.telegramBot.sendJob(newJob)
+            await self.telegram_bot.send_job(newJob)
         self.logger.info("finished handling")

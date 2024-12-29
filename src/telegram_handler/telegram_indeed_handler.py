@@ -34,5 +34,5 @@ class TelegramIndeedHandler(TelegramHandler):
         self.logger.info(f"Found {len(jobs)} jobs")
         new_jobs = self.jobRepository.insertManyIfNotFound(jobs)
         for newJob in new_jobs:
-            await self.telegramBot.sendJob(newJob)
+            await self.telegramBot.send_job(newJob)
         self.logger.info("finished handling")

@@ -1,7 +1,7 @@
 import os
 
 from telegram import Update
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
 from src.jobspy import Site
 from src.jobspy.scrapers.utils import create_logger
@@ -10,7 +10,7 @@ from src.telegram_handler import TelegramIndeedHandler, TelegramDefaultHandler
 logger = create_logger("Main")
 title_filters: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end",
                             "Front End", "DevOps", "Physical", "Staff",
-                            "automation", "BI", "Principal", "Architect", "Android", "Machine Learning", "Student",
+                            "automation", "BI ", "Principal", "Architect", "Android", "Machine Learning", "Student",
                             "Data Engineer", "DevSecOps"]
 
 if __name__ == "__main__":
@@ -47,5 +47,6 @@ if __name__ == "__main__":
                                               title_filters=title_filters,
                                               search_term=search_term)
     application.add_handler(CommandHandler(Site.INDEED.value, tg_handler_indeed.handle))
+    application.add_handler(CallbackQueryHandler(tg_handler_linkedin.button))
     logger.info("Run polling from telegram")
     application.run_polling(allowed_updates=Update.ALL_TYPES)

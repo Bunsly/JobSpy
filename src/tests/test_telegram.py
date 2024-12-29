@@ -1,8 +1,9 @@
 import asyncio
+
 from dotenv import load_dotenv
-from jobspy.db.job_repository import JobRepository
-from jobspy.telegram_bot import TelegramBot
-from tests.test_util import createMockJob
+
+from src.telegram_bot import TelegramBot
+from src.tests.test_util import createMockJob
 
 load_dotenv()
 
@@ -21,7 +22,7 @@ class TelegramTests:
         Sents a mock job Telegram using Telegram Bot.
         """
         job = createMockJob()
-        await self.bot.sendJob(job)
+        await self.bot.send_job(job)
         print(f"Test sent job finished.")
 
 
