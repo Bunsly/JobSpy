@@ -18,32 +18,6 @@ class TelegramBot:
         self.chatId = os.getenv("TELEGRAM_CHAT_ID")
         self.bot = Bot(token=self._api_token)
 
-    async def send_job(self, job: JobPost):
-        """
-        Send JobPost details to Telegram chat.
-        """
-        message = f"Job ID: {job.id}\n" \
-                  f"Job Title: {job.title}\n" \
-                  f"Company: {job.company_name}\n" \
-                  f"Location: {job.location.display_location()}\n" \
-                  f"Link: {job.job_url}\n"
-
-        keyboard = [
-            [
-                InlineKeyboardButton(ReactionEmoji.FIRE, callback_data=ReactionEmoji.FIRE.name),
-                InlineKeyboardButton(ReactionEmoji.PILE_OF_POO, callback_data=ReactionEmoji.PILE_OF_POO.name)
-            ],
-        ]
-
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        try:
-            await self.bot.sendMessage(chat_id=self.chatId, text=message, reply_markup=reply_markup)
-            logger.info(f"Sent job to Telegram: {job.id}")
-        except Exception as e:
-            logger.error(f"Failed to send job to Telegram: {job.id}")
-            logger.error(f"Error: {e}")
-
     def get_reply_markup(self):
         keyboard = [
             [
@@ -53,6 +27,24 @@ class TelegramBot:
         ]
 
         return InlineKeyboardMarkup(keyboard)
+
+    async def send_job(self, job: JobPost):
+        """
+        Send JobPost details to Telegram chat.
+        """
+        message = f"Job ID: {job.id}\n" \
+                  f"Job Title: {job.title}\n" \
+                  f"Company: {job.company_name}\n" \
+                  f"Location: {job.location.display_location()}\n" \
+                  f"Link: {job.job_url}\n"
+        reply_markup = self.get_reply_markup()
+
+        try:
+            await self.bot.sendMessage(chat_id=self.chatId, text=message, reply_markup=reply_markup)
+            logger.info(f"Sent job to Telegram: {job.id}")
+        except Exception as e:
+            logger.error(f"Failed to send job to Telegram: {job.id}")
+            logger.error(f"Error: {e}")
 
     async def send_test_message(self):
         """

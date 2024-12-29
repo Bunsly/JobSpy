@@ -6,17 +6,17 @@ from src.telegram_handler.button_callback.button_strategy import ButtonStrategy
 
 
 class FireStrategy(ButtonStrategy):
-    def __init__(self, data: MaybeInaccessibleMessage) -> None:
+    def __init__(self, message: MaybeInaccessibleMessage) -> None:
         """
         Usually, the Context accepts a strategy through the constructor, but
         also provides a setter to change it at runtime.
         """
-        self.data = data
+        self.message = message
         self._emoji = ReactionEmoji.FIRE
+        self.telegram_bot = TelegramBot()
 
     async def execute(self):
-        telegram_bot = TelegramBot()
-        await telegram_bot.set_message_reaction(self.data.message_id, self._emoji)
+        await self.telegram_bot.set_message_reaction(self.message.message_id, self._emoji)
         # find the position in DB
         # set applied to True
         # save
