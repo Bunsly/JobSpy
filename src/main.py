@@ -23,7 +23,7 @@ if __name__ == "__main__":
                                             locations=locations,
                                             title_filters=title_filters,
                                             search_term=search_term)
-    application.add_handler(CommandHandler("findAll", tg_handler_all.handle))
+    application.add_handler(CommandHandler("find", tg_handler_all.handle))
     # Goozali
     tg_handler_goozali = TelegramDefaultHandler(sites=[Site.GOOZALI],
                                                 locations=locations,
