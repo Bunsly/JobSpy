@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from pymongo import UpdateOne
 
 from .monogo_db import MongoDB
-from .. import create_logger
-from ..jobs import JobPost
+from jobspy import create_logger
+from jobspy.jobs import JobPost
 
 load_dotenv()
 

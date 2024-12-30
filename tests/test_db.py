@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from jobspy.db.job_repository import JobRepository
+from db import JobRepository
 from tests.test_util import createMockJob
 
 load_dotenv()
