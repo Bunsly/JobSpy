@@ -3,11 +3,11 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from src.jobspy import Site, scrape_jobs
-from src.jobspy.db.job_repository import JobRepository
-from src.jobspy.scrapers.utils import create_logger
-from src.telegram_bot import TelegramBot
-from src.telegram_handler.telegram_handler import TelegramHandler
+from jobspy import Site, scrape_jobs
+from jobspy.db.job_repository import JobRepository
+from jobspy.scrapers.utils import create_logger
+from telegram_bot import TelegramBot
+from telegram_handler.telegram_handler import TelegramHandler
 
 
 class TelegramIndeedHandler(TelegramHandler):
@@ -18,7 +18,8 @@ class TelegramIndeedHandler(TelegramHandler):
         self.title_filters = title_filters
         self.telegramBot = TelegramBot()
         self.jobRepository = JobRepository()
-        self.logger = create_logger(f"Telegram{self.sites_to_scrap[0].name.title()}Handler")
+        self.logger = create_logger(
+            f"Telegram{self.sites_to_scrap[0].name.title()}Handler")
 
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.logger.info("start handling")

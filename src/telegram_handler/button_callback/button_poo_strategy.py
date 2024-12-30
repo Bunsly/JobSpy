@@ -1,7 +1,7 @@
 from telegram import MaybeInaccessibleMessage
 from telegram.constants import ReactionEmoji
 
-from src.telegram_handler.button_callback.button_strategy import ButtonStrategy
+from telegram_handler.button_callback.button_strategy import ButtonStrategy
 
 
 class PooStrategy(ButtonStrategy):

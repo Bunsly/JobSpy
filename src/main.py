@@ -3,10 +3,10 @@ import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
-from src.jobspy import Site
-from src.jobspy.scrapers.utils import create_logger
-from src.telegram_handler import TelegramIndeedHandler, TelegramDefaultHandler
-from src.telegram_handler.button_callback.telegram_callback_handler import TelegramCallHandler
+from jobspy.scrapers.site import Site
+from jobspy.scrapers.utils import create_logger
+from telegram_handler import TelegramIndeedHandler, TelegramDefaultHandler
+from telegram_handler.button_callback.telegram_callback_handler import TelegramCallHandler
 
 logger = create_logger("Main")
 title_filters: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end",
@@ -18,7 +18,8 @@ if __name__ == "__main__":
     logger.info("Starting initialize ")
     _api_token = os.getenv("TELEGRAM_API_TOKEN")
     search_term = "software engineer"
-    locations = ["Tel Aviv, Israel", "Ramat Gan, Israel", "Central, Israel", "Rehovot ,Israel"]
+    locations = ["Tel Aviv, Israel", "Ramat Gan, Israel",
+                 "Central, Israel", "Rehovot ,Israel"]
     application = Application.builder().token(_api_token).build()
     tg_callback_handler = TelegramCallHandler()
     tg_handler_all = TelegramDefaultHandler(sites=[Site.LINKEDIN, Site.GLASSDOOR, Site.INDEED, Site.GOOZALI],
@@ -31,24 +32,29 @@ if __name__ == "__main__":
                                                 locations=locations,
                                                 title_filters=title_filters,
                                                 search_term=search_term)
-    application.add_handler(CommandHandler(Site.GOOZALI.value, tg_handler_goozali.handle))
+    application.add_handler(CommandHandler(
+        Site.GOOZALI.value, tg_handler_goozali.handle))
     # GlassDoor
     tg_handler_glassdoor = TelegramDefaultHandler(sites=[Site.GLASSDOOR],
                                                   locations=locations,
                                                   title_filters=title_filters,
                                                   search_term=search_term)
-    application.add_handler(CommandHandler(Site.GLASSDOOR.value, tg_handler_glassdoor.handle))
+    application.add_handler(CommandHandler(
+        Site.GLASSDOOR.value, tg_handler_glassdoor.handle))
     # LinkeDin
     tg_handler_linkedin = TelegramDefaultHandler(sites=[Site.LINKEDIN],
                                                  locations=locations,
                                                  title_filters=title_filters,
                                                  search_term=search_term)
-    application.add_handler(CommandHandler(Site.LINKEDIN.value, tg_handler_linkedin.handle))
+    application.add_handler(CommandHandler(
+        Site.LINKEDIN.value, tg_handler_linkedin.handle))
     # Indeed
     tg_handler_indeed = TelegramIndeedHandler(locations=locations,
                                               title_filters=title_filters,
                                               search_term=search_term)
-    application.add_handler(CommandHandler(Site.INDEED.value, tg_handler_indeed.handle))
-    application.add_handler(CallbackQueryHandler(tg_callback_handler.button_callback))
+    application.add_handler(CommandHandler(
+        Site.INDEED.value, tg_handler_indeed.handle))
+    application.add_handler(CallbackQueryHandler(
+        tg_callback_handler.button_callback))
     logger.info("Run polling from telegram")
     application.run_polling(allowed_updates=Update.ALL_TYPES)

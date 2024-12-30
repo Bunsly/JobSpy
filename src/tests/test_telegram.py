@@ -2,8 +2,8 @@ import asyncio
 
 from dotenv import load_dotenv
 
-from src.telegram_bot import TelegramBot
-from src.tests.test_util import createMockJob
+from telegram_bot import TelegramBot
+from tests.test_util import createMockJob
 
 load_dotenv()
 

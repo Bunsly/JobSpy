@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from typing import List
 
-from src.jobspy import JobPost, Location, Country
+from jobspy import JobPost, Location, Country
 
 
 # Creating some test job posts

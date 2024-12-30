@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ReactionEmoji
 
-from src.jobspy.jobs import JobPost
-from src.jobspy.scrapers.utils import create_logger
+from jobspy.jobs import JobPost
+from jobspy.scrapers.utils import create_logger
 
 load_dotenv()
 
@@ -21,8 +21,10 @@ class TelegramBot:
     def get_reply_markup(self):
         keyboard = [
             [
-                InlineKeyboardButton(ReactionEmoji.FIRE, callback_data=ReactionEmoji.FIRE.name),
-                InlineKeyboardButton(ReactionEmoji.PILE_OF_POO, callback_data=ReactionEmoji.PILE_OF_POO.name)
+                InlineKeyboardButton(ReactionEmoji.FIRE,
+                                     callback_data=ReactionEmoji.FIRE.name),
+                InlineKeyboardButton(
+                    ReactionEmoji.PILE_OF_POO, callback_data=ReactionEmoji.PILE_OF_POO.name)
             ],
         ]
 
@@ -33,10 +35,10 @@ class TelegramBot:
         Send JobPost details to Telegram chat.
         """
         message = f"Job ID: {job.id}\n" \
-                  f"Job Title: {job.title}\n" \
-                  f"Company: {job.company_name}\n" \
-                  f"Location: {job.location.display_location()}\n" \
-                  f"Link: {job.job_url}\n"
+            f"Job Title: {job.title}\n" \
+            f"Company: {job.company_name}\n" \
+            f"Location: {job.location.display_location()}\n" \
+            f"Link: {job.job_url}\n"
         reply_markup = self.get_reply_markup()
 
         try:

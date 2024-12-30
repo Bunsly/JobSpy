@@ -4,11 +4,11 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from src.jobspy import create_logger
-from src.telegram_bot import TelegramBot
-from src.telegram_handler.button_callback.button_callback_context import ButtonCallBackContext
-from src.telegram_handler.button_callback.button_fire_strategy import FireStrategy
-from src.telegram_handler.button_callback.button_poo_strategy import PooStrategy
+from jobspy import create_logger
+from telegram_bot import TelegramBot
+from telegram_handler.button_callback.button_callback_context import ButtonCallBackContext
+from telegram_handler.button_callback.button_fire_strategy import FireStrategy
+from telegram_handler.button_callback.button_poo_strategy import PooStrategy
 
 
 class TelegramCallHandler:

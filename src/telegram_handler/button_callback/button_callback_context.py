@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from src.telegram_bot import TelegramBot
-from src.telegram_handler.button_callback.button_strategy import ButtonStrategy
+from telegram_bot import TelegramBot
+from telegram_handler.button_callback.button_strategy import ButtonStrategy
 
 
 class ButtonCallBackContext():

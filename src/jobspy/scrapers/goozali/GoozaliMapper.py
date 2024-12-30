@@ -1,7 +1,7 @@
 from datetime import datetime
 import json
 
-from src.jobspy.jobs import JobPost, Location
+from jobspy.jobs import JobPost, Location
 from .model import GoozaliColumnTypeOptions, GoozaliResponse, GoozaliRow, GoozaliColumn, GoozaliColumnChoice, GoozaliResponseData
 from .constants import job_post_column_to_goozali_column, job_post_column_names
 
