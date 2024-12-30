@@ -1,4 +1,5 @@
 from telegram import Update
+from telegram.constants import ReactionEmoji
 from telegram.ext import (
     ContextTypes,
 )
@@ -26,6 +27,10 @@ class TelegramDefaultHandler(TelegramHandler):
 
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.logger.info("start handling")
+        await self.telegram_bot.send_text(
+            f"Start scarping: {self.sites_to_scrap[0].name}")
+        await self.telegram_bot.set_message_reaction(
+            update.message.message_id, ReactionEmoji.FIRE)
         jobs = scrape_jobs(
             site_name=self.sites_to_scrap,
             search_term=self.search_term,
@@ -38,4 +43,6 @@ class TelegramDefaultHandler(TelegramHandler):
         new_jobs = self.jobRepository.insertManyIfNotFound(jobs)
         for newJob in new_jobs:
             await self.telegram_bot.send_job(newJob)
+        await self.telegram_bot.send_text(
+                f"Finished scarping: {self.sites_to_scrap[0].name}")
         self.logger.info("finished handling")

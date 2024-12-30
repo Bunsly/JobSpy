@@ -12,6 +12,10 @@ logger = create_logger("TelegramBot")
 
 
 class TelegramBot:
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(TelegramBot, cls).__new__(cls)
+        return cls.instance
 
     def __init__(self):
         self._api_token = os.getenv("TELEGRAM_API_TOKEN")
@@ -35,10 +39,10 @@ class TelegramBot:
         Send JobPost details to Telegram chat.
         """
         message = f"Job ID: {job.id}\n" \
-            f"Job Title: {job.title}\n" \
-            f"Company: {job.company_name}\n" \
-            f"Location: {job.location.display_location()}\n" \
-            f"Link: {job.job_url}\n"
+                  f"Job Title: {job.title}\n" \
+                  f"Company: {job.company_name}\n" \
+                  f"Location: {job.location.display_location()}\n" \
+                  f"Link: {job.job_url}\n"
         reply_markup = self.get_reply_markup()
 
         try:
@@ -46,6 +50,17 @@ class TelegramBot:
             logger.info(f"Sent job to Telegram: {job.id}")
         except Exception as e:
             logger.error(f"Failed to send job to Telegram: {job.id}")
+            logger.error(f"Error: {e}")
+
+    async def send_text(self, message: str):
+        """
+        Send Text han Message to Telegram chat.
+        """
+        try:
+            await self.bot.sendMessage(chat_id=self.chatId, text=message)
+            logger.info("Sent text message to Telegram")
+        except Exception as e:
+            logger.error("Failed to send text message to Telegram")
             logger.error(f"Error: {e}")
 
     async def send_test_message(self):
@@ -58,7 +73,7 @@ class TelegramBot:
             await self.bot.sendMessage(chat_id=self.chatId, text=message, reply_markup=reply_markup)
             logger.info("Sent test message to Telegram")
         except Exception as e:
-            logger.error("Failed o send test message to Telegram")
+            logger.error("Failed to send test message to Telegram")
             logger.error(f"Error: {e}")
 
     async def set_message_reaction(self, message_id: int, emoji_reaction: ReactionEmoji):

@@ -11,6 +11,10 @@ load_dotenv()
 
 
 class JobRepository:
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(JobRepository, cls).__new__(cls)
+        return cls.instance
 
     def __init__(self, database_name: str = None):
         self.logger = create_logger("JobRepository")
