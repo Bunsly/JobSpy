@@ -1,5 +1,6 @@
 import os
 
+from pymongo import MongoClient
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
@@ -14,12 +15,28 @@ title_filters: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "F
                             "automation", "BI ", "Principal", "Architect", "Android", "Machine Learning", "Student",
                             "Data Engineer", "DevSecOps"]
 
+def connect_db():
+    logger = create_logger("Mongo Client")
+    mongoUri = os.getenv("MONGO_URI")
+    if not mongoUri:
+        logger.error("MONGO_URI environment variable is not set")
+        raise ValueError("MONGO_URI environment variable is not set")
+    client = MongoClient(mongoUri)
+    database_name = os.getenv("MONGO_DB_NAME")
+    if not database_name:
+        logger.error("MONGO_DB_NAME environment variable is not set")
+        raise ValueError(
+            "MONGO_DB_NAME environment variable is not set")
+
+    return client[database_name]
+
 if __name__ == "__main__":
     logger.info("Starting initialize ")
     _api_token = os.getenv("TELEGRAM_API_TOKEN")
     search_term = "software engineer"
     locations = ["Tel Aviv, Israel", "Ramat Gan, Israel",
                  "Central, Israel", "Rehovot ,Israel"]
+    db = connect_db()
     application = Application.builder().token(_api_token).build()
     tg_callback_handler = TelegramCallHandler()
     tg_handler_all = TelegramDefaultHandler(sites=[Site.LINKEDIN, Site.GLASSDOOR, Site.INDEED, Site.GOOZALI],

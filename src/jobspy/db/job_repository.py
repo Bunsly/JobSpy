@@ -1,9 +1,9 @@
-import os
 from typing import List
-from dotenv import load_dotenv
-from pymongo import MongoClient, UpdateOne
-import pymongo
 
+from dotenv import load_dotenv
+from pymongo import UpdateOne
+
+from .monogo_db import MongoDB
 from .. import create_logger
 from ..jobs import JobPost
 
@@ -11,27 +11,20 @@ load_dotenv()
 
 
 class JobRepository:
-    def __new__(cls):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(JobRepository, cls).__new__(cls)
-        return cls.instance
+    _instance = None
 
-    def __init__(self, database_name: str = None):
+    def __new__(cls):
+
+        if cls._instance is not None:
+            return cls._instance
+
+        self = super().__new__(cls)
+        cls._instance = self
         self.logger = create_logger("JobRepository")
-        self.mongoUri = os.getenv("MONGO_URI")
-        if not self.mongoUri:
-            self.logger.error("MONGO_URI environment variable is not set")
-            raise ValueError("MONGO_URI environment variable is not set")
-        self.client = MongoClient(self.mongoUri)
-        if database_name is None:
-            database_name = os.getenv("MONGO_DB_NAME")
-            if not database_name:
-                self.logger.error("MONGO_DB_NAME environment variable is not set")
-                raise ValueError(
-                    "MONGO_DB_NAME environment variable is not set")
-        self.db = self.client[database_name]
-        self.collection = self.db["jobs"]
+        mongo_client = MongoDB()
+        self.collection = mongo_client.db["jobs"]
         self.logger.info("Succeed connect to MongoDB")
+        return cls._instance
 
     def insert_job(self, job: JobPost):
         job_dict = job.model_dump(exclude={"date_posted"})
@@ -60,7 +53,7 @@ class JobRepository:
             # Execute all operations in bulk
             result = self.collection.bulk_write(operations)
             self.logger.info(f"Matched: {result.matched_count}, Upserts: {
-                  result.upserted_count}, Modified: {result.modified_count}")
+            result.upserted_count}, Modified: {result.modified_count}")
 
             # Get the newly inserted jobs (those that were upserted)
             # The `upserted_count` corresponds to how many new documents were inserted
