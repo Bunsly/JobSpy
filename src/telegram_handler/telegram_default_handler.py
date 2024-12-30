@@ -27,10 +27,11 @@ class TelegramDefaultHandler(TelegramHandler):
 
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.logger.info("start handling")
-        await self.telegram_bot.send_text(
-            f"Start scarping: {self.sites_to_scrap[0].name}")
         await self.telegram_bot.set_message_reaction(
             update.message.message_id, ReactionEmoji.FIRE)
+        site_names = [site.name for site in self.sites_to_scrap]
+        await self.telegram_bot.send_text(
+            f"Start scarping: {", ".join(site_names)}")
         jobs = scrape_jobs(
             site_name=self.sites_to_scrap,
             search_term=self.search_term,
