@@ -29,30 +29,30 @@ from .scrapers.exceptions import (
 
 
 def scrape_jobs(
-    site_name: str | list[str] | Site | list[Site] | None = None,
-    search_term: str | None = None,
-    google_search_term: str | None = None,
-    location: str | None = None,
-    locations: list[str] | None = None,
-    distance: int | None = 50,
-    is_remote: bool = False,
-    job_type: str | None = None,
-    easy_apply: bool | None = None,
-    results_wanted: int = 15,
-    country_indeed: str = "usa",
-    hyperlinks: bool = False,
-    proxies: list[str] | str | None = None,
-    ca_cert: str | None = None,
-    description_format: str = "markdown",
-    linkedin_fetch_description: bool | None = False,
-    linkedin_company_ids: list[int] | None = None,
-    offset: int | None = 0,
-    hours_old: int = None,
-    enforce_annual_salary: bool = False,
-    verbose: int = 2,
-    filter_by_title:list[str] = None,
-    ** kwargs,
-) -> list[JobPost]:
+        site_name: str | list[str] | Site | list[Site] | None = None,
+        search_term: str | None = None,
+        google_search_term: str | None = None,
+        location: str | None = None,
+        locations: list[str] | None = None,
+        distance: int | None = 50,
+        is_remote: bool = False,
+        job_type: str | None = None,
+        easy_apply: bool | None = None,
+        results_wanted: int = 15,
+        country_indeed: str = "usa",
+        hyperlinks: bool = False,
+        proxies: list[str] | str | None = None,
+        ca_cert: str | None = None,
+        description_format: str = "markdown",
+        linkedin_fetch_description: bool | None = False,
+        linkedin_company_ids: list[int] | None = None,
+        offset: int | None = 0,
+        hours_old: int = None,
+        enforce_annual_salary: bool = False,
+        verbose: int = 2,
+        filter_by_title: list[str] = None,
+        **kwargs,
+) -> (list[JobPost], list[JobPost]):
     """
     Simultaneously scrapes job data from multiple job sites.
     :return: pandas dataframe containing job data
@@ -151,13 +151,29 @@ def scrape_jobs(
             except Exception as e:
                 logger.error(f"Future Error occurred: {e}")
 
-    def filter_jobs_by_title_name(job: JobPost):
-        for filter_title in filter_by_title:
-            if re.search(filter_title, job.title, re.IGNORECASE):
-                logger.info(f"job filtered out by title: {job.id} , {
-                job.title} , found {filter_title}")
-                return False
+    def filter_jobs_by_title_name(jobs: list[JobPost], filter_by_title: list[str]) -> tuple[list, list]:
+        """
+        Filters jobs based on title names and returns two lists: filtered and remaining jobs.
 
-        return True
+        Args:
+            jobs: A list of JobPost objects.
+            filter_by_title: A list of strings representing titles to filter out.
 
-    return list(filter(filter_jobs_by_title_name, merged_jobs))
+        Returns:
+            A tuple containing two lists:
+                - The first list contains JobPost objects that were filtered out.
+                - The second list contains JobPost objects that remain after filtering.
+        """
+        filtered_jobs = []
+        remaining_jobs = []
+        for job in jobs:
+            for filter_title in filter_by_title:
+                if re.search(filter_title, job.title, re.IGNORECASE):
+                    logger.info(f"job filtered out by title: {job.id} , {job.title} , found {filter_title}")
+                    filtered_jobs.append(job)
+                    break  # Exit inner loop once a match is found for the job
+            else:
+                remaining_jobs.append(job)
+        return filtered_jobs, remaining_jobs
+
+    return filter_jobs_by_title_name(merged_jobs, filter_by_title)

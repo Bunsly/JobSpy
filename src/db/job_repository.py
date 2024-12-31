@@ -1,5 +1,3 @@
-from typing import List
-
 from dotenv import load_dotenv
 from pymongo import UpdateOne
 
@@ -31,13 +29,14 @@ class JobRepository:
         self.collection.insert_one(job_dict)
         self.logger.info(f"Inserted new job with title {job.title}.")
 
-    def insertManyIfNotFound(self, jobs: List[JobPost]) -> List[JobPost]:
+    def insert_many_if_not_found(self, jobs: list[JobPost]) -> tuple[list[JobPost],list[JobPost]]:
         """
         Perform bulk upserts for a list of JobPost objects into a MongoDB collection.
         Only insert new jobs and return the list of newly inserted jobs.
         """
         operations = []
         new_jobs = []  # List to store the new jobs inserted into MongoDB
+        old_jobs = []  # List to store the new jobs inserted into MongoDB
         for job in jobs:
             job_dict = job.model_dump(exclude={"date_posted"})
             operations.append(
@@ -60,6 +59,7 @@ class JobRepository:
             for i, job in enumerate(jobs):
                 if result.upserted_count > 0 and i < result.upserted_count:
                     new_jobs.append(job)
-                    self.logger.info(f"New Job ID: {job.id}, Label: {job.title}")
+                else:
+                    old_jobs.append(job)
 
-        return new_jobs
+        return old_jobs ,new_jobs

@@ -23,7 +23,7 @@ class TelegramIndeedHandler(TelegramHandler):
 
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.logger.info("start handling")
-        jobs = scrape_jobs(
+        filtered_out_jobs, jobs = scrape_jobs(
             site_name=self.sites_to_scrap,
             search_term=self.search_term,
             locations=self.locations,
@@ -33,7 +33,7 @@ class TelegramIndeedHandler(TelegramHandler):
             filter_by_title=self.title_filters
         )
         self.logger.info(f"Found {len(jobs)} jobs")
-        new_jobs = self.jobRepository.insertManyIfNotFound(jobs)
+        new_jobs = self.jobRepository.insert_many_if_not_found(jobs)
         for newJob in new_jobs:
             await self.telegramBot.send_job(newJob)
         self.logger.info("finished handling")
