@@ -1,12 +1,11 @@
 import os
 
-from pymongo import MongoClient
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
 from jobspy.scrapers.site import Site
 from jobspy.scrapers.utils import create_logger
-from telegram_handler import TelegramIndeedHandler, TelegramDefaultHandler
+from telegram_handler import TelegramDefaultHandler
 from telegram_handler.button_callback.telegram_callback_handler import TelegramCallHandler
 
 logger = create_logger("Main")
@@ -50,9 +49,10 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler(
         Site.LINKEDIN.value, tg_handler_linkedin.handle))
     # Indeed
-    tg_handler_indeed = TelegramIndeedHandler(locations=locations,
-                                              title_filters=title_filters,
-                                              search_term=search_term)
+    tg_handler_indeed = TelegramDefaultHandler(sites=[Site.INDEED],
+                                               locations=locations,
+                                               title_filters=title_filters,
+                                               search_term=search_term)
     application.add_handler(CommandHandler(
         Site.INDEED.value, tg_handler_indeed.handle))
     application.add_handler(CallbackQueryHandler(

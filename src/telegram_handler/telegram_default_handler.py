@@ -60,7 +60,8 @@ class TelegramDefaultHandler(TelegramHandler):
             locations=self.locations,
             results_wanted=200,
             hours_old=48,
-            filter_by_title=self.title_filters
+            filter_by_title=self.title_filters,
+            country_indeed = 'israel'
         )
         self.logger.info(f"Found {len(jobs)} jobs")
         self.jobRepository.insert_many_if_not_found(filtered_out_jobs)
