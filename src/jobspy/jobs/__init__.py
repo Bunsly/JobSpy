@@ -268,7 +268,7 @@ class JobPost(BaseModel):
     company_name: str | None
     job_url: str
     job_url_direct: str | None = None
-    location: Optional[Location]
+    location: Optional[Location] = None
 
     description: str | None = None
     company_url: str | None = None
@@ -276,7 +276,7 @@ class JobPost(BaseModel):
 
     job_type: list[JobType] | None = None
     compensation: Compensation | None = None
-    date_posted: date | None
+    date_posted: Optional[date] = None
     datetime_posted: datetime | None = None
     emails: list[str] | None = None
     is_remote: bool | None = None
@@ -304,8 +304,6 @@ class JobPost(BaseModel):
     def model_dump(self, exclude: set = None):
         data = super().model_dump(exclude=exclude)
         # Use `Location`'s custom serialization logic
-        if self.location:
-            data['location'] = self.location.display_location()
 
         # Serialize `job_type` as a list of strings
         if self.job_type:

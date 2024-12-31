@@ -37,7 +37,7 @@ class JobRepository:
             The job document if found, otherwise None.
         """
         result = self.collection.find_one({"id": job_id})
-        return result
+        return JobPost(**result)
 
     def update(self, job_data: dict) -> bool:
         """
