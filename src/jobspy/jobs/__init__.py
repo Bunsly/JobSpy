@@ -182,10 +182,17 @@ class Country(Enum):
 
 
 class Location(BaseModel):
-    country: Country | str | None = None
+    country: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
-    text: str = None
+    text: str = ""
+
+    def dict(self, *args, **kwargs):
+        """
+        Override the dict() method to exclude fields with None values.
+        """
+        data = super().model_dump(*args, **kwargs)
+        return {k: v for k, v in data.items() if v is not None}
 
     def display_location(self) -> str:
         location_parts = []
