@@ -1,2 +1,1 @@
 from .telegram_default_handler import TelegramDefaultHandler
-from .telegram_indeed_handler import TelegramIndeedHandler
