@@ -25,7 +25,7 @@ def map_jobs_to_keyboard(jobs: list[JobPost]) -> InlineKeyboardMarkup:
     keyboard = []
     for job in jobs:
         # Create a new inner list for each job
-        inner_list = [InlineKeyboardButton(job.title, callback_data=job.id)]
+        inner_list = [InlineKeyboardButton(f"{job.title},{job.company_name}", callback_data=job.id)]
         # Append the inner list to the main keyboard list
         keyboard.append(inner_list)
 
@@ -67,7 +67,9 @@ class TelegramDefaultHandler(TelegramHandler):
         old_jobs, new_jobs = self.jobRepository.insert_many_if_not_found(jobs)
         for newJob in new_jobs:
             await self.telegram_bot.send_job(newJob)
-        await self.telegram_bot.send_text("filtered by title: ", reply_markup=map_jobs_to_keyboard(filtered_out_jobs))
+        if filtered_out_jobs:
+            await self.telegram_bot.send_text("filtered by title: ",
+                                              reply_markup=map_jobs_to_keyboard(filtered_out_jobs))
         self.logger.info(f"Found {len(old_jobs)} old jobs")
         await self.telegram_bot.send_text(
             f"Finished scarping: {site_names_print}")
