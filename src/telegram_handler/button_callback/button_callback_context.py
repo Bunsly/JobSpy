@@ -15,11 +15,12 @@ class ButtonCallBackContext:
     The Context defines the interface
     """
 
-    def __init__(self, data: str, message: MaybeInaccessibleMessage) -> None:
+    def __init__(self, data: str, message: MaybeInaccessibleMessage,job_id:str) -> None:
         self._logger = create_logger("Button CallBack Context")
         self._message = message
         self._data = data
         self._telegram_bot = TelegramBot()
+        self._job_id = job_id
 
     @property
     def strategy(self) -> ButtonStrategy:
@@ -42,7 +43,7 @@ class ButtonCallBackContext:
     async def run(self) -> None:
         self._logger.info("Starting")
         if ReactionEmoji.FIRE.name == self._data:
-            self.strategy = FireStrategy(self._message)
+            self.strategy = FireStrategy(self._message,self._job_id)
         elif ReactionEmoji.PILE_OF_POO.name == self._data:
             self.strategy = PooStrategy(self._message)
         else:
