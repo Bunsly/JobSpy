@@ -52,12 +52,12 @@ class TelegramBot:
             logger.error(f"Failed to send job to Telegram: {job.id}")
             logger.error(f"Error: {e}")
 
-    async def send_text(self, message: str):
+    async def send_text(self, message: str, reply_markup: InlineKeyboardMarkup = None):
         """
         Send Text han Message to Telegram chat.
         """
         try:
-            await self.bot.sendMessage(chat_id=self.chatId, text=message)
+            await self.bot.sendMessage(chat_id=self.chatId, text=message, reply_markup=reply_markup)
             logger.info("Sent text message to Telegram")
         except Exception as e:
             logger.error("Failed to send text message to Telegram")

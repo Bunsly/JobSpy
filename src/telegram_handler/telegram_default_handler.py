@@ -1,4 +1,4 @@
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ReactionEmoji
 from telegram.ext import (
     ContextTypes,
@@ -9,6 +9,27 @@ from jobspy import Site, scrape_jobs, JobPost
 from jobspy.scrapers.utils import create_logger
 from telegram_bot import TelegramBot
 from telegram_handler.telegram_handler import TelegramHandler
+
+
+def map_jobs_to_keyboard(jobs: list[JobPost]) -> InlineKeyboardMarkup:
+    """
+    Maps a list of JobPost objects to a list of lists of InlineKeyboardButton objects.
+
+    Args:
+        jobs: A list of JobPost objects.
+
+    Returns:
+        A list of lists of InlineKeyboardButton objects, where each inner list contains
+        a single button representing a job.
+    """
+    keyboard = []
+    for job in jobs:
+        # Create a new inner list for each job
+        inner_list = [InlineKeyboardButton(job.title, callback_data=job.id)]
+        # Append the inner list to the main keyboard list
+        keyboard.append(inner_list)
+
+    return InlineKeyboardMarkup(keyboard)
 
 
 class TelegramDefaultHandler(TelegramHandler):
@@ -24,10 +45,6 @@ class TelegramDefaultHandler(TelegramHandler):
                 f"Telegram{sites[0].name.title()}Handler")
         else:
             self.logger = create_logger("TelegramAllHandler")
-
-    async def send_old_job(self, old_jobs: list[JobPost]):
-
-        pass
 
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.logger.info("start handling")
@@ -50,9 +67,7 @@ class TelegramDefaultHandler(TelegramHandler):
         old_jobs, new_jobs = self.jobRepository.insert_many_if_not_found(jobs)
         for newJob in new_jobs:
             await self.telegram_bot.send_job(newJob)
-        filtered_by_title = [job.title for job in filtered_out_jobs]
-        result_string = "filtered by title:\n" + "\n".join(filtered_by_title)
-        await self.telegram_bot.send_text(result_string)
+        await self.telegram_bot.send_text("filtered by title: ", reply_markup=map_jobs_to_keyboard(filtered_out_jobs))
         self.logger.info(f"Found {len(old_jobs)} old jobs")
         await self.telegram_bot.send_text(
             f"Finished scarping: {site_names_print}")
