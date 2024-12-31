@@ -207,7 +207,7 @@ class Location(BaseModel):
             else:
                 location_parts.append(country_name.title())
 
-        if (len(location_parts) == 0 and len(self.text) > 0):
+        if len(location_parts) == 0 and len(self.text) > 0:
             return self.text
 
         return ", ".join(location_parts)
