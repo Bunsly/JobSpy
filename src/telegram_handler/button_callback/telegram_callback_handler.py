@@ -20,6 +20,6 @@ class TelegramCallHandler:
         """Parses the CallbackQuery and updates the message."""
         query = update.callback_query
         await query.answer()
-        button_context = ButtonCallBackContext(query.data,query.message)
+        button_context = ButtonCallBackContext(query.data, query.message)
 
         await button_context.run()

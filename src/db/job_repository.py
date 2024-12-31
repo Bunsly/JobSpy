@@ -1,3 +1,5 @@
+from typing import Optional
+
 from dotenv import load_dotenv
 from pymongo import UpdateOne
 
@@ -24,12 +26,47 @@ class JobRepository:
         self.logger.info("Succeed connect to MongoDB")
         return cls._instance
 
+    def find_by_id(self, job_id: str) -> Optional[JobPost]:
+        """
+        Finds a job document in the collection by its ID.
+
+        Args:
+            job_id: The ID of the job to find.
+
+        Returns:
+            The job document if found, otherwise None.
+        """
+        result = self.collection.find_one({"id": job_id})
+        return result
+
+    def update(self, job_data: dict) -> bool:
+        """
+        Updates a JobPost in the database.
+
+        Args:
+            job_data: A dictionary representing the JobPost data.
+
+        Returns:
+            True if the update was successful, False otherwise.
+        """
+        result = self.collection.update_one({"id": job_data["id"]}, {"$set": job_data})
+        return result.modified_count > 0
+
     def insert_job(self, job: JobPost):
+        """
+        Inserts a new job posting into the database collection.
+
+        Args:
+            job (JobPost): The JobPost object to be inserted.
+
+        Raises:
+            Exception: If an error occurs during insertion.
+        """
         job_dict = job.model_dump(exclude={"date_posted"})
         self.collection.insert_one(job_dict)
         self.logger.info(f"Inserted new job with title {job.title}.")
 
-    def insert_many_if_not_found(self, jobs: list[JobPost]) -> tuple[list[JobPost],list[JobPost]]:
+    def insert_many_if_not_found(self, jobs: list[JobPost]) -> tuple[list[JobPost], list[JobPost]]:
         """
         Perform bulk upserts for a list of JobPost objects into a MongoDB collection.
         Only insert new jobs and return the list of newly inserted jobs.
@@ -62,4 +99,4 @@ class JobRepository:
                 else:
                     old_jobs.append(job)
 
-        return old_jobs ,new_jobs
+        return old_jobs, new_jobs

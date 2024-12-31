@@ -279,6 +279,7 @@ class JobPost(BaseModel):
     is_remote: bool | None = None
     listing_type: str | None = None
     field: str | None = None
+    applied: bool = False
 
     # linkedin specific
     job_level: str | None = None
