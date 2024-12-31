@@ -166,7 +166,7 @@ class Country(Enum):
         valid_countries = [country.value for country in cls]
         raise ValueError(
             f"Invalid country string: '{country_str}'. Valid countries are: {
-                ', '.join([country[0] for country in valid_countries])}"
+            ', '.join([country[0] for country in valid_countries])}"
         )
 
     def to_dict(self):
@@ -196,8 +196,8 @@ class Location(BaseModel):
         if isinstance(self.country, str):
             location_parts.append(self.country)
         elif self.country and self.country not in (
-            Country.US_CANADA,
-            Country.WORLDWIDE,
+                Country.US_CANADA,
+                Country.WORLDWIDE,
         ):
             country_name = self.country.value[0]
             if "," in country_name:
@@ -206,6 +206,10 @@ class Location(BaseModel):
                 location_parts.append(country_name.upper())
             else:
                 location_parts.append(country_name.title())
+
+        if (len(location_parts) == 0 and len(self.text) > 0):
+            return self.text
+
         return ", ".join(location_parts)
 
     def model_dump(self):
@@ -254,7 +258,6 @@ class DescriptionFormat(Enum):
 
 
 class JobPost(BaseModel):
-
     # def __init__(self, obj):
     #     super().__init__()
     #     for key, value in obj.items():
