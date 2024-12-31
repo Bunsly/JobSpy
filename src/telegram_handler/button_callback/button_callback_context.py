@@ -1,17 +1,25 @@
 from __future__ import annotations
 
+from telegram import MaybeInaccessibleMessage
+from telegram.constants import ReactionEmoji
+
+from jobspy import create_logger
 from telegram_bot import TelegramBot
+from telegram_handler.button_callback.button_fire_strategy import FireStrategy
+from telegram_handler.button_callback.button_poo_strategy import PooStrategy
 from telegram_handler.button_callback.button_strategy import ButtonStrategy
 
 
-class ButtonCallBackContext():
+class ButtonCallBackContext:
     """
     The Context defines the interface
     """
 
-    def __init__(self, strategy: ButtonStrategy = None) -> None:
-        self.telegram_bot = TelegramBot()
-        self._strategy = strategy
+    def __init__(self, data: str, message: MaybeInaccessibleMessage) -> None:
+        self._logger = create_logger("Button CallBack Context")
+        self._message = message
+        self._data = data
+        self._telegram_bot = TelegramBot()
 
     @property
     def strategy(self) -> ButtonStrategy:
@@ -32,14 +40,14 @@ class ButtonCallBackContext():
         self._strategy = strategy
 
     async def run(self) -> None:
-        #  extract job id from message
-        # find the position in DB
-        # set applied to True
-        # save
-        # set reaction to message
+        self._logger.info("Starting")
+        if ReactionEmoji.FIRE.name == self._data:
+            self.strategy = FireStrategy(self._message)
+        elif ReactionEmoji.PILE_OF_POO.name == self._data:
+            self.strategy = PooStrategy(self._message)
+        else:
+            self._logger.error("Invalid enum value")
+            return
 
-        print("Context: Starting")
         await self._strategy.execute()
-        print("Context: Finished")
-
-        # ...
+        self._logger.info("Finished")

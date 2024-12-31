@@ -20,14 +20,6 @@ class TelegramCallHandler:
         """Parses the CallbackQuery and updates the message."""
         query = update.callback_query
         await query.answer()
-        button_context = ButtonCallBackContext()
-
-        if ReactionEmoji.FIRE.name == query.data:
-            button_context.strategy = FireStrategy(query.message)
-        elif ReactionEmoji.PILE_OF_POO.name == query.data:
-            button_context.strategy = PooStrategy(query.message)
-        else:
-            self.logger.error("Invalid enum value")
-            return
+        button_context = ButtonCallBackContext(query.data,query.message)
 
         await button_context.run()
