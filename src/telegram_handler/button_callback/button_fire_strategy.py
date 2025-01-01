@@ -25,6 +25,6 @@ class FireStrategy(ButtonStrategy):
         if not job:
             self._logger.error(f"Job with ID {self._job_id} not found.")
             return
-        job["applied"] = True
+        job.applied = True
         self._job_repository.update(job)
         await self._telegram_bot.set_message_reaction(self._message.message_id, self._emoji)
