@@ -19,7 +19,7 @@ title_filters: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "F
 
 async def stop(update, context):
     logger.info("Stop polling from telegram")
-    await application.stop_running()
+    application.stop_running()
 
 if __name__ == "__main__":
     logger.info("Starting initialize ")
