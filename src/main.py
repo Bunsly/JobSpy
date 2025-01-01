@@ -1,7 +1,7 @@
 import os
 
 from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Updater
 
 from jobspy.scrapers.site import Site
 from jobspy.scrapers.utils import create_logger
@@ -19,7 +19,7 @@ title_filters: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "F
 
 async def stop(update, context):
     logger.info("Stop polling from telegram")
-    await application.stop()
+    await application.stop_running()
 
 if __name__ == "__main__":
     logger.info("Starting initialize ")
