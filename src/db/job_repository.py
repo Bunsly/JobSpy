@@ -39,17 +39,17 @@ class JobRepository:
         result = self.collection.find_one({"id": job_id})
         return JobPost(**result)
 
-    def update(self, job_data: dict) -> bool:
+    def update(self, job: JobPost) -> bool:
         """
         Updates a JobPost in the database.
 
         Args:
-            job_data: A dictionary representing the JobPost data.
+            job: A dictionary representing the JobPost data.
 
         Returns:
             True if the update was successful, False otherwise.
         """
-        result = self.collection.update_one({"id": job_data["id"]}, {"$set": job_data})
+        result = self.collection.update_one({"id": job.id}, {"$set": job.model_dump(exclude={"date_posted"})})
         return result.modified_count > 0
 
     def insert_job(self, job: JobPost):
