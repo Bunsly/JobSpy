@@ -9,18 +9,23 @@ from telegram_handler import TelegramDefaultHandler
 from telegram_handler.button_callback.telegram_callback_handler import TelegramCallHandler
 
 logger = create_logger("Main")
+_api_token = os.getenv("TELEGRAM_API_TOKEN")
+application = Application.builder().token(_api_token).build()
 title_filters: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end",
                             "Front End", "DevOps", "Physical", "Staff",
                             "automation", "BI ", "Principal", "Architect", "Android", "Machine Learning", "Student",
                             "Data Engineer", "DevSecOps"]
 
+
+async def stop(update, context):
+    logger.info("Stop polling from telegram")
+    await application.stop()
+
 if __name__ == "__main__":
     logger.info("Starting initialize ")
-    _api_token = os.getenv("TELEGRAM_API_TOKEN")
     search_term = "software engineer"
     locations = ["Tel Aviv, Israel", "Ramat Gan, Israel",
                  "Central, Israel", "Rehovot ,Israel"]
-    application = Application.builder().token(_api_token).build()
     tg_callback_handler = TelegramCallHandler()
     tg_handler_all = TelegramDefaultHandler(sites=[Site.LINKEDIN, Site.GLASSDOOR, Site.INDEED, Site.GOOZALI],
                                             locations=locations,
@@ -57,5 +62,6 @@ if __name__ == "__main__":
         Site.INDEED.value, tg_handler_indeed.handle))
     application.add_handler(CallbackQueryHandler(
         tg_callback_handler.button_callback))
+    application.add_handler(CommandHandler('stop', stop))
     logger.info("Run polling from telegram")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
