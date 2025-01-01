@@ -11,10 +11,10 @@ class PooStrategy(ButtonStrategy):
         Usually, the Context accepts a strategy through the constructor, but
         also provides a setter to change it at runtime.
         """
-        self.message = message
+        self._message = message
         self._emoji = ReactionEmoji.PILE_OF_POO
         self.telegram_bot = TelegramBot()
 
     async def execute(self):
-        await self.telegram_bot.set_message_reaction(self.message.message_id, self._emoji)
-
+        chat_id = self._message.chat.id
+        await self.telegram_bot.set_message_reaction(chat_id, self._message.message_id, self._emoji)

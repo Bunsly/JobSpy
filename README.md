@@ -63,7 +63,6 @@ JobPost
    ```env
    TELEGRAM_BOT_TOKEN=your_telegram_bot_token
    MONGO_URI=your_mongodb_connection_string
-   TELEGRAM_CHAT_ID=your_telegram_chat_id
    ```
 
 4. **Run the bot**:

@@ -48,12 +48,13 @@ class TelegramDefaultHandler(TelegramHandler):
 
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.logger.info("start handling")
-        await self.telegram_bot.set_message_reaction(
-            update.message.message_id, ReactionEmoji.FIRE)
+        chat_id = update.message.chat.id
+        await self.telegram_bot.set_message_reaction(chat_id,
+                                                     update.message.message_id, ReactionEmoji.FIRE)
         site_names = [site.name for site in self.sites_to_scrap]
         site_names_print = ", ".join(site_names)
-        await self.telegram_bot.send_text(
-            f"Start scarping: {site_names_print}")
+        await self.telegram_bot.send_text(chat_id,
+                                          f"Start scarping: {site_names_print}")
         filtered_out_jobs, jobs = scrape_jobs(
             site_name=self.sites_to_scrap,
             search_term=self.search_term,
@@ -61,17 +62,17 @@ class TelegramDefaultHandler(TelegramHandler):
             results_wanted=200,
             hours_old=48,
             filter_by_title=self.title_filters,
-            country_indeed = 'israel'
+            country_indeed='israel'
         )
         self.logger.info(f"Found {len(jobs)} jobs")
         self.jobRepository.insert_many_if_not_found(filtered_out_jobs)
         old_jobs, new_jobs = self.jobRepository.insert_many_if_not_found(jobs)
         for newJob in new_jobs:
-            await self.telegram_bot.send_job(newJob)
+            await self.telegram_bot.send_job(chat_id, newJob)
         if filtered_out_jobs:
-            await self.telegram_bot.send_text("filtered by title: ",
+            await self.telegram_bot.send_text(chat_id, "filtered by title: ",
                                               reply_markup=map_jobs_to_keyboard(filtered_out_jobs))
         self.logger.info(f"Found {len(old_jobs)} old jobs")
-        await self.telegram_bot.send_text(
-            f"Finished scarping: {site_names_print}")
+        await self.telegram_bot.send_text(chat_id,
+                                          f"Finished scarping: {site_names_print}")
         self.logger.info("finished handling")

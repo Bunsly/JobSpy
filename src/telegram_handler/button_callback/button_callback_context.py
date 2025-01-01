@@ -51,7 +51,8 @@ class ButtonCallBackContext:
         elif self._data:
             job = self._job_repository.find_by_id(self._data)
             if job:
-                self._strategy = JobTitleStrategy(job)
+                chat_id = self._message.chat.id
+                self._strategy = JobTitleStrategy(chat_id,job)
         else:
             self._logger.error("Invalid enum value")
             return

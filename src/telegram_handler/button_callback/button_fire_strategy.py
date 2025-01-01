@@ -27,4 +27,5 @@ class FireStrategy(ButtonStrategy):
             return
         job.applied = True
         self._job_repository.update(job)
-        await self._telegram_bot.set_message_reaction(self._message.message_id, self._emoji)
+        chat_id = self._message.chat.id
+        await self._telegram_bot.set_message_reaction(chat_id, self._message.message_id, self._emoji)

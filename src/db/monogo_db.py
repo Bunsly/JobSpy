@@ -29,4 +29,5 @@ class MongoDB:
                 "MONGO_DB_NAME environment variable is not set")
 
         self.db = client[database_name]
+        logger.info("Succeed connect to MongoDB")
         return cls._instance

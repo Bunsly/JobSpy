@@ -23,7 +23,6 @@ class JobRepository:
         self.logger = create_logger("JobRepository")
         mongo_client = MongoDB()
         self.collection = mongo_client.db["jobs"]
-        self.logger.info("Succeed connect to MongoDB")
         return cls._instance
 
     def find_by_id(self, job_id: str) -> Optional[JobPost]:
