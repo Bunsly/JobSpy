@@ -3,9 +3,9 @@ from typing import Optional
 from dotenv import load_dotenv
 from pymongo import UpdateOne
 
-from .monogo_db import MongoDB
 from jobspy import create_logger
 from jobspy.jobs import JobPost
+from .monogo_db import mongo_client
 
 load_dotenv()
 
@@ -21,7 +21,6 @@ class JobRepository:
         self = super().__new__(cls)
         cls._instance = self
         self.logger = create_logger("JobRepository")
-        mongo_client = MongoDB()
         self.collection = mongo_client.db["jobs"]
         return cls._instance
 

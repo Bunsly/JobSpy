@@ -32,3 +32,5 @@ class MongoDB:
         self.db = client[database_name]
         logger.info("Succeed connect to MongoDB")
         return cls._instance
+
+mongo_client = MongoDB()
