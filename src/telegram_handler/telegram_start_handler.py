@@ -117,10 +117,6 @@ class TelegramStartHandler(TelegramHandler):
 
     async def filters_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Stores the location and asks for some info about the user."""
-        user = update.message.from_user
-        self.logger.info(
-            "Filters of %s: %f / %f", user.first_name, update.message.text
-        )
         self.filters = update.message.text.split(",")
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_FILTERS.name)
