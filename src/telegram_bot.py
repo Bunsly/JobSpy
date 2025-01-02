@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ReactionEmoji
 
+from config.settings import settings
 from jobspy.jobs import JobPost
 from jobspy.scrapers.utils import create_logger
 
@@ -20,7 +21,7 @@ class TelegramBot:
         return cls.instance
 
     def __init__(self):
-        self._api_token = os.getenv("TELEGRAM_API_TOKEN")
+        self._api_token = settings.telegram_api_token
         self.bot = Bot(token=self._api_token)
 
     def get_reply_markup(self):
