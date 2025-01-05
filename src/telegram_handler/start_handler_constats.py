@@ -14,6 +14,9 @@ LOCATION_MESSAGE: str = "Where are you hoping to find a position? 🌎\n" \
 
 EXPERIENCE_MESSAGE: str = "How many years of professional experience do you have in this field? 💼\n"
 
+EXPERIENCE_INVALID: str = "Experience must be a number. 😕\n" \
+                          "Please try again"
+
 FILTER_TILE_MESSAGE: str = "To help me narrow down your search, tell me about any relevant tags or keywords.\n" \
                            "For example: 'remote', 'entry-level', 'python', 'machine learning', 'QA'.\n\n" + multi_value_message
 

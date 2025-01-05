@@ -1,6 +1,7 @@
 from enum import Enum
 
 from telegram import Update, Chat, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.constants import ReactionEmoji
 from telegram.ext import (
     ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters,
 )
@@ -13,7 +14,7 @@ from model.user_repository import user_repository
 from telegram_bot import TelegramBot
 from telegram_handler.start_handler_constats import START_MESSAGE, POSITION_MESSAGE, POSITION_NOT_FOUND, \
     LOCATION_MESSAGE, EXPERIENCE_MESSAGE, FILTER_TILE_MESSAGE, THANK_YOU_MESSAGE, BYE_MESSAGE, VERIFY_MESSAGE, \
-    SEARCH_MESSAGE
+    SEARCH_MESSAGE, EXPERIENCE_INVALID
 
 
 class Flow(Enum):
@@ -56,6 +57,7 @@ class TelegramStartHandler:
         """Stores the selected position and asks for a locations."""
         user = update.message.from_user
         self.logger.info("Position of %s: %s", user.first_name, update.message.text)
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         position = next((p for p in Position if p.value == update.message.text), None)
         if not position:
             await update.message.reply_text(POSITION_NOT_FOUND)
@@ -77,6 +79,7 @@ class TelegramStartHandler:
     async def address(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Asks for a location."""
         cities = update.message.text.split(",")
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_ADDRESS.name)
         await update.message.reply_text(VERIFY_MESSAGE % cities, reply_markup=reply_markup)
@@ -89,22 +92,27 @@ class TelegramStartHandler:
 
     async def verify_address(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Verify for a Address."""
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         if update.message.text == "No":
             await update.message.reply_text(LOCATION_MESSAGE)
             return Flow.ADDRESS.value
 
-        reply_markup = ReplyKeyboardMarkup([["1", "2"]], one_time_keyboard=True,
-                                           input_field_placeholder=Flow.VERIFY_ADDRESS.name)
-        await update.message.reply_text(EXPERIENCE_MESSAGE,
-                                        reply_markup=reply_markup
-                                        )
+        await update.message.reply_text(EXPERIENCE_MESSAGE)
 
         return Flow.EXPERIENCE.value
 
     async def experience(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Asks for a experience."""
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         user = update.message.from_user
         self.logger.info("Experience of %s: %s", user.first_name, update.message.text)
+
+        if not update.message.text.isnumeric():
+            await update.message.reply_text(EXPERIENCE_INVALID)
+            await update.message.reply_text(EXPERIENCE_MESSAGE)
+
+            return Flow.EXPERIENCE.value
+
         cached_user: User = cache_manager.find(update.message.from_user.username)
         cached_user.experience = update.message.text
         cache_manager.save(cached_user.username, cached_user)
@@ -114,6 +122,7 @@ class TelegramStartHandler:
 
     async def filters_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Asks for a filters_flow."""
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         title_filters = update.message.text.split(",")
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_FILTERS.name)
@@ -127,6 +136,7 @@ class TelegramStartHandler:
 
     async def verify_filter(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Verify for a filters_flow."""
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         if update.message.text == "No":
             await update.message.reply_text(FILTER_TILE_MESSAGE)
             return Flow.FILTERS.value
@@ -139,6 +149,7 @@ class TelegramStartHandler:
 
     async def skip_filter(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Skips the location and asks for info about the user."""
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         user = update.message.from_user
         self.logger.info("User %s did not send a filters.", user.first_name)
         await update.message.reply_text(THANK_YOU_MESSAGE)
@@ -148,6 +159,7 @@ class TelegramStartHandler:
 
     async def cancel(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Cancels and ends the conversation."""
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         user = update.message.from_user
         self.logger.info("User %s canceled the conversation.", user.first_name)
         await update.message.reply_text(
