@@ -166,6 +166,10 @@ def scrape_jobs(
         """
         filtered_jobs = []
         remaining_jobs = []
+
+        if not filter_by_title:
+            return filtered_jobs, remaining_jobs
+
         for job in jobs:
             for filter_title in filter_by_title:
                 if re.search(filter_title, job.title, re.IGNORECASE):

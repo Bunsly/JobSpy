@@ -68,7 +68,7 @@ class TelegramStartHandler:
             )
             return Flow.POSITION.value
         cached_user: User = cache_manager.find(user.username)
-        cached_user.field = position
+        cached_user.position = position
         cache_manager.save(cached_user.username, cached_user)
         await update.message.reply_text(LOCATION_MESSAGE)
 

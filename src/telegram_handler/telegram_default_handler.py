@@ -4,9 +4,10 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from model.job_repository import JobRepository
 from jobspy import Site, scrape_jobs, JobPost
 from jobspy.scrapers.utils import create_logger
+from model.job_repository import JobRepository
+from model.user_repository import user_repository
 from telegram_bot import TelegramBot
 from telegram_handler.telegram_handler import TelegramHandler
 
@@ -33,11 +34,8 @@ def map_jobs_to_keyboard(jobs: list[JobPost]) -> InlineKeyboardMarkup:
 
 
 class TelegramDefaultHandler(TelegramHandler):
-    def __init__(self, sites: list[Site], locations: list[str], title_filters: list[str], search_term: str):
+    def __init__(self, sites: list[Site]):
         self.sites_to_scrap = sites
-        self.locations = locations
-        self.search_term = search_term
-        self.title_filters = title_filters
         self.telegram_bot = TelegramBot()
         self.jobRepository = JobRepository()
         if len(sites) == 1:
@@ -51,17 +49,20 @@ class TelegramDefaultHandler(TelegramHandler):
         chat_id = update.message.chat.id
         await self.telegram_bot.set_message_reaction(chat_id,
                                                      update.message.message_id, ReactionEmoji.FIRE)
+        user = user_repository.find_by_username(update.message.from_user.username)
+
         site_names = [site.name for site in self.sites_to_scrap]
         site_names_print = ", ".join(site_names)
+        locations = [location + ", Israel" for location in user.cities]
         await self.telegram_bot.send_text(chat_id,
                                           f"Start scarping: {site_names_print}")
         filtered_out_jobs, jobs = scrape_jobs(
             site_name=self.sites_to_scrap,
-            search_term=self.search_term,
-            locations=self.locations,
+            search_term=user.position.value,
+            locations=locations,
             results_wanted=200,
             hours_old=48,
-            filter_by_title=self.title_filters,
+            filter_by_title=user.title_filters,
             country_indeed='israel'
         )
         self.logger.info(f"Found {len(jobs)} jobs")
