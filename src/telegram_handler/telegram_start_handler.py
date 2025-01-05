@@ -5,9 +5,9 @@ from telegram.ext import (
     ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters,
 )
 
+from db.Position import Position
 from db.User import User
-from db.position_repository import position_repository
-from db.user_repository import UserRepository
+from db.user_repository import UserRepository, user_repository
 from jobspy.scrapers.utils import create_logger
 from telegram_bot import TelegramBot
 from telegram_handler.start_handler_constats import START_MESSAGE, POSITION_MESSAGE, POSITION_NOT_FOUND, \
@@ -30,9 +30,7 @@ class TelegramStartHandler(TelegramHandler):
     def __init__(self):
         self.filters = None
         self.telegram_bot = TelegramBot()
-        self.user_repository = UserRepository()
         self.logger = create_logger("TelegramStartHandler")
-        self.positions = position_repository.find_all()
         self.temp_user = None
         self.cities = None
 
@@ -40,9 +38,9 @@ class TelegramStartHandler(TelegramHandler):
         """Starts the conversation and asks the user about their position."""
         chat: Chat = update.message.chat
         user = User(full_name=chat.full_name, username=chat.username, chat_id=chat.id)
-        self.user_repository.insert_user(user)
+        user_repository.insert_user(user)
 
-        buttons = [[KeyboardButton(position.name)] for position in self.positions]
+        buttons = [[KeyboardButton(position.value)] for position in Position]
         reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True,
                                            input_field_placeholder=Flow.POSITION.name)
         await update.message.reply_text(
@@ -147,7 +145,7 @@ class TelegramStartHandler(TelegramHandler):
         # chat.username - 'Qw1zeR'
         # chat.full_name - 'Qw1zeR'
         # user = User(full_name=chat.full_name, username=chat.username, chat_id=chat.id)
-        # self.user_repository.insert_user(user)
+        # user_repository.insert_user(user)
         # fields = field_repository.find_all()  # Get all fields from the database
         # buttons = [[KeyboardButton(field.name)] for field in fields]
         # reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True)

@@ -22,6 +22,7 @@ class UserRepository:
         cls._instance = self
         self.logger = create_logger("UserRepository")
         self.collection = mongo_client.db["user"]
+        self.collection.create_index('username', unique=True)
         return cls._instance
 
     def find_by_id(self, user_id: str) -> Optional[User]:
@@ -97,3 +98,5 @@ class UserRepository:
                     old_users.append(user)
 
         return old_users, new_users
+
+user_repository = UserRepository()
