@@ -7,23 +7,27 @@ POSITION_MESSAGE: str = "What kind of position are you looking for? ✨\n" \
 
 POSITION_NOT_FOUND: str = "I couldn't find any positions matching your request. 😕\n" \
                           "Please try again"
+multi_value_message: str = "📌  You can enter multiple tags separated by commas."
+
 LOCATION_MESSAGE: str = "Where are you hoping to find a position? 🌎\n" \
-                        "(e.g., Rishon Lezion, New York City, San Francisco)\n" \
-                        "You can enter multiple tags separated by commas. 🔍"
+                        "(e.g., Rishon Lezion, New York City, San Francisco)\n\n" + multi_value_message
+
 EXPERIENCE_MESSAGE: str = "How many years of professional experience do you have in this field? 💼\n"
+
 FILTER_TILE_MESSAGE: str = "To help me narrow down your search, tell me about any relevant tags or keywords.\n" \
-                           "For example: 'remote', 'entry-level', 'python', 'machine learning', 'QA'.\n" \
-                           "You can enter multiple tags separated by commas. 🔍"
+                           "For example: 'remote', 'entry-level', 'python', 'machine learning', 'QA'.\n\n" + multi_value_message
+
 THANK_YOU_MESSAGE: str = "Thank you for chatting with Professor Bot!\n\n" \
-                         "I can help you find jobs on LinkedIn, Glassdoor, and more." \
-                         "To search for jobs on a specific site, simply send the site name:\n" \
-                         "/linkedin\n" \
-                         "/glassdoor\n" \
-                         "/google\n" \
-                         "Or, use the command /find to search across all supported job boards for a broader search.\n" \
-                         "Let me know how I can assist you further! 😊"
+                         "I can help you find jobs on LinkedIn, Glassdoor, and more."
+
+SEARCH_MESSAGE: str = "To search for jobs on a specific site, simply send the site name:\n" \
+                      "/linkedin\n" \
+                      "/glassdoor\n" \
+                      "/google\n\n" \
+                      "Or, use the command /find to search across all supported job boards for a broader search.\n\n" \
+                      "Let me know how I can assist you further! 😊"
 
 BYE_MESSAGE: str = "Have a great day!✨\n" \
                    "I hope to assist you with your job search in the future.😊"
 
-VERIFY_MESSAGE:str = "Did you choose: %s ? 🧐"
+VERIFY_MESSAGE: str = "Did you choose: %s ? 🧐"

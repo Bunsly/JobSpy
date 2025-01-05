@@ -8,10 +8,10 @@ class PositionCodec(TypeCodec):
     bson_type = str
 
     def transform_python(self, value):
-        return value.value
+        return value.name
 
     def transform_bson(self, value):
         return Position(value)
 
 
-position_codec = PositionCodec()
+# position_codec = PositionCodec()

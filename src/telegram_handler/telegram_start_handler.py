@@ -8,9 +8,11 @@ from telegram.ext import (
 from jobspy.scrapers.utils import create_logger
 from model.Position import Position
 from model.User import User
+from model.user_repository import user_repository
 from telegram_bot import TelegramBot
 from telegram_handler.start_handler_constats import START_MESSAGE, POSITION_MESSAGE, POSITION_NOT_FOUND, \
-    LOCATION_MESSAGE, EXPERIENCE_MESSAGE, FILTER_TILE_MESSAGE, THANK_YOU_MESSAGE, BYE_MESSAGE, VERIFY_MESSAGE
+    LOCATION_MESSAGE, EXPERIENCE_MESSAGE, FILTER_TILE_MESSAGE, THANK_YOU_MESSAGE, BYE_MESSAGE, VERIFY_MESSAGE, \
+    SEARCH_MESSAGE
 from telegram_handler.telegram_handler import TelegramHandler
 
 
@@ -36,8 +38,11 @@ class TelegramStartHandler(TelegramHandler):
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Starts the conversation and asks the user about their position."""
         chat: Chat = update.message.chat
-        user = User(full_name=chat.full_name, username=chat.username, chat_id=chat.id)
-        # user_repository.insert_user(user)
+        user = user_repository.find_by_username(chat.username)
+        if not user:
+            user = User(full_name=chat.full_name, username=chat.username, chat_id=chat.id)
+            user_repository.insert_user(user)
+
         await update.message.reply_text(START_MESSAGE)
 
         buttons = [[KeyboardButton(position.value)] for position in Position]
@@ -54,10 +59,10 @@ class TelegramStartHandler(TelegramHandler):
         """Stores the selected position and asks for a locations."""
         user = update.message.from_user
         self.logger.info("Position of %s: %s", user.first_name, update.message.text)
-        position = next((p for p in Position if p.name == update.message.text), None)
+        position = next((p for p in Position if p.value == update.message.text), None)
         if not position:
             await update.message.reply_text(POSITION_NOT_FOUND)
-            buttons = [[KeyboardButton(position.name)] for position in Position]
+            buttons = [[KeyboardButton(position.value)] for position in Position]
             reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True,
                                                input_field_placeholder=Flow.POSITION.name)
             await update.message.reply_text(
@@ -70,13 +75,13 @@ class TelegramStartHandler(TelegramHandler):
 
         return Flow.ADDRESS.value
 
-    async def address(self, update: Update) -> int:
+    async def address(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Asks for a location."""
         user = update.message.from_user
         self.cities = update.message.text.split(",")
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_ADDRESS.name)
-        await update.message.reply_text(VERIFY_MESSAGE % self.filters, reply_markup=reply_markup)
+        await update.message.reply_text(VERIFY_MESSAGE % self.cities, reply_markup=reply_markup)
 
         return Flow.VERIFY_ADDRESS.value
 
@@ -119,6 +124,7 @@ class TelegramStartHandler(TelegramHandler):
             return Flow.FILTERS.value
 
         await update.message.reply_text(THANK_YOU_MESSAGE)
+        await update.message.reply_text(SEARCH_MESSAGE)
 
         return ConversationHandler.END
 
@@ -127,6 +133,7 @@ class TelegramStartHandler(TelegramHandler):
         user = update.message.from_user
         self.logger.info("User %s did not send a filters.", user.first_name)
         await update.message.reply_text(THANK_YOU_MESSAGE)
+        await update.message.reply_text(SEARCH_MESSAGE)
 
         return ConversationHandler.END
 

@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Position(Enum):
+class Position(str, Enum):
     PRODUCT_MANAGEMENT = "Product Management"
     DATA_ANALYST = "Data Analyst"
     DATA_SCIENCE = "Data Science, ML & Algorithms"

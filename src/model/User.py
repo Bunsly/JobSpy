@@ -9,4 +9,4 @@ class User(BaseModel):
     full_name: str
     username: str
     chat_id: Union[int, str] = None
-    field: Optional[Position] = Position.SOFTWARE_ENGINEERING
+    field: Optional[Position] = None
