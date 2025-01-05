@@ -3,7 +3,7 @@ from __future__ import annotations
 from telegram import MaybeInaccessibleMessage
 from telegram.constants import ReactionEmoji
 
-from db.job_repository import JobRepository
+from model.job_repository import JobRepository
 from jobspy import create_logger
 from telegram_handler.button_callback.button_fire_strategy import FireStrategy
 from telegram_handler.button_callback.button_job_title_strategy import JobTitleStrategy

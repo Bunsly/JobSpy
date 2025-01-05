@@ -1,7 +1,7 @@
 from telegram import MaybeInaccessibleMessage
 from telegram.constants import ReactionEmoji
 
-from db.job_repository import JobRepository
+from model.job_repository import JobRepository
 from jobspy import create_logger
 from telegram_bot import TelegramBot
 from telegram_handler.button_callback.button_strategy import ButtonStrategy

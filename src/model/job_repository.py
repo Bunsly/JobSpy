@@ -21,7 +21,7 @@ class JobRepository:
         self = super().__new__(cls)
         cls._instance = self
         self.logger = create_logger("JobRepository")
-        self.collection = mongo_client.db["jobs"]
+        self.collection = mongo_client._db["jobs"]
         return cls._instance
 
     def find_by_id(self, job_id: str) -> Optional[JobPost]:

@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 
-from db.job_repository import JobRepository
+from model.job_repository import JobRepository
 from tests.test_util import createMockJob
 
 load_dotenv()

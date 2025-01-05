@@ -2,7 +2,7 @@ from typing import Optional, Union
 
 from pydantic import BaseModel, Field
 
-from db.Position import Position
+from model.Position import Position
 
 
 class User(BaseModel):

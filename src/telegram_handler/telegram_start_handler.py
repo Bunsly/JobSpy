@@ -5,9 +5,9 @@ from telegram.ext import (
     ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters,
 )
 
-from db.Position import Position
-from db.User import User
-from db.user_repository import UserRepository, user_repository
+from model.Position import Position
+from model.User import User
+from model.user_repository import UserRepository, user_repository
 from jobspy.scrapers.utils import create_logger
 from telegram_bot import TelegramBot
 from telegram_handler.start_handler_constats import START_MESSAGE, POSITION_MESSAGE, POSITION_NOT_FOUND, \
@@ -38,26 +38,27 @@ class TelegramStartHandler(TelegramHandler):
         """Starts the conversation and asks the user about their position."""
         chat: Chat = update.message.chat
         user = User(full_name=chat.full_name, username=chat.username, chat_id=chat.id)
-        user_repository.insert_user(user)
+        # user_repository.insert_user(user)
+        await update.message.reply_text(START_MESSAGE)
 
         buttons = [[KeyboardButton(position.value)] for position in Position]
         reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True,
                                            input_field_placeholder=Flow.POSITION.name)
         await update.message.reply_text(
-            START_MESSAGE + POSITION_MESSAGE,
+            POSITION_MESSAGE,
             reply_markup=reply_markup,
         )
 
         return Flow.POSITION.value
 
     async def position(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-        """Stores the selected position and asks for a photo."""
+        """Stores the selected position and asks for a locations."""
         user = update.message.from_user
         self.logger.info("Position of %s: %s", user.first_name, update.message.text)
-        position = next((p for p in self.positions if p.name == update.message.text), None)
+        position = next((p for p in Position if p.name == update.message.text), None)
         if not position:
             await update.message.reply_text(POSITION_NOT_FOUND)
-            buttons = [[KeyboardButton(position.name)] for position in self.positions]
+            buttons = [[KeyboardButton(position.name)] for position in Position]
             reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True,
                                                input_field_placeholder=Flow.POSITION.name)
             await update.message.reply_text(
@@ -71,7 +72,7 @@ class TelegramStartHandler(TelegramHandler):
         return Flow.ADDRESS.value
 
     async def address(self, update: Update) -> int:
-        """Stores the photo and asks for a location."""
+        """Asks for a location."""
         user = update.message.from_user
         self.cities = update.message.text.split(",")
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
@@ -81,6 +82,7 @@ class TelegramStartHandler(TelegramHandler):
         return Flow.VERIFY_ADDRESS.value
 
     async def verify_address(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+        """Verify for a Address."""
         if update.message.text == "No":
             await update.message.reply_text(LOCATION_MESSAGE)
             return Flow.ADDRESS.value
@@ -94,7 +96,7 @@ class TelegramStartHandler(TelegramHandler):
         return Flow.EXPERIENCE.value
 
     async def experience(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-        """Stores the info about the user and ends the conversation."""
+        """Asks for a experience."""
         user = update.message.from_user
         self.logger.info("Experience of %s: %s", user.first_name, update.message.text)
 
@@ -103,7 +105,7 @@ class TelegramStartHandler(TelegramHandler):
         return Flow.FILTERS.value
 
     async def filters_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-        """Stores the location and asks for some info about the user."""
+        """Asks for a filters_flow."""
         self.filters = update.message.text.split(",")
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_FILTERS.name)
@@ -112,6 +114,7 @@ class TelegramStartHandler(TelegramHandler):
         return Flow.VERIFY_FILTERS.value
 
     async def verify_filter(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+        """Verify for a filters_flow."""
         if update.message.text == "No":
             await update.message.reply_text(FILTER_TILE_MESSAGE)
             return Flow.FILTERS.value

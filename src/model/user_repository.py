@@ -1,10 +1,12 @@
 from typing import Optional
 
+from bson.codec_options import TypeRegistry, CodecOptions
 from dotenv import load_dotenv
 from pymongo import UpdateOne
 
 from jobspy import create_logger
 from .User import User
+from .codec.position_codec import position_codec
 from .monogo_db import mongo_client
 
 load_dotenv()
@@ -21,7 +23,9 @@ class UserRepository:
         self = super().__new__(cls)
         cls._instance = self
         self.logger = create_logger("UserRepository")
-        self.collection = mongo_client.db["user"]
+        type_registry = TypeRegistry([position_codec])
+        codec_options = CodecOptions(type_registry=type_registry)
+        self.collection = mongo_client.get_collection('user', codec_options=codec_options)
         self.collection.create_index('username', unique=True)
         return cls._instance
 
@@ -98,5 +102,6 @@ class UserRepository:
                     old_users.append(user)
 
         return old_users, new_users
+
 
 user_repository = UserRepository()
