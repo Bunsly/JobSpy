@@ -67,7 +67,7 @@ JobPost
 
 4. **Run the bot**:
    ```bash
-   python bot.py
+   python src/main.py
    ```
 
 ## Usage
