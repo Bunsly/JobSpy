@@ -10,6 +10,8 @@ from db.position_repository import position_repository
 from db.user_repository import UserRepository
 from jobspy.scrapers.utils import create_logger
 from telegram_bot import TelegramBot
+from telegram_handler.start_handler_constats import START_MESSAGE, POSITION_MESSAGE, POSITION_NOT_FOUND, \
+    LOCATION_MESSAGE, EXPERIENCE_MESSAGE, FILTER_TILE_MESSAGE, THANK_YOU_MESSAGE, BYE_MESSAGE, VERIFY_MESSAGE
 from telegram_handler.telegram_handler import TelegramHandler
 
 
@@ -44,9 +46,7 @@ class TelegramStartHandler(TelegramHandler):
         reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True,
                                            input_field_placeholder=Flow.POSITION.name)
         await update.message.reply_text(
-            "Hi! My name is Professor Bot. I will hold a conversation with you. "
-            "Send /cancel to stop talking to me.\n\n"
-            "What Position are you looking for?",
+            START_MESSAGE + POSITION_MESSAGE,
             reply_markup=reply_markup,
         )
 
@@ -58,48 +58,40 @@ class TelegramStartHandler(TelegramHandler):
         self.logger.info("Position of %s: %s", user.first_name, update.message.text)
         position = next((p for p in self.positions if p.name == update.message.text), None)
         if not position:
-            await update.message.reply_text("Position not found")
+            await update.message.reply_text(POSITION_NOT_FOUND)
             buttons = [[KeyboardButton(position.name)] for position in self.positions]
             reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True,
                                                input_field_placeholder=Flow.POSITION.name)
             await update.message.reply_text(
-                "What Position are you looking for?",
+                POSITION_MESSAGE,
                 reply_markup=reply_markup,
             )
             return Flow.POSITION.value
 
-        await update.message.reply_text(
-            "Gorgeous! Now, send me cites you want to search for\n"
-            "Example: Rishon Lezion,Petah Tikva,..."
-        )
+        await update.message.reply_text(LOCATION_MESSAGE)
 
         return Flow.ADDRESS.value
 
-    async def address(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    async def address(self, update: Update) -> int:
         """Stores the photo and asks for a location."""
         user = update.message.from_user
         self.cities = update.message.text.split(",")
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_ADDRESS.name)
-        await update.message.reply_text(f"Did you choose: {self.cities} ?", reply_markup=reply_markup)
+        await update.message.reply_text(VERIFY_MESSAGE % self.filters, reply_markup=reply_markup)
 
         return Flow.VERIFY_ADDRESS.value
 
     async def verify_address(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         if update.message.text == "No":
-            await update.message.reply_text(
-                "Please send the cities\n"
-                "Example: Rishon Lezion,Petah Tikva,..."
-            )
+            await update.message.reply_text(LOCATION_MESSAGE)
             return Flow.ADDRESS.value
 
         reply_markup = ReplyKeyboardMarkup([["1", "2"]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_ADDRESS.name)
-        await update.message.reply_text(
-            "Maybe I can visit you sometime!\n"
-            "Tell Your experience",
-            reply_markup=reply_markup
-        )
+        await update.message.reply_text(EXPERIENCE_MESSAGE,
+                                        reply_markup=reply_markup
+                                        )
 
         return Flow.EXPERIENCE.value
 
@@ -109,10 +101,7 @@ class TelegramStartHandler(TelegramHandler):
         self.logger.info("Experience of %s: %s", user.first_name, update.message.text)
 
         await update.message.reply_text(
-            "Gorgeous!\n"
-            "Now, send me keywords to filter out positions based on title\n"
-            "Example: Data,QA,..."
-        )
+            FILTER_TILE_MESSAGE)
         return Flow.FILTERS.value
 
     async def filters_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -120,19 +109,16 @@ class TelegramStartHandler(TelegramHandler):
         self.filters = update.message.text.split(",")
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_FILTERS.name)
-        await update.message.reply_text(f"Did you choose: {self.filters} ?", reply_markup=reply_markup)
+        await update.message.reply_text(VERIFY_MESSAGE % self.filters, reply_markup=reply_markup)
 
         return Flow.VERIFY_FILTERS.value
 
     async def verify_filter(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         if update.message.text == "No":
-            await update.message.reply_text(
-                "Please send the filters\n"
-                "Example: QA ,DATA,..."
-            )
+            await update.message.reply_text(FILTER_TILE_MESSAGE)
             return Flow.FILTERS.value
 
-        await update.message.reply_text("Thank you! I hope we can talk again some day.")
+        await update.message.reply_text(THANK_YOU_MESSAGE)
 
         return ConversationHandler.END
 
@@ -140,7 +126,7 @@ class TelegramStartHandler(TelegramHandler):
         """Skips the location and asks for info about the user."""
         user = update.message.from_user
         self.logger.info("User %s did not send a filters.", user.first_name)
-        await update.message.reply_text("Thank you! I hope we can talk again some day.")
+        await update.message.reply_text(THANK_YOU_MESSAGE)
 
         return ConversationHandler.END
 
@@ -149,7 +135,7 @@ class TelegramStartHandler(TelegramHandler):
         user = update.message.from_user
         self.logger.info("User %s canceled the conversation.", user.first_name)
         await update.message.reply_text(
-            "Bye! I hope we can talk again some day.", reply_markup=ReplyKeyboardRemove()
+            BYE_MESSAGE, reply_markup=ReplyKeyboardRemove()
         )
 
         return ConversationHandler.END
