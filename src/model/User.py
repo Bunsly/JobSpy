@@ -9,4 +9,7 @@ class User(BaseModel):
     full_name: str
     username: str
     chat_id: Union[int, str] = None
+    experience: Union[int, str] = None
     field: Optional[Position] = None
+    cities: Optional[list[str]] = None
+    title_filters: Optional[list[str]] = None

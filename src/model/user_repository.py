@@ -4,6 +4,7 @@ from cachebox import LRUCache
 from dotenv import load_dotenv
 from pymongo import UpdateOne
 
+from config.cache_manager import cache_manager
 from jobspy import create_logger
 from .User import User
 from .monogo_db import mongo_client
@@ -13,7 +14,6 @@ load_dotenv()
 
 class UserRepository:
     def __init__(self):
-        self._cache = LRUCache(50)
         self._logger = create_logger("UserRepository")
         self._collection = mongo_client.get_collection('user')
         self._collection.create_index('username', unique=True)
@@ -29,15 +29,15 @@ class UserRepository:
             The user document if found, otherwise None.
         """
         user = None
-        cached_user = self._cache[user_id]
+        cached_user = cache_manager.find(user_id)
         if cached_user:
-            return User(**cached_user)
+            return cached_user
 
         result = self._collection.find_one({"id": user_id})
 
         if result:
             user = User(**result)
-            self._cache[user_id] = user
+            cache_manager.save(user_id, user)
 
         return user
 
@@ -52,15 +52,15 @@ class UserRepository:
             The user document if found, otherwise None.
         """
         user = None
-        cached_user = self._cache.get(username)
+        cached_user = cache_manager.find(username)
         if cached_user:
             return cached_user
 
-        self._logger.info("Find user by username")
         result = self._collection.find_one({"username": username})
+        self._logger.info("find user by usernameeeeeeee")
         if result:
             user = User(**result)
-            self._cache[username] = user
+            cache_manager.save(username, user)
 
         return user
 
@@ -74,7 +74,7 @@ class UserRepository:
         Returns:
             True if the update was successful, False otherwise.
         """
-        result = self._collection.update_one({"id": user.id}, {"$set": user.model_dump()})
+        result = self._collection.update_one({"username": user.username}, {"$set": user.model_dump()})
         return result.modified_count > 0
 
     def insert_user(self, user: User):
@@ -88,6 +88,7 @@ class UserRepository:
             Exception: If an error occurs during insertion.
         """
         self._collection.insert_one(user.model_dump())
+        cache_manager.save(user.username, user)
         self._logger.info(f"Inserted new user with username {user.username}.")
 
     def insert_many_if_not_found(self, users: list[User]) -> tuple[list[User], list[User]]:

@@ -5,6 +5,7 @@ from telegram.ext import (
     ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters,
 )
 
+from config.cache_manager import cache_manager
 from jobspy.scrapers.utils import create_logger
 from model.Position import Position
 from model.User import User
@@ -13,7 +14,6 @@ from telegram_bot import TelegramBot
 from telegram_handler.start_handler_constats import START_MESSAGE, POSITION_MESSAGE, POSITION_NOT_FOUND, \
     LOCATION_MESSAGE, EXPERIENCE_MESSAGE, FILTER_TILE_MESSAGE, THANK_YOU_MESSAGE, BYE_MESSAGE, VERIFY_MESSAGE, \
     SEARCH_MESSAGE
-from telegram_handler.telegram_handler import TelegramHandler
 
 
 class Flow(Enum):
@@ -26,14 +26,11 @@ class Flow(Enum):
     SKIP_FILTERS = 6
 
 
-class TelegramStartHandler(TelegramHandler):
+class TelegramStartHandler:
 
     def __init__(self):
-        self.filters = None
         self.telegram_bot = TelegramBot()
         self.logger = create_logger("TelegramStartHandler")
-        self.temp_user = None
-        self.cities = None
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Starts the conversation and asks the user about their position."""
@@ -70,18 +67,23 @@ class TelegramStartHandler(TelegramHandler):
                 reply_markup=reply_markup,
             )
             return Flow.POSITION.value
-
+        cached_user: User = cache_manager.find(user.username)
+        cached_user.field = position
+        cache_manager.save(cached_user.username, cached_user)
         await update.message.reply_text(LOCATION_MESSAGE)
 
         return Flow.ADDRESS.value
 
     async def address(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Asks for a location."""
-        user = update.message.from_user
-        self.cities = update.message.text.split(",")
+        cities = update.message.text.split(",")
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_ADDRESS.name)
-        await update.message.reply_text(VERIFY_MESSAGE % self.cities, reply_markup=reply_markup)
+        await update.message.reply_text(VERIFY_MESSAGE % cities, reply_markup=reply_markup)
+
+        cached_user: User = cache_manager.find(update.message.from_user.username)
+        cached_user.cities = cities
+        cache_manager.save(cached_user.username, cached_user)
 
         return Flow.VERIFY_ADDRESS.value
 
@@ -103,17 +105,23 @@ class TelegramStartHandler(TelegramHandler):
         """Asks for a experience."""
         user = update.message.from_user
         self.logger.info("Experience of %s: %s", user.first_name, update.message.text)
-
+        cached_user: User = cache_manager.find(update.message.from_user.username)
+        cached_user.experience = update.message.text
+        cache_manager.save(cached_user.username, cached_user)
         await update.message.reply_text(
             FILTER_TILE_MESSAGE)
         return Flow.FILTERS.value
 
     async def filters_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Asks for a filters_flow."""
-        self.filters = update.message.text.split(",")
+        title_filters = update.message.text.split(",")
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_FILTERS.name)
-        await update.message.reply_text(VERIFY_MESSAGE % self.filters, reply_markup=reply_markup)
+        await update.message.reply_text(VERIFY_MESSAGE % title_filters, reply_markup=reply_markup)
+
+        cached_user: User = cache_manager.find(update.message.from_user.username)
+        cached_user.title_filters = title_filters
+        cache_manager.save(cached_user.username, cached_user)
 
         return Flow.VERIFY_FILTERS.value
 
@@ -125,7 +133,8 @@ class TelegramStartHandler(TelegramHandler):
 
         await update.message.reply_text(THANK_YOU_MESSAGE)
         await update.message.reply_text(SEARCH_MESSAGE)
-
+        cached_user: User = cache_manager.find(update.message.from_user.username)
+        user_repository.update(cached_user)
         return ConversationHandler.END
 
     async def skip_filter(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -144,37 +153,9 @@ class TelegramStartHandler(TelegramHandler):
         await update.message.reply_text(
             BYE_MESSAGE, reply_markup=ReplyKeyboardRemove()
         )
-
+        cached_user: User = cache_manager.find(user.username)
+        user_repository.update(cached_user.username, cached_user)
         return ConversationHandler.END
-
-    async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        self.logger.info("start handling")
-        # chat: Chat = update.message.chat
-        # chat.id - 368620919
-        # chat.username - 'Qw1zeR'
-        # chat.full_name - 'Qw1zeR'
-        # user = User(full_name=chat.full_name, username=chat.username, chat_id=chat.id)
-        # user_repository.insert_user(user)
-        # fields = field_repository.find_all()  # Get all fields from the database
-        # buttons = [[KeyboardButton(field.name)] for field in fields]
-        # reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True)
-        #
-        # await update.message.reply_text("Please select your field:", reply_markup=reply_markup)
-        # await self.telegram_bot.set_message_reaction(
-        #     update.message.message_id, ReactionEmoji.FIRE)
-        # site_names = [site.name for site in self.sites_to_scrap]
-        # site_names_print = ", ".join(site_names)
-        # await self.telegram_bot.send_text(
-        #     f"Start scarping: {site_names_print}")
-        # self.logger.info(f"Found {len(jobs)} jobs")
-        # self.jobRepository.insert_many_if_not_found(filtered_out_jobs)
-        # old_jobs, new_jobs = self.jobRepository.insert_many_if_not_found(jobs)
-        # for newJob in new_jobs:
-        #     await self.telegram_bot.send_job(newJob)
-        # self.logger.info(f"Found {len(old_jobs)} old jobs")
-        # await self.telegram_bot.send_text(
-        #     f"Finished scarping: {site_names_print}")
-        self.logger.info("finished handling")
 
 
 start_handler = TelegramStartHandler()
