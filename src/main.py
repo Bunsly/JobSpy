@@ -3,13 +3,14 @@ import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Updater
 
+from config.settings import settings
 from jobspy.scrapers.site import Site
 from jobspy.scrapers.utils import create_logger
 from telegram_handler import TelegramDefaultHandler
 from telegram_handler.button_callback.telegram_callback_handler import TelegramCallHandler
 
 logger = create_logger("Main")
-_api_token = os.getenv("TELEGRAM_API_TOKEN")
+_api_token = settings.telegram_api_token
 application = Application.builder().token(_api_token).build()
 title_filters: list[str] = ["test", "qa", "Lead", "Full-Stack", "Full Stack", "Fullstack", "Frontend", "Front-end",
                             "Front End", "DevOps", "Physical", "Staff",

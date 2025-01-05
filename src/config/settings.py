@@ -12,7 +12,7 @@ if not os.path.exists(dotenv_file):
 
 
 class Settings(BaseSettings):
-    environment: str
+    env: str
     telegram_api_token: str
     mongo_uri: str
     mongo_db_name: str
