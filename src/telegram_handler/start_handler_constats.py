@@ -8,7 +8,7 @@ POSITION_MESSAGE: str = "What kind of position are you looking for? ✨\n" \
 POSITION_NOT_FOUND: str = "I couldn't find any positions matching your request. 😕\n" \
                           "Please try again"
 LOCATION_MESSAGE: str = "Where are you hoping to find a position? 🌎\n" \
-                        "(e.g., Rishon Lezion, New York City, San Francisco)" \
+                        "(e.g., Rishon Lezion, New York City, San Francisco)\n" \
                         "You can enter multiple tags separated by commas. 🔍"
 EXPERIENCE_MESSAGE: str = "How many years of professional experience do you have in this field? 💼\n"
 FILTER_TILE_MESSAGE: str = "To help me narrow down your search, tell me about any relevant tags or keywords.\n" \

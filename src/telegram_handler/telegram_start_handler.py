@@ -5,10 +5,9 @@ from telegram.ext import (
     ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters,
 )
 
+from jobspy.scrapers.utils import create_logger
 from model.Position import Position
 from model.User import User
-from model.user_repository import UserRepository, user_repository
-from jobspy.scrapers.utils import create_logger
 from telegram_bot import TelegramBot
 from telegram_handler.start_handler_constats import START_MESSAGE, POSITION_MESSAGE, POSITION_NOT_FOUND, \
     LOCATION_MESSAGE, EXPERIENCE_MESSAGE, FILTER_TILE_MESSAGE, THANK_YOU_MESSAGE, BYE_MESSAGE, VERIFY_MESSAGE
