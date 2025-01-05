@@ -1,5 +1,5 @@
 START_MESSAGE: str = "Hi there! I'm Professor Bot, your friendly job search assistant.😊\n" \
-                     "I'm here to help you find the perfect position." \
+                     "I'm here to help you find the perfect position.\n\n" \
                      "To stop chatting with me at any time, just send '/cancel'.\n\n"
 
 POSITION_MESSAGE: str = "What kind of position are you looking for? ✨\n" \

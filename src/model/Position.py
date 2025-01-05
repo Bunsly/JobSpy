@@ -16,7 +16,7 @@ class Position(Enum):
     HR_RECRUITMENT = "HR & Recruitment"
     MOBILE_DEVELOPMENT = "Mobile Development"
     HARDWARE_ENGINEERING = "Hardware Engineering"
-    EMBEDDED_ENGINEERING = "Embedded, Low Level & Firmware Engineering",
+    EMBEDDED_ENGINEERING = "Embedded, Low Level & Firmware Engineering"
     CUSTOMER_SUCCESS = "Customer Success"
     PROJECT_MANAGEMENT = "Project Management"
     OPERATIONS = "Operations"
