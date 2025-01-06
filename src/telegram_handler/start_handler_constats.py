@@ -14,7 +14,7 @@ LOCATION_MESSAGE: str = "Where are you hoping to find a position? 🌎\n" \
 
 EXPERIENCE_MESSAGE: str = "How many years of professional experience do you have in this field? 💼\n"
 
-EXPERIENCE_INVALID: str = "Oops! Please enter your experience in years as a number.😕" \
+EXPERIENCE_INVALID: str = "Oops! Please enter your experience in years as a number.😕\n" \
                           "For example, 2, 5, or 10."
 
 JOB_AGE_MESSAGE: str = "How recent should the jobs be? ⏰\n" \
@@ -23,7 +23,7 @@ JOB_AGE_MESSAGE: str = "How recent should the jobs be? ⏰\n" \
 # JOB_AGE_MESSAGE: str = "Within how many hours do you want to see jobs posted? ⏰\n" \
 #                         "(Enter a number, e.g., 48 for the last 48 hours)"
 
-JOB_AGE_INVALID: str = "Oops! Please enter a number for the number of hours. 😕\n" \
+JOB_AGE_INVALID: str = "Oops!\n Please enter a number for the number of hours. 😕\n" \
                        "For example, 24, 48, or 168."
 
 FILTER_TILE_MESSAGE: str = "To help me narrow down your search, tell me about any NOT relevant tags or keywords.\n" \
