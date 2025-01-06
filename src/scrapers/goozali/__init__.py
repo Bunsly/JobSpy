@@ -72,11 +72,8 @@ class GoozaliScraper(Scraper):
         except Exception as e:
             logger.error(f"Exception: {str(e)}")
             return JobResponse(jobs=job_list)
-        # model the response with models
         goozali_response = self.mapper.map_response_to_goozali_response(
             response=response)
-        # suggestL create groupby field and then filter by hours
-        # filter result by Field
         column = self.component.find_column(
             goozali_response.data.columns, job_post_column_to_goozali_column["field"])
         user_goozali_fields = position_to_goozali_field_map[scraper_input.user.position]
@@ -88,7 +85,6 @@ class GoozaliScraper(Scraper):
             filtered_rows_by_column_choice, scraper_input.hours_old)
         dict_column_name_to_column: dict[str, GoozaliColumn] = create_dict_by_key_and_value(
             goozali_response.data.columns, extract_goozali_column_name)
-        # map to JobResponse Object
         for row in filtered_rows_by_age_and_column_choice:
             job_post = self.mapper.map_goozali_response_to_job_post(
                 row, dict_column_name_to_column)
