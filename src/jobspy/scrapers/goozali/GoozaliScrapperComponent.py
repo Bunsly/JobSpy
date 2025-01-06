@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from . import GoozaliFieldChoice
 from .model import GoozaliRow, GoozaliColumn, GoozaliColumnChoice
 from ..utils import create_logger
 
@@ -39,13 +40,13 @@ class GoozaliScrapperComponent:
             if (column.name == column_name):
                 return column
 
-    def find_choice_from_column(self, column: GoozaliColumn, choice_name: str) -> GoozaliColumnChoice:
+    def find_choice_from_column(self, column: GoozaliColumn, choice_name: GoozaliFieldChoice) -> GoozaliColumnChoice:
         if not column.typeOptions.choices:
             logger.exception(f"Choices for column {column.name} doesn't exist")
             raise Exception(f"Choices for column {column.name} doesn't exist")
 
         for key, choice in column.typeOptions.choices.items():
-            if (choice.name == choice_name):
+            if choice.name == choice_name.value:
                 return choice
 
         logger.exception(f"Can't find {choice_name} for column {column.name}")

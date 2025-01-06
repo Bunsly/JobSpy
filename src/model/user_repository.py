@@ -1,6 +1,5 @@
 from typing import Optional
 
-from cachebox import LRUCache
 from dotenv import load_dotenv
 from pymongo import UpdateOne
 
