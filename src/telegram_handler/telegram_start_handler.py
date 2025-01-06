@@ -25,6 +25,7 @@ class Flow(Enum):
     VERIFY_ADDRESS = 4
     VERIFY_FILTERS = 5
     SKIP_FILTERS = 6
+    JOB_AGE = 7
 
 
 class TelegramStartHandler:
@@ -57,9 +58,9 @@ class TelegramStartHandler:
         """Stores the selected position and asks for a locations."""
         user = update.message.from_user
         self.logger.info("Position of %s: %s", user.first_name, update.message.text)
-        await update.message.set_reaction(ReactionEmoji.FIRE)
         position = next((p for p in Position if p.value == update.message.text), None)
         if not position:
+            await update.message.set_reaction(ReactionEmoji.PILE_OF_POO)
             await update.message.reply_text(POSITION_NOT_FOUND)
             buttons = [[KeyboardButton(position.value)] for position in Position]
             reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True,
@@ -69,6 +70,8 @@ class TelegramStartHandler:
                 reply_markup=reply_markup,
             )
             return Flow.POSITION.value
+
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         cached_user: User = cache_manager.find(user.username)
         cached_user.position = position
         cache_manager.save(cached_user.username, cached_user)
@@ -94,32 +97,55 @@ class TelegramStartHandler:
 
     async def verify_address(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Verify for a Address."""
-        await update.message.set_reaction(ReactionEmoji.FIRE)
         if update.message.text == "No":
+            await update.message.set_reaction(ReactionEmoji.PILE_OF_POO)
             await update.message.reply_text(LOCATION_MESSAGE)
             return Flow.ADDRESS.value
 
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         await update.message.reply_text(EXPERIENCE_MESSAGE)
 
         return Flow.EXPERIENCE.value
 
     async def experience(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Asks for a experience."""
-        await update.message.set_reaction(ReactionEmoji.FIRE)
         user = update.message.from_user
         self.logger.info("Experience of %s: %s", user.first_name, update.message.text)
 
         if not update.message.text.isnumeric():
+            await update.message.set_reaction(ReactionEmoji.PILE_OF_POO)
             await update.message.reply_text(EXPERIENCE_INVALID)
             await update.message.reply_text(EXPERIENCE_MESSAGE)
 
             return Flow.EXPERIENCE.value
 
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         cached_user: User = cache_manager.find(update.message.from_user.username)
         cached_user.experience = update.message.text
         cache_manager.save(cached_user.username, cached_user)
         await update.message.reply_text(
             FILTER_TILE_MESSAGE)
+        return Flow.JOB_AGE.value
+
+    async def job_age(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+        """Asks for a Job age in hours."""
+        await update.message.set_reaction(ReactionEmoji.FIRE)
+        user = update.message.from_user
+        self.logger.info("Job age of %s: %s", user.first_name, update.message.text)
+
+        if not update.message.text.isnumeric():
+            await update.message.set_reaction(ReactionEmoji.PILE_OF_POO)
+            await update.message.reply_text(EXPERIENCE_INVALID)
+            await update.message.reply_text(EXPERIENCE_MESSAGE)
+
+            return Flow.EXPERIENCE.value
+        await update.message.set_reaction(ReactionEmoji.FIRE)
+        cached_user: User = cache_manager.find(update.message.from_user.username)
+        cached_user.experience = update.message.text
+        cache_manager.save(cached_user.username, cached_user)
+        await update.message.reply_text(
+            FILTER_TILE_MESSAGE)
+
         return Flow.FILTERS.value
 
     async def filters_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -138,11 +164,12 @@ class TelegramStartHandler:
 
     async def verify_filter(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Verify for a filters_flow."""
-        await update.message.set_reaction(ReactionEmoji.FIRE)
         if update.message.text == "No":
+            await update.message.set_reaction(ReactionEmoji.PILE_OF_POO)
             await update.message.reply_text(FILTER_TILE_MESSAGE)
             return Flow.FILTERS.value
 
+        await update.message.set_reaction(ReactionEmoji.FIRE)
         await update.message.reply_text(THANK_YOU_MESSAGE)
         await update.message.reply_text(SEARCH_MESSAGE)
         cached_user: User = cache_manager.find(update.message.from_user.username)
@@ -180,6 +207,7 @@ start_conv_handler = ConversationHandler(
         Flow.ADDRESS.value: [MessageHandler(filters.TEXT, start_handler.address)],
         Flow.VERIFY_ADDRESS.value: [MessageHandler(filters.TEXT, start_handler.verify_address)],
         Flow.EXPERIENCE.value: [MessageHandler(filters.TEXT, start_handler.experience)],
+        Flow.JOB_AGE.value: [MessageHandler(filters.TEXT, start_handler.job_age)],
         Flow.FILTERS.value: [MessageHandler(filters.TEXT, start_handler.filters_flow)],
         Flow.VERIFY_FILTERS.value: [MessageHandler(filters.TEXT, start_handler.verify_filter)],
     },
