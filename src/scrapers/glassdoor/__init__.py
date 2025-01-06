@@ -1,5 +1,5 @@
 """
-jobspy.scrapers.glassdoor
+scrapers.glassdoor
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains routines to scrape Glassdoor.
@@ -7,7 +7,6 @@ This module contains routines to scrape Glassdoor.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import re
 import json
 import requests
@@ -18,14 +17,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from .GlassDoorLocation import GlassDoorLocationResponse, get_location_id, get_location_type
 
 from .constants import fallback_token, query_template, headers
-from .. import Scraper, ScraperInput, Site
+from ..scraper import Scraper
+from ..scraper_input import ScraperInput
+from ..site import Site
 from ..utils import extract_emails_from_text, create_logger
 from ..exceptions import GlassdoorException
 from ..utils import (
     create_session,
     markdown_converter,
 )
-from ...jobs import (
+from jobs import (
     JobPost,
     Compensation,
     CompensationInterval,

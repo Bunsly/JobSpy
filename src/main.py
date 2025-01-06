@@ -1,10 +1,9 @@
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import Application, CommandHandler, ConversationHandler, \
-    MessageHandler, filters, ContextTypes, CallbackQueryHandler
+from telegram import Update
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
 from config.settings import settings
-from jobspy import Site
-from jobspy.scrapers.utils import create_logger
+from scrapers import Site
+from scrapers.utils import create_logger
 from telegram_handler import TelegramDefaultHandler
 from telegram_handler.button_callback.telegram_callback_handler import TelegramCallHandler
 from telegram_handler.telegram_myinfo_handler import my_info_handler

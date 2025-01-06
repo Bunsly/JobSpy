@@ -1,31 +1,29 @@
 from __future__ import annotations
 
 import re
-from threading import Lock
+from asyncio import Lock, as_completed
+from concurrent.futures import ThreadPoolExecutor
 
-import pandas as pd
-from typing import Tuple
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-from .scrapers.site import Site
-
-from .scrapers.goozali import GoozaliScraper
-
-from .jobs import JobPost, JobType, Location
-from .scrapers.utils import set_logger_level, extract_salary, create_logger
-from .scrapers.indeed import IndeedScraper
-from .scrapers.ziprecruiter import ZipRecruiterScraper
-from .scrapers.glassdoor import GlassdoorScraper
-from .scrapers.google import GoogleJobsScraper
-from .scrapers.linkedin import LinkedInScraper
-from .scrapers import SalarySource, ScraperInput, JobResponse, Country
-from .scrapers.exceptions import (
-    LinkedInException,
-    IndeedException,
-    ZipRecruiterException,
-    GlassdoorException,
-    GoogleJobsException,
+from jobs import (
+    Enum,
+    JobType,
+    JobResponse,
+    Country,
+    JobPost,
 )
+from .glassdoor import GlassdoorScraper
+from .google import GoogleJobsScraper
+from .goozali import GoozaliScraper
+from .indeed import IndeedScraper
+from .linkedin import LinkedInScraper
+from .site import Site
+from .utils import set_logger_level, create_logger
+from .ziprecruiter import ZipRecruiterScraper
+
+
+class SalarySource(Enum):
+    DIRECT_DATA = "direct_data"
+    DESCRIPTION = "description"
 
 
 def scrape_jobs(
@@ -55,7 +53,7 @@ def scrape_jobs(
 ) -> (list[JobPost], list[JobPost]):
     """
     Simultaneously scrapes job data from multiple job sites.
-    :return: pandas dataframe containing job data
+    :return: list of jobPost, list of new jobPost
     """
     SCRAPER_MAPPING = {
         Site.LINKEDIN: LinkedInScraper,
@@ -111,7 +109,7 @@ def scrape_jobs(
         hours_old=hours_old
     )
 
-    def scrape_site(site: Site) -> Tuple[str, JobResponse]:
+    def scrape_site(site: Site) -> tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
         scraper = scraper_class(proxies=proxies, ca_cert=ca_cert)
         scraped_data: JobResponse = scraper.scrape(scraper_input)

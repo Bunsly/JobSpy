@@ -3,15 +3,15 @@ requires = [ "poetry-core",]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "python-jobspy"
+name = "python-JobSeekerTG"
 version = "1.1.76"
 description = "Job scraper for LinkedIn, Indeed, Glassdoor & ZipRecruiter"
-authors = [ "Zachary Hampton <zachary@bunsly.com>", "Cullen Watson <cullen@bunsly.com>",]
-homepage = "https://github.com/Bunsly/JobSpy"
+authors = [ "YM "]
+homepage = "https://github.com/yariv245/JobSeekerTG"
 readme = "README.md"
 keywords = [ "jobs-scraper", "linkedin", "indeed", "glassdoor", "ziprecruiter",]
 [[tool.poetry.packages]]
-include = "jobspy"
+include = "JobSeekerTG"
 from = "src"
 
 [tool.black]

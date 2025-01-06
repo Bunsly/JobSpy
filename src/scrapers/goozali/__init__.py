@@ -1,5 +1,5 @@
 """
-jobspy.scrapers.Goozali
+scrapers.Goozali
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains routines to scrape Goozali.
@@ -9,15 +9,16 @@ from __future__ import annotations
 
 from model.User import User
 from model.user_repository import user_repository
-from .. import Scraper, ScraperInput
 from .GoozaliMapper import GoozaliMapper
 from .GoozaliScrapperComponent import GoozaliScrapperComponent
 from .constants import extract_goozali_column_name, job_post_column_to_goozali_column, position_to_goozali_field_map
 from .model import GoozaliColumn, GoozaliFieldChoice, GoozaliPartRequest, GoozaliFullRequest
+from ..scraper import Scraper
+from ..scraper_input import ScraperInput
 from ..site import Site
 
 from ..utils import create_dict_by_key_and_value, create_session, create_logger
-from ...jobs import (
+from jobs import (
     JobPost,
     JobResponse,
 )

@@ -1,5 +1,5 @@
 """
-jobspy.scrapers.ziprecruiter
+scrapers.ziprecruiter
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains routines to scrape ZipRecruiter.
@@ -19,7 +19,9 @@ from concurrent.futures import ThreadPoolExecutor
 from bs4 import BeautifulSoup
 
 from .constants import headers
-from .. import Scraper, ScraperInput, Site
+from ..site import Site
+from ..scraper import Scraper
+from ..scraper_input import ScraperInput
 from ..utils import (
     extract_emails_from_text,
     create_session,
@@ -27,7 +29,7 @@ from ..utils import (
     remove_attributes,
     create_logger,
 )
-from ...jobs import (
+from jobs import (
     JobPost,
     Compensation,
     Location,

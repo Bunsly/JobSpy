@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from pymongo import UpdateOne
 
 from config.cache_manager import cache_manager
-from jobspy import create_logger
+from scrapers.utils import create_logger
 from .User import User
 from .monogo_db import mongo_client
 

@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from pymongo.synchronous.database import Database
 
 from config.settings import settings
-from jobspy import create_logger
+from scrapers.utils import create_logger
 
 
 class MongoDB:

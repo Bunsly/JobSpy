@@ -1,4 +1,4 @@
-from jobspy import scrape_jobs
+from scrapers import scrape_jobs
 import pandas as pd
 
 

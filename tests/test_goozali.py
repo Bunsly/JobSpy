@@ -1,12 +1,12 @@
 import json
 import os
 
-from jobspy.jobs import JobPost
-from jobspy.scrapers.goozali.GoozaliMapper import GoozaliMapper
-from jobspy.scrapers.goozali.GoozaliScrapperComponent import GoozaliScrapperComponent
-from jobspy.scrapers.goozali.constants import extract_goozali_column_name, job_post_column_to_goozali_column
-from jobspy.scrapers.goozali.model import GoozaliColumn, GoozaliFieldChoice, GoozaliResponseData
-from jobspy.scrapers.utils import create_dict_by_key_and_value
+from jobs import JobPost
+from scrapers.goozali.GoozaliMapper import GoozaliMapper
+from scrapers.goozali.GoozaliScrapperComponent import GoozaliScrapperComponent
+from scrapers.goozali.constants import extract_goozali_column_name, job_post_column_to_goozali_column
+from scrapers.goozali.model import GoozaliColumn, GoozaliFieldChoice, GoozaliResponseData
+from scrapers.utils import create_dict_by_key_and_value
 # URL Example
 # https://airtable.com/v0.3/view/viwagEIbkfz2iMsLU/readSharedViewData?stringifiedObjectParams=%7B%22shouldUseNestedResponseFormat%22%3Atrue%7D&requestId=reqXyRSHWlXyiRgY9&accessPolicy=%7B%22allowedActions%22%3A%5B%7B%22modelClassName%22%3A%22view%22%2C%22modelIdSelector%22%3A%22viwagEIbkfz2iMsLU%22%2C%22action%22%3A%22readSharedViewData%22%7D%2C%7B%22modelClassName%22%3A%22view%22%2C%22modelIdSelector%22%3A%22viwagEIbkfz2iMsLU%22%2C%22action%22%3A%22getMetadataForPrinting%22%7D%2C%7B%22modelClassName%22%3A%22view%22%2C%22modelIdSelector%22%3A%22viwagEIbkfz2iMsLU%22%2C%22action%22%3A%22readSignedAttachmentUrls%22%7D%2C%7B%22modelClassName%22%3A%22row%22%2C%22modelIdSelector%22%3A%22rows%20*%5BdisplayedInView%3DviwagEIbkfz2iMsLU%5D%22%2C%22action%22%3A%22createDocumentPreviewSession%22%7D%5D%2C%22shareId%22%3A%22shr97tl6luEk4Ca9R%22%2C%22applicationId%22%3A%22app5sYJyDgcRbJWYU%22%2C%22generationNumber%22%3A0%2C%22expires%22%3A%222025-01-02T00%3A00%3A00.000Z%22%2C%22signature%22%3A%223aa292ee44d15aa75d9506200329e413653471f89e000fa370ef9fa38393070a%22%7D
 

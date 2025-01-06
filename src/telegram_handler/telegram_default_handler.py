@@ -4,8 +4,8 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from jobspy import Site, scrape_jobs, JobPost
-from jobspy.scrapers.utils import create_logger
+from scrapers import Site, scrape_jobs, JobPost
+from scrapers.utils import create_logger
 from model.job_repository import JobRepository
 from model.user_repository import user_repository
 from telegram_bot import TelegramBot

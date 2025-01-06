@@ -7,7 +7,7 @@ from telegram.ext import (
 )
 
 from config.cache_manager import cache_manager
-from jobspy.scrapers.utils import create_logger
+from scrapers.utils import create_logger
 from model.Position import Position
 from model.User import User
 from model.user_repository import user_repository

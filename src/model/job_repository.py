@@ -3,8 +3,8 @@ from typing import Optional
 from dotenv import load_dotenv
 from pymongo import UpdateOne
 
-from jobspy import create_logger
-from jobspy.jobs import JobPost
+from scrapers import create_logger
+from jobs import JobPost
 from .monogo_db import mongo_client
 
 load_dotenv()

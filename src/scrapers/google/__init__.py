@@ -1,5 +1,5 @@
 """
-jobspy.scrapers.google
+scrapers.google
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains routines to scrape Google.
@@ -14,12 +14,14 @@ from typing import Tuple
 from datetime import datetime, timedelta
 
 from .constants import headers_jobs, headers_initial, async_param
-from .. import Scraper, ScraperInput, Site
+from ..scraper import Scraper
+from ..scraper_input import ScraperInput
+from ..site import Site
 from ..utils import extract_emails_from_text, create_logger, extract_job_type
 from ..utils import (
     create_session,
 )
-from ...jobs import (
+from jobs import (
     JobPost,
     JobResponse,
     Location,
