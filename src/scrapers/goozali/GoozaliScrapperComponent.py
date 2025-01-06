@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
-from . import GoozaliFieldChoice
-from .model import GoozaliRow, GoozaliColumn, GoozaliColumnChoice
+from .model import GoozaliRow, GoozaliColumn, GoozaliColumnChoice,GoozaliFieldChoice
 from ..utils import create_logger
 
 # Mapping function to convert parsed dictionary into GoozaliResponseData

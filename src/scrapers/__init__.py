@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import re
-from asyncio import Lock, as_completed
-from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 
 from jobs import (
     Enum,
@@ -16,6 +17,7 @@ from .google import GoogleJobsScraper
 from .goozali import GoozaliScraper
 from .indeed import IndeedScraper
 from .linkedin import LinkedInScraper
+from .scraper_input import ScraperInput
 from .site import Site
 from .utils import set_logger_level, create_logger
 from .ziprecruiter import ZipRecruiterScraper
