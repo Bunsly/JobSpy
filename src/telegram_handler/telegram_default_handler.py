@@ -58,6 +58,7 @@ class TelegramDefaultHandler(TelegramHandler):
                                           f"Start scarping: {site_names_print}")
         filtered_out_jobs, jobs = scrape_jobs(
             site_name=self.sites_to_scrap,
+            user=user,
             search_term=user.position.value,
             locations=locations,
             results_wanted=200,

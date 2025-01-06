@@ -6,13 +6,13 @@ class GoozaliFullRequest():
         self.view_id: str = "viwIOzPYaUGxlA0Jd"
         self.url = base_url.format(view_id=self.view_id)
         self.application_id: str = "appwewqLk7iUY4azc"
-        self.air_table_page_load_id: str = "pglqAAzFDZEWCEC7s"
+        self.air_table_page_load_id: str = "pglke45UFwdvQgBNJ"
         self.stringifiedObjectParams = {
             "shouldUseNestedResponseFormat": "true"}
         self.cookies: dict[str, str] = {}
-        self.request_id: str = "req4q4tKw3woEEWxw&"
+        self.request_id: str = "reqGjlEjOQFyRssam"
         self.share_id: str = "shrQBuWjXd0YgPqV6"
-        self.signature: str = "be8bd40c133f051f929ebab311c416013f5af0d5acae4264575b88ccf051ee59"
+        self.signature: str = "7a1402a3f7f6f9a23c8db3849878812f2d3141da60f3b3d6e14dd4a910b91b74"
         self.headers = self._generate_headers()
         self.params = self._generate_params()
         self.cookies = {}
@@ -66,7 +66,7 @@ class GoozaliFullRequest():
             "shareId": self.share_id,
             "applicationId": self.application_id,
             "generationNumber": 0,
-            "expires": "2025-01-02T00:00:00.000Z",
+            "expires": "2025-01-30T00:00:00.000Z",
             "signature": self.signature
         }
         # Convert to a JSON string

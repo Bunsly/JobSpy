@@ -12,6 +12,7 @@ from jobs import (
     Country,
     JobPost,
 )
+from model.User import User
 from .glassdoor import GlassdoorScraper
 from .google import GoogleJobsScraper
 from .goozali import GoozaliScraper
@@ -30,6 +31,7 @@ class SalarySource(Enum):
 
 def scrape_jobs(
         site_name: str | list[str] | Site | list[Site] | None = None,
+        user: User = None,
         search_term: str | None = None,
         google_search_term: str | None = None,
         location: str | None = None,
@@ -93,6 +95,7 @@ def scrape_jobs(
 
     country_enum = Country.from_string(country_indeed)
     scraper_input = ScraperInput(
+        user=user,
         site_type=get_site_type(),
         country=country_enum,
         search_term=search_term,

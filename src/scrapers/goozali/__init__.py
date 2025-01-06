@@ -7,8 +7,10 @@ This module contains routines to scrape Goozali.
 
 from __future__ import annotations
 
-from model.User import User
-from model.user_repository import user_repository
+from jobs import (
+    JobPost,
+    JobResponse,
+)
 from .GoozaliMapper import GoozaliMapper
 from .GoozaliScrapperComponent import GoozaliScrapperComponent
 from .constants import extract_goozali_column_name, job_post_column_to_goozali_column, position_to_goozali_field_map
@@ -16,14 +18,9 @@ from .model import GoozaliColumn, GoozaliFieldChoice, GoozaliPartRequest, Goozal
 from ..scraper import Scraper
 from ..scraper_input import ScraperInput
 from ..site import Site
-
 from ..utils import create_dict_by_key_and_value, create_session, create_logger
-from jobs import (
-    JobPost,
-    JobResponse,
-)
 
-logger = create_logger("Goozali")
+logger = create_logger("GoozaliScraper")
 
 
 class GoozaliScraper(Scraper):
@@ -82,12 +79,11 @@ class GoozaliScraper(Scraper):
         # filter result by Field
         column = self.component.find_column(
             goozali_response.data.columns, job_post_column_to_goozali_column["field"])
-        user: User = user_repository.find_by_username()
-        user_goozali_field = position_to_goozali_field_map[user.position]
-        column_choice = self.component.find_choice_from_column(
-            column, user_goozali_field)
+        user_goozali_fields = position_to_goozali_field_map[scraper_input.user.position]
+        column_choices = self.component.find_choices_from_column(
+            column, user_goozali_fields)
         filtered_rows_by_column_choice = self.component.filter_rows_by_column_choice(
-            goozali_response.data.rows, column, column_choice)
+            goozali_response.data.rows, column, column_choices)
         filtered_rows_by_age_and_column_choice = self.component.filter_rows_by_hours(
             filtered_rows_by_column_choice, scraper_input.hours_old)
         dict_column_name_to_column: dict[str, GoozaliColumn] = create_dict_by_key_and_value(

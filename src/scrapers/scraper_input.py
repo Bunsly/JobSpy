@@ -1,11 +1,13 @@
 from pydantic import BaseModel
 
 from jobs import Country, JobType, DescriptionFormat
+from model.User import User
 from scrapers.site import Site
 
 
 class ScraperInput(BaseModel):
     site_type: list[Site]
+    user: User
     search_term: str | None = None
     google_search_term: str | None = None
 
