@@ -7,14 +7,14 @@ from telegram.ext import (
 )
 
 from config.cache_manager import cache_manager
-from scrapers.utils import create_logger
 from model.Position import Position
 from model.User import User
 from model.user_repository import user_repository
+from scrapers.utils import create_logger
 from telegram_bot import TelegramBot
 from telegram_handler.start_handler_constats import START_MESSAGE, POSITION_MESSAGE, POSITION_NOT_FOUND, \
     LOCATION_MESSAGE, EXPERIENCE_MESSAGE, FILTER_TILE_MESSAGE, THANK_YOU_MESSAGE, BYE_MESSAGE, VERIFY_MESSAGE, \
-    SEARCH_MESSAGE, EXPERIENCE_INVALID
+    SEARCH_MESSAGE, EXPERIENCE_INVALID, JOB_AGE_INVALID, JOB_AGE_MESSAGE
 
 
 class Flow(Enum):
@@ -123,8 +123,7 @@ class TelegramStartHandler:
         cached_user: User = cache_manager.find(update.message.from_user.username)
         cached_user.experience = update.message.text
         cache_manager.save(cached_user.username, cached_user)
-        await update.message.reply_text(
-            FILTER_TILE_MESSAGE)
+        await update.message.reply_text(JOB_AGE_MESSAGE)
         return Flow.JOB_AGE.value
 
     async def job_age(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -135,13 +134,13 @@ class TelegramStartHandler:
 
         if not update.message.text.isnumeric():
             await update.message.set_reaction(ReactionEmoji.PILE_OF_POO)
-            await update.message.reply_text(EXPERIENCE_INVALID)
-            await update.message.reply_text(EXPERIENCE_MESSAGE)
+            await update.message.reply_text(JOB_AGE_INVALID)
+            await update.message.reply_text(JOB_AGE_MESSAGE)
 
-            return Flow.EXPERIENCE.value
+            return Flow.JOB_AGE.value
         await update.message.set_reaction(ReactionEmoji.FIRE)
         cached_user: User = cache_manager.find(update.message.from_user.username)
-        cached_user.experience = update.message.text
+        cached_user.job_age = update.message.text
         cache_manager.save(cached_user.username, cached_user)
         await update.message.reply_text(
             FILTER_TILE_MESSAGE)
@@ -152,6 +151,8 @@ class TelegramStartHandler:
         """Asks for a filters_flow."""
         await update.message.set_reaction(ReactionEmoji.FIRE)
         title_filters = update.message.text.split(",")
+        # Remove leading/trailing spaces from each city name
+        title_filters = [title_filter.strip() for title_filter in title_filters]
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_FILTERS.name)
         await update.message.reply_text(VERIFY_MESSAGE % title_filters, reply_markup=reply_markup)

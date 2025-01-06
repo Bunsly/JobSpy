@@ -10,6 +10,7 @@ class User(BaseModel):
     username: str
     chat_id: Union[int, str] = None
     experience: Union[int, str] = None
+    job_age: Union[int, str] = None
     position: Optional[Position] = None
     cities: Optional[list[str]] = None
     title_filters: Optional[list[str]] = None
@@ -20,8 +21,10 @@ class User(BaseModel):
         message += f"Username: @{self.username}\n"
         if self.chat_id:
             message += f"Chat ID: {self.chat_id}\n"
+        if self.job_age:
+            message += f"Job Age (Hours): {self.experience}\n"
         if self.experience:
-            message += f"Experience: {self.experience}\n"
+            message += f"Experience(Years): {self.experience}\n"
         if self.position:
             message += f"Position Level: {self.position.value}\n"
         if self.cities:

@@ -26,16 +26,17 @@ JOB_AGE_MESSAGE: str = "How recent should the jobs be? ⏰\n" \
 JOB_AGE_INVALID: str = "Oops! Please enter a number for the number of hours. 😕\n" \
                        "For example, 24, 48, or 168."
 
-FILTER_TILE_MESSAGE: str = "To help me narrow down your search, tell me about any relevant tags or keywords.\n" \
-                           "For example: 'remote', 'entry-level', 'python', 'machine learning', 'QA'.\n\n" + multi_value_message
+FILTER_TILE_MESSAGE: str = "To help me narrow down your search, tell me about any NOT relevant tags or keywords.\n" \
+                           "For example: 'remote', 'BI', 'python', 'machine learning', 'QA'.\n\n" + multi_value_message
 
 THANK_YOU_MESSAGE: str = "Thank you for chatting with JobSeeker Bot!\n\n" \
                          "I can help you find jobs on LinkedIn, Glassdoor, and more."
 
 SEARCH_MESSAGE: str = "To search for jobs on a specific site, simply send the site name:\n" \
                       "/linkedin\n" \
+                      "/indeed\n" \
                       "/glassdoor\n" \
-                      "/google\n\n" \
+                      "/goozali\n\n" \
                       "Or, use the command /find to search across all supported job boards for a broader search.\n\n" \
                       "Let me know how I can assist you further! 😊"
 
