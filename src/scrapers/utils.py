@@ -11,11 +11,11 @@ import numpy as np
 from markdownify import markdownify as md
 from requests.adapters import HTTPAdapter, Retry
 
-from ..jobs import CompensationInterval, JobType
+from jobs import CompensationInterval, JobType
 
 
 def create_logger(name: str):
-    logger = logging.getLogger(f"JobSpy:{name}")
+    logger = logging.getLogger(f"JobSeekerTG:{name}")
     logger.propagate = False
     if not logger.handlers:
         logger.setLevel(logging.INFO)
@@ -143,7 +143,7 @@ def set_logger_level(verbose: int = 2):
     level = getattr(logging, level_name.upper(), None)
     if level is not None:
         for logger_name in logging.root.manager.loggerDict:
-            if logger_name.startswith("JobSpy:"):
+            if logger_name.startswith("JobSeekerTG:"):
                 logging.getLogger(logger_name).setLevel(level)
     else:
         raise ValueError(f"Invalid log level: {level_name}")

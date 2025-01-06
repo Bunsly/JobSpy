@@ -1,5 +1,5 @@
 """
-jobspy.scrapers.indeed
+scrapers.indeed
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains routines to scrape Indeed.
@@ -12,7 +12,9 @@ from typing import Tuple
 from datetime import datetime
 
 from .constants import job_search_query, api_headers
-from .. import Scraper, ScraperInput, Site
+from ..scraper import Scraper
+from ..scraper_input import ScraperInput
+from ..site import Site
 from ..utils import (
     extract_emails_from_text,
     get_enum_from_job_type,
@@ -20,7 +22,7 @@ from ..utils import (
     create_session,
     create_logger,
 )
-from ...jobs import (
+from jobs import (
     JobPost,
     Compensation,
     CompensationInterval,
@@ -35,7 +37,7 @@ logger = create_logger("Indeed")
 
 class IndeedScraper(Scraper):
     def __init__(
-        self, proxies: list[str] | str | None = None, ca_cert: str | None = None
+            self, proxies: list[str] | str | None = None, ca_cert: str | None = None
     ):
         """
         Initializes IndeedScraper with the Indeed API url
@@ -74,7 +76,7 @@ class IndeedScraper(Scraper):
             while len(self.seen_urls) < scraper_input.results_wanted + scraper_input.offset:
                 logger.info(
                     f"search page: {
-                        page} / {math.ceil(scraper_input.results_wanted / self.jobs_per_page)}"
+                    page} / {math.ceil(scraper_input.results_wanted / self.jobs_per_page)}"
                 )
                 jobs, cursor = self._scrape_page(cursor, location)
                 if not jobs:
@@ -85,9 +87,9 @@ class IndeedScraper(Scraper):
 
         return JobResponse(
             jobs=job_list[
-                scraper_input.offset: scraper_input.offset
-                + scraper_input.results_wanted
-            ]
+                 scraper_input.offset: scraper_input.offset
+                                       + scraper_input.results_wanted
+                 ]
         )
 
     def _scrape_page(self, cursor: str | None, location: str) -> Tuple[list[JobPost], str | None]:
@@ -108,7 +110,7 @@ class IndeedScraper(Scraper):
             what=(f'what: "{search_term}"' if search_term else ""),
             location=(
                 f'location: {{where: "{location}", radius: {
-                    self.scraper_input.distance}, radiusUnit: MILES}}'
+                self.scraper_input.distance}, radiusUnit: MILES}}'
                 if location
                 else ""
             ),
@@ -130,7 +132,7 @@ class IndeedScraper(Scraper):
         if not response.ok:
             logger.info(
                 f"responded with status code: {
-                    response.status_code} (submit GitHub issue if this appears to be a bug)"
+                response.status_code} (submit GitHub issue if this appears to be a bug)"
             )
             return jobs, new_cursor
         data = response.json()
@@ -232,7 +234,7 @@ class IndeedScraper(Scraper):
             company_name=job["employer"].get(
                 "name") if job.get("employer") else None,
             company_url=(f"{self.base_url}{
-                         rel_url}" if job["employer"] else None),
+            rel_url}" if job["employer"] else None),
             company_url_direct=(
                 employer["links"]["corporateWebsite"] if employer else None
             ),
@@ -345,7 +347,7 @@ class IndeedScraper(Scraper):
             for keyword in remote_keywords
         )
         return (
-            is_remote_in_attributes or is_remote_in_description or is_remote_in_location
+                is_remote_in_attributes or is_remote_in_description or is_remote_in_location
         )
 
     @staticmethod

@@ -1,25 +1,13 @@
-from __future__ import annotations
+from pydantic import BaseModel
 
-from abc import ABC, abstractmethod
-
-from .site import Site
-from ..jobs import (
-    Enum,
-    BaseModel,
-    JobType,
-    JobResponse,
-    Country,
-    DescriptionFormat,
-)
-
-
-class SalarySource(Enum):
-    DIRECT_DATA = "direct_data"
-    DESCRIPTION = "description"
+from jobs import Country, JobType, DescriptionFormat
+from model.User import User
+from scrapers.site import Site
 
 
 class ScraperInput(BaseModel):
     site_type: list[Site]
+    user: User
     search_term: str | None = None
     google_search_term: str | None = None
 
@@ -37,15 +25,3 @@ class ScraperInput(BaseModel):
 
     results_wanted: int = 15
     hours_old: int | None = None
-
-
-class Scraper(ABC):
-    def __init__(
-        self, site: Site, proxies: list[str] | None = None, ca_cert: str | None = None
-    ):
-        self.site = site
-        self.proxies = proxies
-        self.ca_cert = ca_cert
-
-    @abstractmethod
-    def scrape(self, scraper_input: ScraperInput) -> JobResponse: ...

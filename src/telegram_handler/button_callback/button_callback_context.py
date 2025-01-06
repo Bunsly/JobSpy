@@ -3,8 +3,8 @@ from __future__ import annotations
 from telegram import MaybeInaccessibleMessage
 from telegram.constants import ReactionEmoji
 
-from db.job_repository import JobRepository
-from jobspy import create_logger
+from scrapers import create_logger
+from model.job_repository import job_repository
 from telegram_handler.button_callback.button_fire_strategy import FireStrategy
 from telegram_handler.button_callback.button_job_title_strategy import JobTitleStrategy
 from telegram_handler.button_callback.button_poo_strategy import PooStrategy
@@ -22,7 +22,6 @@ class ButtonCallBackContext:
         self._data = data
         self._job_id = job_id
         self._strategy = None
-        self._job_repository = JobRepository()
 
     @property
     def strategy(self) -> ButtonStrategy:
@@ -49,10 +48,10 @@ class ButtonCallBackContext:
         elif ReactionEmoji.PILE_OF_POO.name == self._data:
             self._strategy = PooStrategy(self._message)
         elif self._data:
-            job = self._job_repository.find_by_id(self._data)
+            job = job_repository.find_by_id(self._data)
             if job:
                 chat_id = self._message.chat.id
-                self._strategy = JobTitleStrategy(chat_id,job)
+                self._strategy = JobTitleStrategy(chat_id, job)
         else:
             self._logger.error("Invalid enum value")
             return

@@ -3,7 +3,7 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from jobspy import create_logger
+from scrapers import create_logger
 from telegram_bot import TelegramBot
 from telegram_handler.button_callback.button_callback_context import ButtonCallBackContext
 

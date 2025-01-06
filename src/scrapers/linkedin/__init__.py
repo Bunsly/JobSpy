@@ -1,5 +1,5 @@
 """
-jobspy.scrapers.linkedin
+scrapers.linkedin
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains routines to scrape LinkedIn.
@@ -17,13 +17,15 @@ from datetime import datetime
 from bs4.element import Tag
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urlunparse, unquote
-from requests.exceptions import RetryError, RequestException
+from requests.exceptions import RetryError
 from urllib3.exceptions import MaxRetryError
 from .constants import headers
-from .. import Scraper, ScraperInput, Site
+from ..scraper import Scraper
+from ..scraper_input import ScraperInput
+from ..site import Site
 from ..exceptions import LinkedInException
 from ..utils import create_session, remove_attributes, create_logger
-from ...jobs import (
+from jobs import (
     JobPost,
     Location,
     JobResponse,

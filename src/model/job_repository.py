@@ -3,27 +3,17 @@ from typing import Optional
 from dotenv import load_dotenv
 from pymongo import UpdateOne
 
-from .monogo_db import MongoDB
-from jobspy import create_logger
-from jobspy.jobs import JobPost
+from scrapers import create_logger
+from jobs import JobPost
+from .monogo_db import mongo_client
 
 load_dotenv()
 
 
 class JobRepository:
-    _instance = None
-
-    def __new__(cls):
-
-        if cls._instance is not None:
-            return cls._instance
-
-        self = super().__new__(cls)
-        cls._instance = self
-        self.logger = create_logger("JobRepository")
-        mongo_client = MongoDB()
-        self.collection = mongo_client.db["jobs"]
-        return cls._instance
+    def __init__(self):
+        self._logger = create_logger("JobRepository")
+        self._collection = mongo_client.get_collection('jobs')
 
     def find_by_id(self, job_id: str) -> Optional[JobPost]:
         """
@@ -35,7 +25,7 @@ class JobRepository:
         Returns:
             The job document if found, otherwise None.
         """
-        result = self.collection.find_one({"id": job_id})
+        result = self._collection.find_one({"id": job_id})
         return JobPost(**result)
 
     def update(self, job: JobPost) -> bool:
@@ -48,7 +38,7 @@ class JobRepository:
         Returns:
             True if the update was successful, False otherwise.
         """
-        result = self.collection.update_one({"id": job.id}, {"$set": job.model_dump(exclude={"date_posted"})})
+        result = self._collection.update_one({"id": job.id}, {"$set": job.model_dump(exclude={"date_posted"})})
         return result.modified_count > 0
 
     def insert_job(self, job: JobPost):
@@ -62,8 +52,8 @@ class JobRepository:
             Exception: If an error occurs during insertion.
         """
         job_dict = job.model_dump(exclude={"date_posted"})
-        self.collection.insert_one(job_dict)
-        self.logger.info(f"Inserted new job with title {job.title}.")
+        self._collection.insert_one(job_dict)
+        self._logger.info(f"Inserted new job with title {job.title}.")
 
     def insert_many_if_not_found(self, jobs: list[JobPost]) -> tuple[list[JobPost], list[JobPost]]:
         """
@@ -86,8 +76,8 @@ class JobRepository:
 
         if operations:
             # Execute all operations in bulk
-            result = self.collection.bulk_write(operations)
-            self.logger.info(f"Matched: {result.matched_count}, Upserts: {
+            result = self._collection.bulk_write(operations)
+            self._logger.info(f"Matched: {result.matched_count}, Upserts: {
             result.upserted_count}, Modified: {result.modified_count}")
 
             # Get the newly inserted jobs (those that were upserted)
@@ -99,3 +89,5 @@ class JobRepository:
                     old_jobs.append(job)
 
         return old_jobs, new_jobs
+
+job_repository = JobRepository()

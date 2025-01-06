@@ -1,0 +1,26 @@
+from enum import Enum
+
+
+class Position(str, Enum):
+    BACKEND_DEVELOPER = "Backend Developer"
+    FULLSTACK_DEVELOPER = "Fullstack Developer"
+    FRONTEND_DEVELOPER = "Frontend Developer"
+    DATA_SCIENTIST = "Data Scientist"
+    DATA_ANALYST = "Data Analyst"
+    PROJECT_MANAGER = "Project Manager"
+    CLOUD_ENGINEER = "Cloud Engineer"
+    CLOUD_ARCHITECT = "Cloud Architect"
+    UX_UI_DESIGNER = "UX/UI Designer"
+    PRODUCT_MANAGER = "Product Manager"
+    DEV_OPS_ENGINEER = "DevOps Engineer"
+    BUSINESS_ANALYST = "Business Analyst"
+    CYBERSECURITY_ENGINEER = "Cybersecurity Engineer"
+    MACHINE_LEARNING_ENGINEER = "Machine Learning Engineer"
+    ARTIFICIAL_INTELLIGENCE_ENGINEER = "Artificial Intelligence Engineer"
+    DATABASE_ADMINISTRATOR = "Database Administrator"
+    SYSTEMS_ADMINISTRATOR = "Systems Administrator"
+    NETWORK_ENGINEER = "Network Engineer"
+    TECHNICAL_SUPPORT_SPECIALIST = "Technical Support Specialist"
+    SALES_ENGINEER = "Sales Engineer"
+    SCRUM_MASTER = "Scrum Master"
+    IT_MANAGER = "IT Manager"

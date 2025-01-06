@@ -1,5 +1,5 @@
 """
-jobspy.scrapers.Goozali
+scrapers.Goozali
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains routines to scrape Goozali.
@@ -7,20 +7,20 @@ This module contains routines to scrape Goozali.
 
 from __future__ import annotations
 
-
-from .. import Scraper, ScraperInput
-from .GoozaliMapper import GoozaliMapper
-from .GoozaliScrapperComponent import GoozaliScrapperComponent
-from .constants import extract_goozali_column_name, job_post_column_to_goozali_column
-from .model import GoozaliColumn, GoozaliFieldChoice, GoozaliPartRequest, GoozaliFullRequest
-from ..site import Site
-
-from ..utils import create_dict_by_key_and_value, create_session, create_logger
-from ...jobs import (
+from jobs import (
     JobPost,
     JobResponse,
 )
-logger = create_logger("Goozali")
+from .GoozaliMapper import GoozaliMapper
+from .GoozaliScrapperComponent import GoozaliScrapperComponent
+from .constants import extract_goozali_column_name, job_post_column_to_goozali_column, position_to_goozali_field_map
+from .model import GoozaliColumn, GoozaliFieldChoice, GoozaliPartRequest, GoozaliFullRequest
+from ..scraper import Scraper
+from ..scraper_input import ScraperInput
+from ..site import Site
+from ..utils import create_dict_by_key_and_value, create_session, create_logger
+
+logger = create_logger("GoozaliScraper")
 
 
 class GoozaliScraper(Scraper):
@@ -67,27 +67,24 @@ class GoozaliScraper(Scraper):
             logger.info(f"response: {str(response)}")
             if (response.status_code != 200):
                 logger.error(f"Status code: {response.status_code}, Error: {
-                             str(response.text)}")
+                str(response.text)}")
                 return JobResponse(jobs=job_list)
         except Exception as e:
             logger.error(f"Exception: {str(e)}")
             return JobResponse(jobs=job_list)
-        # model the response with models
         goozali_response = self.mapper.map_response_to_goozali_response(
             response=response)
-        # suggestL create groupby field and then filter by hours
-        # filter result by Field
         column = self.component.find_column(
             goozali_response.data.columns, job_post_column_to_goozali_column["field"])
-        column_choice = self.component.find_choice_from_column(
-            column, GoozaliFieldChoice.SOFTWARE_ENGINEERING.value)
+        user_goozali_fields = position_to_goozali_field_map[scraper_input.user.position]
+        column_choices = self.component.find_choices_from_column(
+            column, user_goozali_fields)
         filtered_rows_by_column_choice = self.component.filter_rows_by_column_choice(
-            goozali_response.data.rows, column, column_choice)
+            goozali_response.data.rows, column, column_choices)
         filtered_rows_by_age_and_column_choice = self.component.filter_rows_by_hours(
             filtered_rows_by_column_choice, scraper_input.hours_old)
         dict_column_name_to_column: dict[str, GoozaliColumn] = create_dict_by_key_and_value(
             goozali_response.data.columns, extract_goozali_column_name)
-        # map to JobResponse Object
         for row in filtered_rows_by_age_and_column_choice:
             job_post = self.mapper.map_goozali_response_to_job_post(
                 row, dict_column_name_to_column)

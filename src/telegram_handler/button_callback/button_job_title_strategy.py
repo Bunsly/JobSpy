@@ -1,6 +1,6 @@
 from typing import Union
 
-from jobspy import JobPost
+from scrapers import JobPost
 from telegram_bot import TelegramBot
 from telegram_handler.button_callback.button_strategy import ButtonStrategy
 

@@ -1,4 +1,3 @@
-import os
 from typing import Union
 
 from dotenv import load_dotenv
@@ -6,8 +5,8 @@ from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ReactionEmoji
 
 from config.settings import settings
-from jobspy.jobs import JobPost
-from jobspy.scrapers.utils import create_logger
+from jobs import JobPost
+from scrapers.utils import create_logger
 
 load_dotenv()
 
