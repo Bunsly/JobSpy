@@ -79,6 +79,8 @@ class TelegramStartHandler:
     async def address(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Asks for a location."""
         cities = update.message.text.split(",")
+        # Remove leading/trailing spaces from each city name
+        cities = [city.strip() for city in cities]
         await update.message.set_reaction(ReactionEmoji.FIRE)
         reply_markup = ReplyKeyboardMarkup([[KeyboardButton("Yes"), KeyboardButton("No")]], one_time_keyboard=True,
                                            input_field_placeholder=Flow.VERIFY_ADDRESS.name)
