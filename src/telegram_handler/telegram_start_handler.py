@@ -142,8 +142,7 @@ class TelegramStartHandler:
         cached_user: User = cache_manager.find(update.message.from_user.username)
         cached_user.job_age = update.message.text
         cache_manager.save(cached_user.username, cached_user)
-        await update.message.reply_text(
-            FILTER_TILE_MESSAGE)
+        await update.message.reply_text(FILTER_TILE_MESSAGE)
 
         return Flow.FILTERS.value
 

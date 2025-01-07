@@ -53,14 +53,14 @@ class TelegramDefaultHandler(TelegramHandler):
 
         site_names = [site.name for site in self.sites_to_scrap]
         site_names_print = ", ".join(site_names)
-        # locations = [location + ", Israel" for location in user.cities]
+        locations = [location + f", {user.country}" for location in user.cities]
         await self.telegram_bot.send_text(chat_id,
                                           f"Start scarping: {site_names_print}")
         filtered_out_jobs, jobs = scrape_jobs(
             site_name=self.sites_to_scrap,
             user=user,
             search_term=user.position.value,
-            locations=user.cities,
+            locations=locations,
             results_wanted=200,
             hours_old=int(user.job_age),
             filter_by_title=user.title_filters,

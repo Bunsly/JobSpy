@@ -1,6 +1,6 @@
 from typing import Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from model.Position import Position
 
@@ -12,6 +12,7 @@ class User(BaseModel):
     experience: Union[int, str] = None
     job_age: Union[int, str] = None
     position: Optional[Position] = None
+    country: Optional[str] = None
     cities: Optional[list[str]] = None
     title_filters: Optional[list[str]] = None
 

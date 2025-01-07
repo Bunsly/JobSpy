@@ -2,7 +2,7 @@ START_MESSAGE: str = "Hi there! I'm JobSeeker Bot, your friendly job search assi
                      "I'm here to help you find the perfect position.\n\n" \
                      "To stop chatting with me at any time, just send '/cancel'.\n\n"
 
-POSITION_MESSAGE: str = "What kind of position are you looking for? ✨\n" \
+POSITION_MESSAGE: str = "What kind of position are you looking for? ✨\n\n" \
                         "(e.g., Software Engineer, Data Scientist, Marketing Manager)"
 
 POSITION_NOT_FOUND: str = "I couldn't find any positions matching your request. 😕\n" \
@@ -17,7 +17,7 @@ EXPERIENCE_MESSAGE: str = "How many years of professional experience do you have
 EXPERIENCE_INVALID: str = "Oops! Please enter your experience in years as a number.😕\n" \
                           "For example, 2, 5, or 10."
 
-JOB_AGE_MESSAGE: str = "How recent should the jobs be? ⏰\n" \
+JOB_AGE_MESSAGE: str = "How recent should the jobs be? ⏰\n\n" \
                        "(Enter the number of hours, e.g., 24 for last 24 hours, 168 for last week)"
 
 # JOB_AGE_MESSAGE: str = "Within how many hours do you want to see jobs posted? ⏰\n" \

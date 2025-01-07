@@ -28,23 +28,17 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("find", tg_handler_all.handle))
     # Goozali
     tg_handler_goozali = TelegramDefaultHandler(sites=[Site.GOOZALI])
-    application.add_handler(CommandHandler(
-        Site.GOOZALI.value, tg_handler_goozali.handle))
+    application.add_handler(CommandHandler(Site.GOOZALI.value, tg_handler_goozali.handle))
     # GlassDoor
     tg_handler_glassdoor = TelegramDefaultHandler(sites=[Site.GLASSDOOR])
-    application.add_handler(CommandHandler(
-        Site.GLASSDOOR.value, tg_handler_glassdoor.handle))
+    application.add_handler(CommandHandler(Site.GLASSDOOR.value, tg_handler_glassdoor.handle))
     # LinkeDin
     tg_handler_linkedin = TelegramDefaultHandler(sites=[Site.LINKEDIN])
-    application.add_handler(CommandHandler(
-        Site.LINKEDIN.value, tg_handler_linkedin.handle))
+    application.add_handler(CommandHandler(Site.LINKEDIN.value, tg_handler_linkedin.handle))
     # Indeed
     tg_handler_indeed = TelegramDefaultHandler(sites=[Site.INDEED])
-    application.add_handler(CommandHandler(
-        Site.INDEED.value, tg_handler_indeed.handle))
-    application.add_handler(CommandHandler(
-        "myInfo", my_info_handler.handle))
-    application.add_handler(CallbackQueryHandler(
-        tg_callback_handler.button_callback))
+    application.add_handler(CommandHandler(Site.INDEED.value, tg_handler_indeed.handle))
+    application.add_handler(CommandHandler("myInfo", my_info_handler.handle))
+    application.add_handler(CallbackQueryHandler(tg_callback_handler.button_callback))
     logger.info("Run polling from telegram")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
