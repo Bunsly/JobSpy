@@ -165,8 +165,7 @@ class Country(Enum):
                 return country
         valid_countries = [country.value for country in cls]
         raise ValueError(
-            f"Invalid country string: '{country_str}'. Valid countries are: {
-            ', '.join([country[0] for country in valid_countries])}"
+            f"Invalid country string: '{country_str}'. Valid countries are: {', '.join([country[0] for country in valid_countries])}"
         )
 
     def to_dict(self):
