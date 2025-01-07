@@ -1,10 +1,5 @@
-import os
-
 from pydantic import Field
 from pydantic_settings import BaseSettings
-
-if not os.environ.get("ENV"):
-    raise ValueError("Invalid environment. Set the 'ENV' variable (e.g., export ENV=dev).")
 
 
 class Settings(BaseSettings):
