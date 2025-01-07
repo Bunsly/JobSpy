@@ -12,7 +12,7 @@ class User(BaseModel):
     experience: Union[int, str] = None
     job_age: Union[int, str] = None
     position: Optional[Position] = None
-    country: Optional[str] = None
+    country: Optional[str] = "Israel"
     cities: Optional[list[str]] = None
     title_filters: Optional[list[str]] = None
 
