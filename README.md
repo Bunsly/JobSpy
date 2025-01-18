@@ -193,6 +193,11 @@ This searches the description/title and must include software, summer, 2025, one
 
 ---
 
+**Q: No results when using "google"?**  
+**A:** You have to use super specific syntax. Search for google jobs on your browser and then whatever pops up in the google jobs search box after applying some filters is what you need to copy & paste into the google_search_term. 
+
+---
+
 **Q: Received a response code 429?**  
 **A:** This indicates that you have been blocked by the job board site for sending too many requests. All of the job board sites are aggressive with blocking. We recommend:
 
