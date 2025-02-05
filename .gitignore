@@ -1,10 +1,37 @@
-/venv/
-/.idea
-**/__pycache__/
-**/.pytest_cache/
-/.ipynb_checkpoints/
-**/output/
-**/.DS_Store
-*.pyc
-.env
-dist
+# Sensitive configuration
+config_sensitive.py
+
+# Generated files
+*.csv
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
