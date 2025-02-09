@@ -2,9 +2,6 @@
 
 **JobSpy** is a simple, yet comprehensive, job scraping library.
 
-*Looking to build a data-focused software product?* **[Book a call](https://bunsly.com/)** *to
-work with us.*
-
 ## Features
 
 - Scrapes job postings from **LinkedIn**, **Indeed**, **Glassdoor**, **Google**, & **ZipRecruiter** simultaneously
