@@ -1,4 +1,4 @@
-from jobspy.model import CompensationInterval, JobType
+from jobspy.model import CompensationInterval, Country, JobType
 
 jobs_per_page = 100
 details_per_request = 25
@@ -107,3 +107,28 @@ details_alias = """
         }
     }
 """
+
+domains = {
+    Country.ARGENTINA: "www.glassdoor.com.ar",
+    Country.AUSTRALIA: "www.glassdoor.com.au",
+    Country.AUSTRIA: "www.glassdoor.at",
+    Country.BELGIUM: "fr.glassdoor.be",
+    Country.BRAZIL: "www.glassdoor.com.br",
+    Country.CANADA: "www.glassdoor.ca",
+    Country.FRANCE: "www.glassdoor.fr",
+    Country.GERMANY: "www.glassdoor.de",
+    Country.HONGKONG: "www.glassdoor.com.hk",
+    Country.INDIA: "www.glassdoor.co.in",
+    Country.IRELAND: "www.glassdoor.ie",
+    Country.ITALY: "www.glassdoor.it",
+    Country.MALAYSIA: "www.glassdoor.com",
+    Country.MEXICO: "www.glassdoor.com.mx",
+    Country.NETHERLANDS: "www.glassdoor.nl",
+    Country.NEWZEALAND: "www.glassdoor.co.nz",
+    Country.SINGAPORE: "www.glassdoor.sg",
+    Country.SPAIN: "www.glassdoor.es",
+    Country.SWITZERLAND: "de.glassdoor.ch",
+    Country.UK: "www.glassdoor.co.uk",
+    Country.USA: "www.glassdoor.com",
+    Country.VIETNAM: "www.glassdoor.com",
+}

@@ -20,7 +20,6 @@ from jobspy.bayt.constant import (
 from jobspy.model import (
     Compensation,
     CompensationInterval,
-    Country,
     JobPost,
     JobResponse,
     Location,
@@ -46,14 +45,14 @@ class Bayt(Scraper):
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         self.scraper_input = scraper_input
         self.session = create_session(
-            proxies=self.proxies, ca_cert=self.ca_cert, user_agent=self.user_agent
+            proxies=scraper_input.proxies,
+            ca_cert=scraper_input.ca_cert,
+            user_agent=scraper_input.user_agent,
         )
         self.hybrid_ids = None
         job_type = scraper_input.job_type
         if job_type and job_type not in job_type_codes:
-            self.log.warning(
-                f"job_type {job_type.value[0]} isn't supported, ignoring it"
-            )
+            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
         self.country, self.city = self._location(scraper_input.location)
         hours_old = scraper_input.hours_old
         oldest = time.time() - hours_old * 3600 if hours_old else 0
@@ -227,7 +226,7 @@ class Bayt(Scraper):
             location=Location(
                 city=parts[0 if has_state else -2] if len(parts) > 1 else None,
                 state=parts[1] if has_state else None,
-                country=parts[-1] if parts else Country.WORLDWIDE,
+                country=parts[-1] if parts else None,
             ),
             job_url=job_url,
             date_posted=utc_date(self._timestamp(job)),

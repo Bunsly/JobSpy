@@ -7,6 +7,7 @@ from urllib.parse import quote
 from jobspy.glassdoor.constant import (
     details_alias,
     details_per_request,
+    domains,
     headers,
     job_type_codes,
     jobs_per_page,
@@ -32,10 +33,18 @@ from jobspy.util import (
 class Glassdoor(Scraper):
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         self.scraper_input = scraper_input
+        country = scraper_input.country_indeed
+        if country not in domains:
+            self.log.warning(
+                f"country_indeed {country.value} isn't supported, skipping it"
+            )
+            return JobResponse(jobs=[])
         try:
-            self.base_url = scraper_input.country.get_glassdoor_url()
+            self.base_url = f"https://{domains[country]}"
             self.session = create_session(
-                proxies=self.proxies, ca_cert=self.ca_cert, user_agent=self.user_agent
+                proxies=scraper_input.proxies,
+                ca_cert=scraper_input.ca_cert,
+                user_agent=scraper_input.user_agent,
             )
             self.session.headers.update(headers)
             variables = self._search_variables()
@@ -151,9 +160,7 @@ class Glassdoor(Scraper):
         if code := job_type_codes.get(job_type):
             filters["jobType"] = code
         elif job_type:
-            self.log.warning(
-                f"job_type {job_type.value[0]} isn't supported, ignoring it"
-            )
+            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
         if self.scraper_input.is_remote:
             filters["remoteWorkType"] = 1
         if self.scraper_input.easy_apply:

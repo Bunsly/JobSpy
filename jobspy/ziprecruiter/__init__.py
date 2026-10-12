@@ -36,9 +36,11 @@ class ZipRecruiter(Scraper):
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         self.scraper_input = scraper_input
         self.session = create_session(
-            proxies=self.proxies, ca_cert=self.ca_cert, user_agent=self.user_agent
+            proxies=scraper_input.proxies,
+            ca_cert=scraper_input.ca_cert,
+            user_agent=scraper_input.user_agent,
         )
-        if not self.proxies:
+        if not scraper_input.proxies:
             self.session.impersonate = "safari"
         params = self._search_params()
         job_list: list[JobPost] = []
@@ -89,9 +91,7 @@ class ZipRecruiter(Scraper):
             if "internship" not in (search_term or "").lower():
                 search_term = f"{search_term or ''} internship".strip()
         elif job_type and job_type not in job_type_codes:
-            self.log.warning(
-                f"job_type {job_type.value[0]} isn't supported, ignoring it"
-            )
+            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
         params = {
             "search": search_term,
             "location": self.scraper_input.location,
@@ -152,7 +152,11 @@ class ZipRecruiter(Scraper):
     @staticmethod
     def _parse_job_type(types: list[dict]) -> list[JobType] | None:
         names = (t["name"].split("NAME_")[1].replace("_", "").lower() for t in types)
-        return [t for name in names if (t := get_enum_from_job_type(name))] or None
+        return [
+            t
+            for name in names
+            if (t := get_enum_from_job_type(name.replace("contractor", "contract")))
+        ] or None
 
     @staticmethod
     def _parse_salary(pay: dict) -> Compensation | None:

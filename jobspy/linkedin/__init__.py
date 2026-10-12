@@ -29,7 +29,6 @@ from jobspy.util import (
     create_session,
     format_description,
     get_enum_from_job_type,
-    remove_attributes,
 )
 
 
@@ -38,25 +37,17 @@ class LinkedIn(Scraper):
     delay = 3
     band_delay = 4
 
-    def __init__(
-        self,
-        proxies: list[str] | str | None = None,
-        ca_cert: str | None = None,
-        user_agent: str | None = None,
-    ):
-        super().__init__(proxies=proxies, ca_cert=ca_cert, user_agent=user_agent)
+    def scrape(self, scraper_input: ScraperInput) -> JobResponse:
+        self.scraper_input = scraper_input
         self.session = create_session(
-            proxies=self.proxies,
-            ca_cert=ca_cert,
+            proxies=scraper_input.proxies,
+            ca_cert=scraper_input.ca_cert,
             is_tls=False,
             clear_cookies=True,
         )
         self.session.headers.update(headers)
-        if user_agent:
-            self.session.headers["user-agent"] = user_agent
-
-    def scrape(self, scraper_input: ScraperInput) -> JobResponse:
-        self.scraper_input = scraper_input
+        if scraper_input.user_agent:
+            self.session.headers["user-agent"] = scraper_input.user_agent
         for name in ("is_remote", "job_type"):
             if getattr(scraper_input, name):
                 self.log.warning(f"{name} isn't supported, ignoring it")
@@ -200,10 +191,10 @@ class LinkedIn(Scraper):
 
         soup = BeautifulSoup(response.text, "html.parser")
         div_content = soup.find("div", class_="show-more-less-html__markup")
+        if div_content:
+            div_content.attrs.clear()
         description, emails = format_description(
-            remove_attributes(div_content).prettify(formatter="html")
-            if div_content
-            else None,
+            div_content.prettify(formatter="html") if div_content else None,
             self.scraper_input.description_format,
         )
         logo_image = soup.find("img", class_="artdeco-entity-image")

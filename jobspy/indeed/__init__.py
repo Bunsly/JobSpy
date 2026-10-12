@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 
 from jobspy.indeed.constant import (
     countries,
+    country_codes,
     default_distance,
     full_time_is_permanent_in,
     headers,
@@ -15,6 +16,7 @@ from jobspy.indeed.constant import (
     languages,
     permanent_key,
     remote_key,
+    subdomains,
 )
 from jobspy.indeed.util import get_compensation, get_job_type, is_job_remote
 from jobspy.model import (
@@ -31,29 +33,21 @@ from jobspy.util import create_session, format_description, utc_date
 class Indeed(Scraper):
     api_url = "https://apis.indeed.com/graphql"
 
-    def __init__(
-        self,
-        proxies: list[str] | str | None = None,
-        ca_cert: str | None = None,
-        user_agent: str | None = None,
-    ):
-        super().__init__(proxies=proxies, ca_cert=ca_cert, user_agent=user_agent)
-        self.session = create_session(
-            proxies=self.proxies, ca_cert=ca_cert, is_tls=False
-        )
-        self.base_url = None
-
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         self.scraper_input = scraper_input
-        domain, country_code = scraper_input.country.indeed_domain_value
+        self.session = create_session(
+            proxies=scraper_input.proxies, ca_cert=scraper_input.ca_cert, is_tls=False
+        )
+        country_code = country_codes[scraper_input.country_indeed]
+        domain = subdomains.get(scraper_input.country_indeed, country_code.lower())
         self.base_url = f"https://{domain}.indeed.com"
         language = languages.get(country_code, "en")
         request_headers = headers | {
             "indeed-co": country_code,
             "indeed-locale": f"{language}-{country_code}",
         }
-        if self.user_agent:
-            request_headers["user-agent"] = self.user_agent
+        if scraper_input.user_agent:
+            request_headers["user-agent"] = scraper_input.user_agent
         filters = self._build_filters()
         job_list: list[JobPost] = []
         seen = set()
@@ -140,12 +134,10 @@ class Indeed(Scraper):
         job_type = self.scraper_input.job_type
         keys = list(job_type_codes.get(job_type, ()))
         if job_type and not keys:
-            self.log.warning(
-                f"job_type {job_type.value[0]} isn't supported, ignoring it"
-            )
+            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
         if (
             job_type == JobType.FULL_TIME
-            and self.scraper_input.country == full_time_is_permanent_in
+            and self.scraper_input.country_indeed == full_time_is_permanent_in
         ):
             keys.append(permanent_key)
         if len(keys) > 1:
@@ -194,7 +186,7 @@ class Indeed(Scraper):
                 state=location.get("admin1Code"),
                 country=countries.get(country_code, country_code),
             ),
-            job_type=get_job_type(job["attributes"], self.scraper_input.country),
+            job_type=get_job_type(job["attributes"], self.scraper_input.country_indeed),
             compensation=get_compensation(job["compensation"]),
             date_posted=utc_date(job["dateOnIndeed"] / 1000),
             job_url=f"{self.base_url}/viewjob?jk={job['key']}",

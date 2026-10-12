@@ -18,7 +18,6 @@ from jobspy.bdjobs.constant import (
 from jobspy.model import (
     Compensation,
     CompensationInterval,
-    Country,
     JobPost,
     JobResponse,
     JobType,
@@ -42,10 +41,10 @@ class BDJobs(Scraper):
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         self.scraper_input = scraper_input
         self.session = create_session(
-            proxies=self.proxies,
-            ca_cert=self.ca_cert,
+            proxies=scraper_input.proxies,
+            ca_cert=scraper_input.ca_cert,
             is_tls=False,
-            user_agent=self.user_agent,
+            user_agent=scraper_input.user_agent,
         )
         params = self._search_params()
         job_list: list[JobPost] = []
@@ -113,9 +112,7 @@ class BDJobs(Scraper):
         if job_type in job_type_codes:
             params["jobNature"] = job_type_codes[job_type]
         elif job_type:
-            self.log.warning(
-                f"job_type {job_type.value[0]} isn't supported, ignoring it"
-            )
+            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
         if self.scraper_input.is_remote:
             params["workplace"] = 1
         if self.scraper_input.easy_apply:
@@ -140,7 +137,7 @@ class BDJobs(Scraper):
             id=f"bd-{job_id}",
             title=job["jobTitle"],
             company_name=job["companyName"],
-            location=Location(city=city or None, country=Country.BANGLADESH),
+            location=Location(city=city or None, country="Bangladesh"),
             job_url=f"{self.base_url}/h/details/{job_id}",
             date_posted=posted.date(),
             job_type=self._parse_job_type(job["JobType"]),

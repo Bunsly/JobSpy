@@ -45,7 +45,7 @@ def parse_location(text: str) -> Location:
             return Location(city=city, state=last, country=Country.USA)
         return Location(city=city, country=last)
     try:
-        Country.from_string(text)
+        Country(text)
         return Location(country=text)
     except ValueError:
         return Location(city=text)
