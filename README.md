@@ -83,7 +83,7 @@ Optional
 |    in miles, default 50
 │
 ├── job_type (str): 
-|    fulltime, parttime, internship, contract
+|    fulltime, parttime, contract, temporary, internship, perdiem, other, volunteer
 │
 ├── proxies (list): 
 |    in format ['user:pass@host:port', 'localhost']
@@ -102,7 +102,7 @@ Optional
 |    override the default user agent which may be outdated
 │
 ├── description_format (str): 
-|    markdown, html (Format type of the job descriptions. Default is markdown.)
+|    markdown, html, plain (Format type of the job descriptions. Default is markdown.)
 │
 ├── offset (int): 
 |    starts the search from an offset (e.g. 25 will start the search from the 25th result)

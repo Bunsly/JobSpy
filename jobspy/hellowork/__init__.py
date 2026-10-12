@@ -45,7 +45,9 @@ class HelloWork(Scraper):
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         self.scraper_input = scraper_input
         self.session = create_session(
-            proxies=self.proxies, ca_cert=self.ca_cert, user_agent=self.user_agent
+            proxies=scraper_input.proxies,
+            ca_cert=scraper_input.ca_cert,
+            user_agent=scraper_input.user_agent,
         )
         params = self._search_params()
         job_list: list[JobPost] = []
@@ -108,9 +110,7 @@ class HelloWork(Scraper):
         if job_type in job_type_params:
             params |= job_type_params[job_type]
         elif job_type:
-            self.log.warning(
-                f"job_type {job_type.value[0]} isn't supported, ignoring it"
-            )
+            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
         if scraper_input.is_remote:
             params["t"] = "Complet"
         if scraper_input.easy_apply:

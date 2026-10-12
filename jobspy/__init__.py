@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import difflib
-import inspect
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
+from pydantic import ValidationError
 
 from jobspy.bayt import Bayt
 from jobspy.bdjobs import BDJobs
@@ -18,7 +17,6 @@ from jobspy.model import (
     Country,
     JobResponse,
     Location,
-    SalarySource,
     ScraperInput,
     Site,
 )
@@ -28,10 +26,20 @@ from jobspy.util import (
     convert_to_annual,
     desired_order,
     extract_salary,
-    get_enum_from_job_type,
-    map_str_to_site,
 )
 from jobspy.ziprecruiter import ZipRecruiter
+
+SCRAPER_MAPPING = {
+    Site.LINKEDIN: LinkedIn,
+    Site.INDEED: Indeed,
+    Site.ZIP_RECRUITER: ZipRecruiter,
+    Site.GLASSDOOR: Glassdoor,
+    Site.GOOGLE: Google,
+    Site.BAYT: Bayt,
+    Site.NAUKRI: Naukri,
+    Site.BDJOBS: BDJobs,
+    Site.HELLOWORK: HelloWork,
+}
 
 
 def scrape_jobs(
@@ -56,95 +64,49 @@ def scrape_jobs(
     verbose: int | None = 1,
     user_agent: str | None = None,
     fetch_description: bool | None = False,
-    **kwargs,
 ) -> pd.DataFrame:
     """
     Scrapes job data from job boards concurrently
     :param linkedin_fetch_description: Deprecated since 1.2.0: use fetch_description;
         will be removed in 2.0.
     :return: Pandas DataFrame containing job data
+    :raises ValueError: an argument is invalid
     """
-    SCRAPER_MAPPING = {
-        Site.LINKEDIN: LinkedIn,
-        Site.INDEED: Indeed,
-        Site.ZIP_RECRUITER: ZipRecruiter,
-        Site.GLASSDOOR: Glassdoor,
-        Site.GOOGLE: Google,
-        Site.BAYT: Bayt,
-        Site.NAUKRI: Naukri,
-        Site.BDJOBS: BDJobs,
-        Site.HELLOWORK: HelloWork,
-    }
-    configure_logging(verbose)
-    if linkedin_fetch_description:
+    arguments = dict(locals())
+    try:
+        scraper_input = ScraperInput.model_validate(
+            {
+                name: value
+                for name, value in arguments.items()
+                if not (value is None or isinstance(value, str) and not value)
+            }
+        )
+    except ValidationError as e:
+        messages = []
+        for error in e.errors():
+            name, value = error["loc"][0], error["input"]
+            shown = type(value).__name__ if name == "proxies" else repr(value)
+            messages.append(f"Invalid {name}: {shown}. {error['msg']}")
+        raise ValueError("; ".join(messages)) from None
+    if scraper_input.linkedin_fetch_description:
         warnings.warn(
             "linkedin_fetch_description is deprecated; use fetch_description",
             DeprecationWarning,
             stacklevel=2,
         )
-    if kwargs:
-        known = [
-            name
-            for name in inspect.signature(scrape_jobs).parameters
-            if name not in ("kwargs", "linkedin_fetch_description")
-        ]
-        unknown = []
-        for name in kwargs:
-            close = difflib.get_close_matches(name, known, n=1)
-            unknown.append(f"{name} (did you mean {close[0]}?)" if close else name)
-        warnings.warn(
-            f"scrape_jobs ignores unknown arguments: {', '.join(unknown)}",
-            FutureWarning,
-            stacklevel=2,
-        )
-    job_type_name, job_type = job_type, None
-    if job_type_name:
-        job_type = get_enum_from_job_type(job_type_name)
-        if not job_type:
-            raise Exception(f"Invalid job type: {job_type_name}")
-
-    if isinstance(site_name, (list, tuple, set)):
-        sites = site_name
-    elif isinstance(site_name, (str, Site)):
-        sites = [site_name]
-    else:
-        sites = [site for site in Site if site != Site.GOOGLE]
-    site_type = [map_str_to_site(s) if isinstance(s, str) else s for s in sites]
-
-    is_remote = False if is_remote is None else is_remote
-    results_wanted = 15 if results_wanted is None else results_wanted
-    offset = 0 if offset is None else offset
-    country_indeed = "usa" if country_indeed is None else country_indeed
-
-    country_enum = Country.from_string(country_indeed)
-
-    scraper_input = ScraperInput(
-        country=country_enum,
-        search_term=search_term,
-        google_search_term=google_search_term,
-        location=location,
-        distance=distance,
-        is_remote=is_remote,
-        job_type=job_type,
-        easy_apply=easy_apply,
-        description_format=description_format,
-        fetch_description=fetch_description or False,
-        linkedin_fetch_description=linkedin_fetch_description or False,
-        results_wanted=results_wanted,
-        linkedin_company_ids=linkedin_company_ids,
-        offset=offset,
-        hours_old=hours_old,
-    )
+    configure_logging(None if verbose is None else scraper_input.verbose)
 
     def scrape_site(site: Site) -> tuple[str, JobResponse]:
-        scraper_class = SCRAPER_MAPPING[site]
-        scraper = scraper_class(proxies=proxies, ca_cert=ca_cert, user_agent=user_agent)
+        scraper = SCRAPER_MAPPING[site]()
         scraped_data: JobResponse = scraper.scrape(scraper_input)
         scraper.log.info("finished scraping")
         return site.value, scraped_data
 
     with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(scrape_site, site) for site in site_type]
+        futures = [
+            executor.submit(scrape_site, site)
+            for site in dict.fromkeys(scraper_input.site_name)
+        ]
         site_to_jobs_dict = dict(future.result() for future in as_completed(futures))
 
     rows = []
@@ -154,7 +116,7 @@ def scrape_jobs(
             job_data["site"] = site
             job_data["company"] = job_data["company_name"]
             job_data["job_type"] = (
-                ", ".join(job_type.value[0] for job_type in job_data["job_type"])
+                ", ".join(job_type.value for job_type in job_data["job_type"])
                 if job_data["job_type"]
                 else None
             )
@@ -172,13 +134,13 @@ def scrape_jobs(
                 interval = compensation.pop("interval")
                 job_data |= compensation
                 job_data["interval"] = interval.value if interval else None
-                job_data["salary_source"] = SalarySource.DIRECT_DATA.value
-                if enforce_annual_salary and job_data["interval"] not in (
+                job_data["salary_source"] = "direct_data"
+                if scraper_input.enforce_annual_salary and job_data["interval"] not in (
                     None,
                     "yearly",
                 ):
                     convert_to_annual(job_data)
-            elif country_enum == Country.USA:
+            elif scraper_input.country_indeed == Country.USA:
                 (
                     job_data["interval"],
                     job_data["min_amount"],
@@ -186,9 +148,9 @@ def scrape_jobs(
                     job_data["currency"],
                 ) = extract_salary(
                     job_data["description"],
-                    enforce_annual_salary=enforce_annual_salary,
+                    enforce_annual_salary=scraper_input.enforce_annual_salary,
                 )
-                job_data["salary_source"] = SalarySource.DESCRIPTION.value
+                job_data["salary_source"] = "description"
             if not (job_data["min_amount"] or job_data["max_amount"]):
                 job_data["salary_source"] = None
             rows.append(job_data)

@@ -11,7 +11,7 @@ from jobspy.indeed.constant import (
 from jobspy.model import Compensation, Country, JobType
 
 
-def get_job_type(attributes: list, country: Country | None) -> list[JobType] | None:
+def get_job_type(attributes: list, country: Country) -> list[JobType] | None:
     """
     The job types among a job's attributes; `country` is the one searched
     """

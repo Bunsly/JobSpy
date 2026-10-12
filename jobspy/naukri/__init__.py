@@ -45,7 +45,9 @@ class Naukri(Scraper):
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         self.scraper_input = scraper_input
         self.session = create_session(
-            proxies=self.proxies, ca_cert=self.ca_cert, user_agent=self.user_agent
+            proxies=scraper_input.proxies,
+            ca_cert=scraper_input.ca_cert,
+            user_agent=scraper_input.user_agent,
         )
         params = self._search_params()
         job_list: list[JobPost] = []
@@ -112,9 +114,7 @@ class Naukri(Scraper):
         if job_type == JobType.INTERNSHIP:
             params |= internship_params
         elif job_type:
-            self.log.warning(
-                f"job_type {job_type.value[0]} isn't supported, ignoring it"
-            )
+            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
         if self.scraper_input.location:
             params["location"] = self.scraper_input.location
         if hours_old := self.scraper_input.hours_old:

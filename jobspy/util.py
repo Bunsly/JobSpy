@@ -4,6 +4,7 @@ import logging
 import re
 from datetime import date, datetime, timezone
 from itertools import cycle
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
@@ -11,7 +12,7 @@ from curl_cffi import CurlOpt
 from curl_cffi import requests as curl_requests
 from markdownify import markdownify as md
 
-from jobspy.model import DescriptionFormat, JobType, Site
+from jobspy.model import DescriptionFormat, JobType
 
 log_handler = logging.StreamHandler()
 log_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
@@ -25,32 +26,29 @@ def configure_logging(verbose: int | None):
     else:
         logger.addHandler(log_handler)
     if verbose is not None:
-        level = {1: logging.WARNING, 0: logging.ERROR}.get(verbose, logging.INFO)
-        logger.setLevel(level)
+        logger.setLevel([logging.ERROR, logging.WARNING, logging.INFO][verbose])
 
 
 class RotatingProxySession:
     request_timeout = 15
 
     def __init__(self, proxies=None):
-        if isinstance(proxies, str):
-            proxies = [proxies]
-        elif not isinstance(proxies, (list, tuple)):
-            proxies = []
+        proxies = proxies or []
         self.rotates = len(set(proxies)) > 1
         self.proxy_cycle = cycle(map(self.format_proxy, proxies)) if proxies else None
 
     @staticmethod
     def format_proxy(proxy):
         """Utility method to format a proxy string into a dictionary."""
-        if not re.match(r"[a-zA-Z][a-zA-Z0-9+.-]*://", proxy):
+        if proxy in ("localhost", "http://localhost"):
+            proxy = ""
+        elif not re.match(r"[a-zA-Z][a-zA-Z0-9+.-]*://", proxy):
             proxy = f"http://{proxy}"
         return {"http": proxy, "https": proxy}
 
     def request(self, method, url, **kwargs):
         if self.proxy_cycle:
-            proxy = next(self.proxy_cycle)
-            self.proxies = {} if proxy["http"] == "http://localhost" else proxy
+            kwargs["proxies"] = next(self.proxy_cycle)
         kwargs.setdefault("verify", self.verify)
         kwargs.setdefault("timeout", self.request_timeout)
         return super().request(method, url, **kwargs)
@@ -81,8 +79,8 @@ class TLSRotating(RotatingProxySession, curl_requests.Session):
 
 def create_session(
     *,
-    proxies: list[str] | str | None = None,
-    ca_cert: str | None = None,
+    proxies: list[str] | None = None,
+    ca_cert: str | Path | None = None,
     is_tls: bool = True,
     clear_cookies: bool = False,
     user_agent: str | None = None,
@@ -97,7 +95,7 @@ def create_session(
         session = RequestsRotating(proxies=proxies, clear_cookies=clear_cookies)
 
     if ca_cert:
-        session.verify = ca_cert
+        session.verify = str(ca_cert)
     if user_agent:
         session.headers["user-agent"] = user_agent
 
@@ -106,12 +104,6 @@ def create_session(
 
 def _as_markup(text: str) -> str:
     return text if "<" in text else f"<!---->{text}"
-
-
-def markdown_converter(description_html: str):
-    if description_html is None:
-        return None
-    return md(_as_markup(description_html)).strip()
 
 
 def plain_converter(description_html: str):
@@ -130,9 +122,11 @@ def extract_emails_from_text(text: str) -> list[str] | None:
 
 def format_description(html: str | None, description_format) -> tuple:
     """The description in the format asked for, and the emails in it."""
+    if html is None:
+        return None, None
     emails = extract_emails_from_text(html)
     if description_format == DescriptionFormat.MARKDOWN:
-        return markdown_converter(html), emails
+        return md(_as_markup(html)).strip(), emails
     if description_format == DescriptionFormat.PLAIN:
         return plain_converter(html), emails
     return html, emails
@@ -144,13 +138,10 @@ def utc_date(epoch: float | None) -> date | None:
 
 
 def get_enum_from_job_type(job_type_str: str) -> JobType | None:
-    return next((t for t in JobType if job_type_str in t.value), None)
-
-
-def remove_attributes(tag):
-    for attr in list(tag.attrs):
-        del tag[attr]
-    return tag
+    try:
+        return JobType(job_type_str)
+    except ValueError:
+        return None
 
 
 salary_range = re.compile(
@@ -181,18 +172,6 @@ def extract_salary(salary_str, enforce_annual_salary=False):
     if enforce_annual_salary:
         return "yearly", annual_low, annual_high, "USD"
     return interval, low, high, "USD"
-
-
-def map_str_to_site(site_name: str) -> Site:
-    name = site_name.upper()
-    if name == "ZIPRECRUITER":
-        return Site.ZIP_RECRUITER
-    if name not in Site.__members__:
-        valid_sites = ", ".join(site.value for site in Site)
-        raise KeyError(
-            f"Invalid site name: '{site_name}'. Valid sites are: {valid_sites}"
-        )
-    return Site[name]
 
 
 def convert_to_annual(job_data: dict):
