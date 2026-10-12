@@ -28,13 +28,10 @@ from jobspy.model import (
     ScraperInput,
 )
 from jobspy.util import (
-    create_logger,
     create_session,
     format_description,
     utc_date,
 )
-
-log = create_logger("Bayt")
 
 
 def slugify(text: str) -> str:
@@ -54,8 +51,8 @@ class Bayt(Scraper):
         self.hybrid_ids = None
         job_type = scraper_input.job_type
         if job_type and job_type not in job_type_codes:
-            log.warning(
-                f"Bayt: job_type {job_type.value[0]} isn't supported, ignoring it"
+            self.log.warning(
+                f"job_type {job_type.value[0]} isn't supported, ignoring it"
             )
         self.country, self.city = self._location(scraper_input.location)
         hours_old = scraper_input.hours_old
@@ -68,7 +65,7 @@ class Bayt(Scraper):
         while len(job_list) < scraper_input.results_wanted:
             if page > first_page:
                 time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
-            log.info(f"search page: {page}")
+            self.log.info(f"search page: {page}")
             cards = self._fetch_cards(page)
             if cards is None:
                 break
@@ -90,7 +87,7 @@ class Bayt(Scraper):
                 try:
                     job_post = self._process_job(job)
                 except Exception as e:
-                    log.warning(f"skipping job: {e}")
+                    self.log.warning(f"skipping job: {e}")
                     continue
                 if job_post:
                     job_list.append(job_post)
@@ -144,13 +141,12 @@ class Bayt(Scraper):
             url = self._search_url(page, hybrid)
             response = self.session.get(url, allow_redirects=True)
         except Exception as e:
-            log.error(f"Bayt: {e}")
+            self.log.error(str(e))
             return None
         if response.status_code == 404 and (self.city or self.country != all_countries):
             wider = "the country" if self.city else "all countries"
-            log.warning(
-                f"Bayt: location '{self.scraper_input.location}' not found, "
-                f"searching {wider}"
+            self.log.warning(
+                f"location '{self.scraper_input.location}' not found, searching {wider}"
             )
             if self.city:
                 self.city = None
@@ -158,7 +154,7 @@ class Bayt(Scraper):
                 self.country = all_countries
             return self._fetch_cards(page, hybrid)
         if response.status_code != 200:
-            log.error(f"Bayt response status code {response.status_code}")
+            self.log.error(f"response status code {response.status_code}")
             return None
         if page > 1 and f"page={page}" not in response.url:
             return []
@@ -282,8 +278,8 @@ class Bayt(Scraper):
         try:
             response = self.session.get(job_url, allow_redirects=True)
             if response.status_code != 200:
-                log.warning(
-                    f"Bayt response status code {response.status_code} for job {job_id}"
+                self.log.warning(
+                    f"response status code {response.status_code} for job {job_id}"
                 )
                 return {}
             soup = BeautifulSoup(response.text, "html.parser")
@@ -293,7 +289,7 @@ class Bayt(Scraper):
             if posting["@type"] != "JobPosting":
                 raise ValueError("no JobPosting")
         except Exception as e:
-            log.warning(f"Bayt: job {job_id}: {e}")
+            self.log.warning(f"job {job_id}: {e}")
             return {}
 
         def row(name: str) -> list[str]:

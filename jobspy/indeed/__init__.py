@@ -25,9 +25,7 @@ from jobspy.model import (
     Scraper,
     ScraperInput,
 )
-from jobspy.util import create_logger, create_session, format_description, utc_date
-
-log = create_logger("Indeed")
+from jobspy.util import create_session, format_description, utc_date
 
 
 class Indeed(Scraper):
@@ -64,7 +62,7 @@ class Indeed(Scraper):
         page = 1
 
         while len(job_list) < scraper_input.results_wanted:
-            log.info(f"search page: {page}")
+            self.log.info(f"search page: {page}")
             try:
                 response = self.session.post(
                     self.api_url,
@@ -72,12 +70,12 @@ class Indeed(Scraper):
                     json={"query": self._build_query(filters, cursor)},
                 )
                 if response.status_code != 200:
-                    log.error(f"Indeed response status code {response.status_code}")
+                    self.log.error(f"response status code {response.status_code}")
                     break
                 data = response.json()
                 search = (data.get("data") or {}).get("jobSearch")
                 if not search:
-                    log.error(f"Indeed: {data.get('errors')}")
+                    self.log.error(f"API error: {data.get('errors')}")
                     break
                 jobs = {
                     result["job"]["key"]: result["job"]
@@ -88,14 +86,14 @@ class Indeed(Scraper):
                 seen.update(jobs)
                 cursor = search["pageInfo"]["nextCursor"]
             except Exception as e:
-                log.error(f"Indeed: {e}")
+                self.log.error(str(e))
                 break
 
             for job in new_jobs[skip:]:
                 try:
                     job_list.append(self._process_job(job))
                 except Exception as e:
-                    log.warning(f"skipping job: {e}")
+                    self.log.warning(f"skipping job: {e}")
                     continue
                 if len(job_list) >= scraper_input.results_wanted:
                     break
@@ -142,8 +140,8 @@ class Indeed(Scraper):
         job_type = self.scraper_input.job_type
         keys = list(job_type_codes.get(job_type, ()))
         if job_type and not keys:
-            log.warning(
-                f"Indeed: job_type {job_type.value[0]} isn't supported, ignoring it"
+            self.log.warning(
+                f"job_type {job_type.value[0]} isn't supported, ignoring it"
             )
         if (
             job_type == JobType.FULL_TIME

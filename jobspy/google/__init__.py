@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Tuple
 
 from jobspy.google.constant import async_param, headers_initial, headers_jobs
-from jobspy.google.util import find_job_info, find_job_info_initial_page, log
+from jobspy.google.util import find_job_info, find_job_info_initial_page
 from jobspy.model import (
     JobPost,
     JobResponse,
@@ -54,7 +54,7 @@ class Google(Scraper):
         try:
             forward_cursor, job_list = self._get_initial_cursor_and_jobs()
         except Exception as e:
-            log.error(f"Google: {e}")
+            self.log.error(str(e))
             return JobResponse(jobs=[])
         if forward_cursor is None:
             return JobResponse(jobs=job_list)
@@ -65,16 +65,16 @@ class Google(Scraper):
             len(self.seen_urls) < scraper_input.results_wanted + scraper_input.offset
             and forward_cursor
         ):
-            log.info(
+            self.log.info(
                 f"search page: {page} / {math.ceil(scraper_input.results_wanted / self.jobs_per_page)}"
             )
             try:
                 jobs, forward_cursor = self._get_jobs_next_page(forward_cursor)
             except Exception as e:
-                log.error(f"Google: {e}")
+                self.log.error(str(e))
                 break
             if not jobs:
-                log.info(f"found no jobs on page: {page}")
+                self.log.info(f"found no jobs on page: {page}")
                 break
             job_list += jobs
             page += 1
@@ -125,31 +125,31 @@ class Google(Scraper):
         params = {"q": query, "udm": "8"}
         response = self.session.get(self.url, headers=headers_initial, params=params)
         if response.status_code != 200:
-            log.error(f"Google response status code {response.status_code}")
+            self.log.error(f"response status code {response.status_code}")
             return None, []
 
         pattern_fc = r'<div jsname="Yust4d"[^>]+data-async-fc="([^"]+)"'
         match_fc = re.search(pattern_fc, response.text)
         data_async_fc = match_fc.group(1) if match_fc else None
-        jobs_raw = find_job_info_initial_page(response.text)
+        jobs_raw = find_job_info_initial_page(response.text, self.log)
         jobs = []
         for job_raw in jobs_raw:
             try:
                 job_post = self._parse_job(job_raw)
             except Exception as e:
-                log.warning(f"skipping job: {e}")
+                self.log.warning(f"skipping job: {e}")
                 continue
             if job_post:
                 jobs.append(job_post)
         if not jobs and not data_async_fc:
-            log.error("Google returned no job data")
+            self.log.error("no job data returned")
         return data_async_fc, jobs
 
     def _get_jobs_next_page(self, forward_cursor: str) -> Tuple[list[JobPost], str]:
         params = {"fc": [forward_cursor], "fcv": ["3"], "async": [async_param]}
         response = self.session.get(self.jobs_url, headers=headers_jobs, params=params)
         if response.status_code != 200:
-            log.error(f"Google response status code {response.status_code}")
+            self.log.error(f"response status code {response.status_code}")
             return [], None
         return self._parse_jobs(response.text)
 
@@ -176,7 +176,7 @@ class Google(Scraper):
             try:
                 job_post = self._parse_job(job_info)
             except Exception as e:
-                log.warning(f"skipping job: {e}")
+                self.log.warning(f"skipping job: {e}")
                 continue
             if job_post:
                 jobs_on_page.append(job_post)

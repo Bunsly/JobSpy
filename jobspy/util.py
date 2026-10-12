@@ -13,18 +13,20 @@ from markdownify import markdownify as md
 
 from jobspy.model import DescriptionFormat, JobType, Site
 
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
 
-def create_logger(name: str):
-    logger = logging.getLogger(f"JobSpy:{name}")
-    logger.propagate = False
-    if not logger.handlers:
-        logger.setLevel(logging.INFO)
-        console_handler = logging.StreamHandler()
-        format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-        formatter = logging.Formatter(format)
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-    return logger
+
+def configure_logging(verbose: int | None):
+    """verbose: 0 errors only, 1 adds warnings, 2 all logs, None leaves the level alone"""
+    logger = logging.getLogger("jobspy")
+    if logging.root.handlers or any(h is not log_handler for h in logger.handlers):
+        logger.removeHandler(log_handler)
+    else:
+        logger.addHandler(log_handler)
+    if verbose is not None:
+        level = {1: logging.WARNING, 0: logging.ERROR}.get(verbose, logging.INFO)
+        logger.setLevel(level)
 
 
 class RotatingProxySession:
@@ -100,21 +102,6 @@ def create_session(
         session.headers["user-agent"] = user_agent
 
     return session
-
-
-def set_logger_level(verbose: int):
-    """
-    Adjusts the logger's level. This function allows the logging level to be changed at runtime.
-
-    Parameters:
-    - verbose: int {0, 1, 2} (0 errors only, 1 adds warnings, 2 all logs)
-    """
-    if verbose is None:
-        return
-    level = {1: logging.WARNING, 0: logging.ERROR}.get(verbose, logging.INFO)
-    for logger_name in logging.root.manager.loggerDict:
-        if logger_name.startswith("JobSpy:"):
-            logging.getLogger(logger_name).setLevel(level)
 
 
 def _as_markup(text: str) -> str:

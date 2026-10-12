@@ -26,14 +26,11 @@ from jobspy.model import (
     ScraperInput,
 )
 from jobspy.util import (
-    create_logger,
     create_session,
     format_description,
     get_enum_from_job_type,
     remove_attributes,
 )
-
-log = create_logger("LinkedIn")
 
 
 class LinkedIn(Scraper):
@@ -62,7 +59,7 @@ class LinkedIn(Scraper):
         self.scraper_input = scraper_input
         for name in ("is_remote", "job_type"):
             if getattr(scraper_input, name):
-                log.warning(f"LinkedIn: {name} isn't supported, ignoring it")
+                self.log.warning(f"{name} isn't supported, ignoring it")
         params = self._search_params()
         job_list: list[JobPost] = []
         seen = set()
@@ -72,27 +69,27 @@ class LinkedIn(Scraper):
         while len(job_list) < scraper_input.results_wanted and start < max_results:
             if start > first_start:
                 time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
-            log.info(f"search page: {page}")
+            self.log.info(f"search page: {page}")
             try:
                 response = self.session.get(
                     f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search",
                     params={**params, "start": start},
                 )
                 if response.status_code != 200:
-                    log.error(f"LinkedIn response status code {response.status_code}")
+                    self.log.error(f"response status code {response.status_code}")
                     break
             except Exception as e:
-                log.error(f"LinkedIn: {e}")
+                self.log.error(str(e))
                 break
 
             soup = BeautifulSoup(response.text, "html.parser")
             job_cards = soup.find_all(class_="base-search-card")
             if not job_cards:
                 if response.text.strip() != empty_page:
-                    log.error("LinkedIn: unexpected page with no jobs (blocked?)")
+                    self.log.error("unexpected page with no jobs (blocked?)")
                 elif start:
-                    log.warning(
-                        f"LinkedIn: empty page at start={start} (the end of the results, or throttled)"
+                    self.log.warning(
+                        f"empty page at start={start} (the end of the results, or throttled)"
                     )
                 break
 
@@ -107,7 +104,7 @@ class LinkedIn(Scraper):
                 try:
                     job_post = self._process_job(job_card, job_id)
                 except Exception as e:
-                    log.warning(f"skipping job: {e}")
+                    self.log.warning(f"skipping job: {e}")
                     continue
                 job_list.append(job_post)
                 if len(job_list) >= scraper_input.results_wanted:
@@ -189,16 +186,16 @@ class LinkedIn(Scraper):
         try:
             response = self.session.get(f"{self.base_url}/jobs/view/{job_id}")
         except Exception as e:
-            log.warning(f"LinkedIn: job {job_id}: {e}")
+            self.log.warning(f"job {job_id}: {e}")
             return {}
         if response.status_code != 200:
-            log.warning(
-                f"LinkedIn response status code {response.status_code} for job {job_id}"
+            self.log.warning(
+                f"response status code {response.status_code} for job {job_id}"
             )
             return {}
         path = urlparse(response.url).path
         if not path.startswith("/jobs/view/"):
-            log.warning(f"LinkedIn: job {job_id}: redirected to {path}")
+            self.log.warning(f"job {job_id}: redirected to {path}")
             return {}
 
         soup = BeautifulSoup(response.text, "html.parser")
