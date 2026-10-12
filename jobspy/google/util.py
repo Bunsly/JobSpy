@@ -1,9 +1,5 @@
 import re
 
-from jobspy.util import create_logger
-
-log = create_logger("Google")
-
 
 def find_job_info(jobs_data: list | dict) -> list | None:
     """Iterates through the JSON data to find the job listings"""
@@ -23,7 +19,7 @@ def find_job_info(jobs_data: list | dict) -> list | None:
     return None
 
 
-def find_job_info_initial_page(html_text: str):
+def find_job_info_initial_page(html_text: str, log):
     pattern = '520084652":(' + r"\[.*?\]\s*])\s*}\s*]\s*]\s*]\s*]\s*]"
     results = []
     matches = re.finditer(pattern, html_text)

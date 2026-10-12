@@ -24,13 +24,12 @@ from jobspy.model import (
 )
 from jobspy.naukri import Naukri
 from jobspy.util import (
+    configure_logging,
     convert_to_annual,
-    create_logger,
     desired_order,
     extract_salary,
     get_enum_from_job_type,
     map_str_to_site,
-    set_logger_level,
 )
 from jobspy.ziprecruiter import ZipRecruiter
 
@@ -76,7 +75,7 @@ def scrape_jobs(
         Site.BDJOBS: BDJobs,
         Site.HELLOWORK: HelloWork,
     }
-    set_logger_level(verbose)
+    configure_logging(verbose)
     if linkedin_fetch_description:
         warnings.warn(
             "linkedin_fetch_description is deprecated; use fetch_description",
@@ -141,7 +140,7 @@ def scrape_jobs(
         scraper_class = SCRAPER_MAPPING[site]
         scraper = scraper_class(proxies=proxies, ca_cert=ca_cert, user_agent=user_agent)
         scraped_data: JobResponse = scraper.scrape(scraper_input)
-        create_logger(scraper_class.__name__).info("finished scraping")
+        scraper.log.info("finished scraping")
         return site.value, scraped_data
 
     with ThreadPoolExecutor() as executor:

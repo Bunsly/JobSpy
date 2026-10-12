@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from datetime import date
 from enum import Enum
@@ -325,6 +326,7 @@ class Scraper(ABC):
         self.user_agent = user_agent
         self.session = None
         self.scraper_input = None
+        self.log = logging.getLogger(type(self).__module__)
 
     @abstractmethod
     def scrape(self, scraper_input: ScraperInput) -> JobResponse: ...

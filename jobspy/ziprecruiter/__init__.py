@@ -16,7 +16,6 @@ from jobspy.model import (
     ScraperInput,
 )
 from jobspy.util import (
-    create_logger,
     create_session,
     format_description,
     get_enum_from_job_type,
@@ -27,8 +26,6 @@ from jobspy.ziprecruiter.constant import (
     pay_intervals,
 )
 from jobspy.ziprecruiter.util import direct_url, page_values
-
-log = create_logger("ZipRecruiter")
 
 
 class ZipRecruiter(Scraper):
@@ -52,29 +49,27 @@ class ZipRecruiter(Scraper):
         while len(job_list) < scraper_input.results_wanted:
             if page > first_page:
                 time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
-            log.info(f"search page: {page}")
+            self.log.info(f"search page: {page}")
             try:
                 # /jobs-search/1 redirects to /jobs-search
                 path = "/jobs-search" if page == 1 else f"/jobs-search/{page}"
                 response = self.session.get(self.base_url + path, params=params)
                 if response.status_code != 200:
-                    log.error(
-                        f"ZipRecruiter response status code {response.status_code}"
-                    )
+                    self.log.error(f"response status code {response.status_code}")
                     break
                 jobs, job_count = page_values(response.text, "jobKeysMap", "jobCount")
                 last_page = math.ceil(job_count / jobs_per_page)
                 new_jobs = [job for key, job in jobs.items() if key not in seen]
                 seen.update(jobs)
             except Exception as e:
-                log.error(f"ZipRecruiter: {e}")
+                self.log.error(str(e))
                 break
 
             for job in new_jobs[skip if page == first_page else 0 :]:
                 try:
                     job_post = self._process_job(job)
                 except Exception as e:
-                    log.warning(f"skipping job: {e}")
+                    self.log.warning(f"skipping job: {e}")
                     continue
                 if job_post:
                     job_list.append(job_post)
@@ -94,9 +89,8 @@ class ZipRecruiter(Scraper):
             if "internship" not in (search_term or "").lower():
                 search_term = f"{search_term or ''} internship".strip()
         elif job_type and job_type not in job_type_codes:
-            log.warning(
-                f"ZipRecruiter: job_type {job_type.value[0]} isn't supported, "
-                "ignoring it"
+            self.log.warning(
+                f"job_type {job_type.value[0]} isn't supported, ignoring it"
             )
         params = {
             "search": search_term,
@@ -175,9 +169,8 @@ class ZipRecruiter(Scraper):
         try:
             response = self.session.get(job_url, allow_redirects=True)
             if response.status_code != 200:
-                log.warning(
-                    f"ZipRecruiter response status code {response.status_code} "
-                    f"for job {job_id}"
+                self.log.warning(
+                    f"response status code {response.status_code} for job {job_id}"
                 )
                 return {}
             [job] = page_values(response.text, "jobDetails")
@@ -185,7 +178,7 @@ class ZipRecruiter(Scraper):
                 job["htmlFullDescription"], self.scraper_input.description_format
             )
         except Exception as e:
-            log.warning(f"ZipRecruiter: job {job_id}: {e}")
+            self.log.warning(f"job {job_id}: {e}")
             return {}
 
         company = job.get("companyWidget") or {}

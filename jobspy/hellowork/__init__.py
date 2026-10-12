@@ -30,13 +30,10 @@ from jobspy.model import (
     ScraperInput,
 )
 from jobspy.util import (
-    create_logger,
     create_session,
     format_description,
     utc_date,
 )
-
-log = create_logger("HelloWork")
 
 
 class HelloWork(Scraper):
@@ -59,20 +56,20 @@ class HelloWork(Scraper):
         while len(job_list) < scraper_input.results_wanted:
             if page > first_page:
                 time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
-            log.info(f"search page: {page}")
+            self.log.info(f"search page: {page}")
             try:
                 response = self.session.get(
                     self.search_url, params=params | {"p": page}
                 )
                 if response.status_code != 200:
-                    log.error(f"HelloWork response status code {response.status_code}")
+                    self.log.error(f"response status code {response.status_code}")
                     break
                 soup = BeautifulSoup(response.text, "html.parser")
                 cards = soup.select("li[data-id-storage-target=item]")
                 pager = soup.select_one("input[type=number][max]")
                 last_page = int(pager["max"]) if pager else page
             except Exception as e:
-                log.error(f"HelloWork: {e}")
+                self.log.error(str(e))
                 break
 
             new_cards = [
@@ -85,7 +82,7 @@ class HelloWork(Scraper):
                 try:
                     job_post = self._process_job(card)
                 except Exception as e:
-                    log.warning(f"skipping job: {e}")
+                    self.log.warning(f"skipping job: {e}")
                     continue
                 if job_post:
                     job_list.append(job_post)
@@ -111,13 +108,13 @@ class HelloWork(Scraper):
         if job_type in job_type_params:
             params |= job_type_params[job_type]
         elif job_type:
-            log.warning(
-                f"HelloWork: job_type {job_type.value[0]} isn't supported, ignoring it"
+            self.log.warning(
+                f"job_type {job_type.value[0]} isn't supported, ignoring it"
             )
         if scraper_input.is_remote:
             params["t"] = "Complet"
         if scraper_input.easy_apply:
-            log.warning("HelloWork: easy_apply isn't supported, ignoring it")
+            self.log.warning("easy_apply isn't supported, ignoring it")
         return {
             name: value for name, value in params.items() if value not in (None, "")
         }
@@ -215,9 +212,8 @@ class HelloWork(Scraper):
         try:
             response = self.session.get(job_url)
             if response.status_code != 200:
-                log.warning(
-                    f"HelloWork response status code {response.status_code} "
-                    f"for job {job_id}"
+                self.log.warning(
+                    f"response status code {response.status_code} for job {job_id}"
                 )
                 return {}
             soup = BeautifulSoup(response.text, "html.parser")
@@ -273,5 +269,5 @@ class HelloWork(Scraper):
                 "experience_range": experience,
             }
         except Exception as e:
-            log.warning(f"HelloWork: job {job_id}: {e}")
+            self.log.warning(f"job {job_id}: {e}")
             return {}

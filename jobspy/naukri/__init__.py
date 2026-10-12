@@ -28,14 +28,11 @@ from jobspy.naukri.constant import (
 )
 from jobspy.naukri.util import generate_nkparam
 from jobspy.util import (
-    create_logger,
     create_session,
     format_description,
     plain_converter,
     utc_date,
 )
-
-log = create_logger("Naukri")
 
 
 class Naukri(Scraper):
@@ -59,7 +56,7 @@ class Naukri(Scraper):
         while len(job_list) < scraper_input.results_wanted:
             if page > first_page:
                 time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
-            log.info(f"search page: {page}")
+            self.log.info(f"search page: {page}")
             try:
                 response = self.session.get(
                     self.search_url,
@@ -69,15 +66,15 @@ class Naukri(Scraper):
                 if response.status_code == 400 and page > 1:
                     break  # past the last page
                 if response.status_code == 406:
-                    log.error(
-                        "Naukri response status code 406 (recaptcha required): "
+                    self.log.error(
+                        "response status code 406 (recaptcha required): "
                         "the address is rate limited, or the request token was "
                         "rejected (the public key in jobspy/naukri/constant.py "
                         "may be out of date)"
                     )
                     break
                 if response.status_code != 200:
-                    log.error(f"Naukri response status code {response.status_code}")
+                    self.log.error(f"response status code {response.status_code}")
                     break
                 result = response.json()
                 jobs = result.get("jobDetails") or []
@@ -85,7 +82,7 @@ class Naukri(Scraper):
                 new_jobs = [job for job in jobs if job.get("jobId") not in seen]
                 seen.update(job.get("jobId") for job in jobs)
             except Exception as e:
-                log.error(f"Naukri: {e}")
+                self.log.error(str(e))
                 break
 
             fresh = False
@@ -96,7 +93,7 @@ class Naukri(Scraper):
                     fresh = True
                     job_post = self._process_job(job)
                 except Exception as e:
-                    log.warning(f"skipping job: {e}")
+                    self.log.warning(f"skipping job: {e}")
                     continue
                 if job_post:
                     job_list.append(job_post)
@@ -115,8 +112,8 @@ class Naukri(Scraper):
         if job_type == JobType.INTERNSHIP:
             params |= internship_params
         elif job_type:
-            log.warning(
-                f"Naukri: job_type {job_type.value[0]} isn't supported, ignoring it"
+            self.log.warning(
+                f"job_type {job_type.value[0]} isn't supported, ignoring it"
             )
         if self.scraper_input.location:
             params["location"] = self.scraper_input.location
@@ -218,8 +215,8 @@ class Naukri(Scraper):
             )
             if response.status_code != 200:
                 reason = ": rate limited" if response.status_code == 406 else ""
-                log.warning(
-                    f"Naukri response status code {response.status_code} "
+                self.log.warning(
+                    f"response status code {response.status_code} "
                     f"for job {job_id}{reason}"
                 )
                 return {}
@@ -239,5 +236,5 @@ class Naukri(Scraper):
                 "company_addresses": company["address"] or None,
             }
         except Exception as e:
-            log.warning(f"Naukri: job {job_id}: {e}")
+            self.log.warning(f"job {job_id}: {e}")
             return {}

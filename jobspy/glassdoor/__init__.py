@@ -23,13 +23,10 @@ from jobspy.model import (
     ScraperInput,
 )
 from jobspy.util import (
-    create_logger,
     create_session,
     format_description,
     get_enum_from_job_type,
 )
-
-log = create_logger("Glassdoor")
 
 
 class Glassdoor(Scraper):
@@ -43,7 +40,7 @@ class Glassdoor(Scraper):
             self.session.headers.update(headers)
             variables = self._search_variables()
         except Exception as e:
-            log.error(f"Glassdoor: {e}")
+            self.log.error(str(e))
             return JobResponse(jobs=[])
         if variables is None:
             return JobResponse(jobs=[])
@@ -53,7 +50,7 @@ class Glassdoor(Scraper):
         page, cursor, skip = 1, None, scraper_input.offset
 
         while len(job_list) < scraper_input.results_wanted:
-            log.info(f"search page: {page}")
+            self.log.info(f"search page: {page}")
             try:
                 response = self._graph(
                     "JobSearchResultsQuery",
@@ -61,7 +58,7 @@ class Glassdoor(Scraper):
                     {**variables, "pageNumber": page, "pageCursor": cursor},
                 )
                 if response.status_code != 200:
-                    log.error(f"Glassdoor response status code {response.status_code}")
+                    self.log.error(f"response status code {response.status_code}")
                     break
                 answer = response.json()[0]
                 result = (answer.get("data") or {}).get("jobListings")
@@ -71,7 +68,7 @@ class Glassdoor(Scraper):
                 cursors = result.get("paginationCursors") or []
                 cursor = {c["pageNumber"]: c["cursor"] for c in cursors}.get(page + 1)
             except Exception as e:
-                log.error(f"Glassdoor: {e}")
+                self.log.error(str(e))
                 break
 
             seen_before = len(seen)
@@ -88,7 +85,7 @@ class Glassdoor(Scraper):
                         continue
                     job_post = self._process_job(job)
                 except Exception as e:
-                    log.warning(f"skipping job: {e}")
+                    self.log.warning(f"skipping job: {e}")
                     continue
                 if job_post:
                     page_jobs.append(job_post)
@@ -122,7 +119,7 @@ class Glassdoor(Scraper):
             f"&term={quote(self.scraper_input.location or '')}"
         )
         if response.status_code != 200:
-            log.error(f"Glassdoor response status code {response.status_code}")
+            self.log.error(f"response status code {response.status_code}")
             return None
         variables = {
             "keyword": self.scraper_input.search_term,
@@ -133,7 +130,7 @@ class Glassdoor(Scraper):
             return variables
         places = response.json()
         if not places:
-            log.error(f"Glassdoor: location '{self.scraper_input.location}' not found")
+            self.log.error(f"location '{self.scraper_input.location}' not found")
             return None
         location_id = int(places[0]["locationId"])
         location_type = location_types[places[0]["locationType"]]
@@ -154,8 +151,8 @@ class Glassdoor(Scraper):
         if code := job_type_codes.get(job_type):
             filters["jobType"] = code
         elif job_type:
-            log.warning(
-                f"Glassdoor: job_type {job_type.value[0]} isn't supported, ignoring it"
+            self.log.warning(
+                f"job_type {job_type.value[0]} isn't supported, ignoring it"
             )
         if self.scraper_input.is_remote:
             filters["remoteWorkType"] = 1
@@ -248,9 +245,8 @@ class Glassdoor(Scraper):
                     "JobDetails", f"query JobDetails {{{aliases}}}", {}
                 )
                 if response.status_code != 200:
-                    log.warning(
-                        f"Glassdoor response status code {response.status_code} "
-                        "for job details"
+                    self.log.warning(
+                        f"response status code {response.status_code} for job details"
                     )
                     break
                 for alias, view in response.json()[0]["data"].items():
@@ -264,5 +260,5 @@ class Glassdoor(Scraper):
                             "emails": emails,
                         }
         except Exception as e:
-            log.warning(f"Glassdoor: job details: {e}")
+            self.log.warning(f"job details: {e}")
         return details

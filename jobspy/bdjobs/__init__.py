@@ -27,12 +27,9 @@ from jobspy.model import (
     ScraperInput,
 )
 from jobspy.util import (
-    create_logger,
     create_session,
     format_description,
 )
-
-log = create_logger("BDJobs")
 
 
 class BDJobs(Scraper):
@@ -58,14 +55,14 @@ class BDJobs(Scraper):
         while len(job_list) < scraper_input.results_wanted:
             if page > 1:
                 time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
-            log.info(f"search page: {page}")
+            self.log.info(f"search page: {page}")
             try:
                 response = self.session.get(
                     self.search_url,
                     params=params | {"pg": page},
                 )
                 if response.status_code != 200:
-                    log.error(f"BDJobs response status code {response.status_code}")
+                    self.log.error(f"response status code {response.status_code}")
                     break
                 result = response.json()
                 jobs = result["data"]
@@ -78,14 +75,14 @@ class BDJobs(Scraper):
                         seen.add(job.get("Jobid"))
                         new_jobs.append(job)
             except Exception as e:
-                log.error(f"BDJobs: {e}")
+                self.log.error(str(e))
                 break
 
             for job in new_jobs[skip:]:
                 try:
                     job_post = self._process_job(job)
                 except Exception as e:
-                    log.warning(f"skipping job: {e}")
+                    self.log.warning(f"skipping job: {e}")
                     continue
                 if job_post:
                     job_list.append(job_post)
@@ -106,8 +103,8 @@ class BDJobs(Scraper):
         if place in locations:
             params["location"] = locations[place]
         elif place and place != "bangladesh":
-            log.warning(
-                f"BDJobs: location '{self.scraper_input.location}' not found, "
+            self.log.warning(
+                f"location '{self.scraper_input.location}' not found, "
                 "searching all of Bangladesh"
             )
         if hours_old := self.scraper_input.hours_old:
@@ -116,13 +113,13 @@ class BDJobs(Scraper):
         if job_type in job_type_codes:
             params["jobNature"] = job_type_codes[job_type]
         elif job_type:
-            log.warning(
-                f"BDJobs: job_type {job_type.value[0]} isn't supported, ignoring it"
+            self.log.warning(
+                f"job_type {job_type.value[0]} isn't supported, ignoring it"
             )
         if self.scraper_input.is_remote:
             params["workplace"] = 1
         if self.scraper_input.easy_apply:
-            log.warning("BDJobs: easy_apply isn't supported, ignoring it")
+            self.log.warning("easy_apply isn't supported, ignoring it")
         return params
 
     def _process_job(self, job: dict) -> JobPost | None:
@@ -180,14 +177,13 @@ class BDJobs(Scraper):
                 params={"jobId": job_id, "ln": 1, "IsCorporate": "false"},
             )
             if response.status_code != 200:
-                log.warning(
-                    f"BDJobs response status code {response.status_code} "
-                    f"for job {job_id}"
+                self.log.warning(
+                    f"response status code {response.status_code} for job {job_id}"
                 )
                 return {}
             result = response.json()
             if not result["data"]:
-                log.warning(f"BDJobs: job {job_id}: {result['message']}")
+                self.log.warning(f"job {job_id}: {result['message']}")
                 return {}
             details = result["data"][0]
             description, emails = format_description(
@@ -224,5 +220,5 @@ class BDJobs(Scraper):
                 "company_description": details["CompanyBusiness"] or None,
             }
         except Exception as e:
-            log.warning(f"BDJobs: job {job_id}: {e}")
+            self.log.warning(f"job {job_id}: {e}")
             return {}
