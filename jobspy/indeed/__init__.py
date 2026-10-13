@@ -18,39 +18,45 @@ from jobspy.indeed.constant import (
     remote_key,
     subdomains,
 )
+from jobspy.indeed.model import Employer, Job, JobSearch
 from jobspy.indeed.util import get_compensation, get_job_type, is_job_remote
 from jobspy.model import (
     JobPost,
-    JobResponse,
     JobType,
     Location,
     Scraper,
     ScraperInput,
 )
-from jobspy.util import create_session, format_description, utc_date
+from jobspy.util import (
+    RequestsRotating,
+    check_status,
+    create_session,
+    format_description,
+    utc_date,
+)
 
 
 class Indeed(Scraper):
     api_url = "https://apis.indeed.com/graphql"
 
-    def scrape(self, scraper_input: ScraperInput) -> JobResponse:
+    def scrape(self, scraper_input: ScraperInput) -> list[JobPost]:
         self.scraper_input = scraper_input
-        self.session = create_session(
-            proxies=scraper_input.proxies, ca_cert=scraper_input.ca_cert, is_tls=False
-        )
         country_code = country_codes[scraper_input.country_indeed]
         domain = subdomains.get(scraper_input.country_indeed, country_code.lower())
         self.base_url = f"https://{domain}.indeed.com"
         language = languages.get(country_code, "en")
-        request_headers = headers | {
-            "indeed-co": country_code,
-            "indeed-locale": f"{language}-{country_code}",
-        }
-        if scraper_input.user_agent:
-            request_headers["user-agent"] = scraper_input.user_agent
+        self.session = create_session(
+            RequestsRotating(scraper_input.proxies),
+            scraper_input,
+            headers
+            | {
+                "indeed-co": country_code,
+                "indeed-locale": f"{language}-{country_code}",
+            },
+        )
         filters = self._build_filters()
         job_list: list[JobPost] = []
-        seen = set()
+        seen: set[object] = set()
         skip = scraper_input.offset
         cursor = None
         page = 1
@@ -60,25 +66,22 @@ class Indeed(Scraper):
             try:
                 response = self.session.post(
                     self.api_url,
-                    headers=request_headers,
                     json={"query": self._build_query(filters, cursor)},
                 )
-                if response.status_code != 200:
-                    self.log.error(f"response status code {response.status_code}")
-                    break
+                check_status(response)
                 data = response.json()
                 search = (data.get("data") or {}).get("jobSearch")
                 if not search:
-                    self.log.error(f"API error: {data.get('errors')}")
-                    break
+                    raise ValueError(f"API error: {data.get('errors')}")
+                job_search = JobSearch.model_validate(search)
                 jobs = {
-                    result["job"]["key"]: result["job"]
-                    for result in search["results"]
-                    if result["job"]
+                    result.job["key"]: result.job
+                    for result in job_search.results
+                    if result.job
                 }
                 new_jobs = [job for key, job in jobs.items() if key not in seen]
                 seen.update(jobs)
-                cursor = search["pageInfo"]["nextCursor"]
+                cursor = job_search.nextCursor
             except Exception as e:
                 self.log.error(str(e))
                 break
@@ -97,7 +100,7 @@ class Indeed(Scraper):
                 break
             page += 1
 
-        return JobResponse(jobs=job_list)
+        return job_list
 
     def _build_query(self, filters: str, cursor: str | None) -> str:
         search_term = self.scraper_input.search_term
@@ -122,7 +125,7 @@ class Indeed(Scraper):
         )
 
     def _build_filters(self) -> str:
-        def attribute(key, match=""):
+        def attribute(key: str, match: str = "") -> str:
             return f'{{ keyword: {{ field: "attributes", keys: ["{key}"]{match} }} }}'
 
         filters = []
@@ -132,7 +135,7 @@ class Indeed(Scraper):
             )
 
         job_type = self.scraper_input.job_type
-        keys = list(job_type_codes.get(job_type, ()))
+        keys = list(job_type_codes[job_type]) if job_type in job_type_codes else []
         if job_type and not keys:
             self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
         if (
@@ -157,52 +160,48 @@ class Indeed(Scraper):
             )
         return f"filters: [{', '.join(filters)}]" if filters else ""
 
-    def _process_job(self, job: dict) -> JobPost:
+    def _process_job(self, raw: dict[str, object]) -> JobPost:
+        job = Job.model_validate(raw)
         description, emails = format_description(
-            job["description"]["html"], self.scraper_input.description_format
+            job.html, self.scraper_input.description_format
         )
 
-        employer = job["employer"] or {}
-        dossier = employer.get("dossier") or {}
-        details = dossier.get("employerDetails") or {}
-        company_page = employer.get("relativeCompanyPageUrl")
-        rating = ((employer.get("ugcStats") or {}).get("ratings") or {}).get(
-            "overallRating"
-        ) or {}
-        location = job["location"]
-        country_code = location.get("countryCode")
-        apply_url = job["recruit"]["viewJobUrl"]
-        if f".{urlsplit(apply_url).hostname}".endswith(".indeed.com"):
+        employer = job.employer or Employer()
+        company_page = employer.relativeCompanyPageUrl
+        location = job.location
+        country_code = location.countryCode
+        apply_url = job.viewJobUrl
+        if apply_url and f".{urlsplit(apply_url).hostname}".endswith(".indeed.com"):
             apply_url = None
         return JobPost(
-            id=f"in-{job['key']}",
-            title=job["title"],
+            id=f"in-{job.key}",
+            title=job.title,
             description=description,
-            company_name=employer.get("name") or job["sourceEmployerName"],
+            company_name=employer.name or job.sourceEmployerName,
             company_url=f"{self.base_url}{company_page}" if company_page else None,
-            company_url_direct=(dossier.get("links") or {}).get("corporateWebsite"),
+            company_url_direct=employer.corporateWebsite,
             location=Location(
-                city=location.get("city"),
-                state=location.get("admin1Code"),
-                country=countries.get(country_code, country_code),
+                city=location.city,
+                state=location.admin1Code,
+                country=country_code and countries.get(country_code, country_code),
             ),
-            job_type=get_job_type(job["attributes"], self.scraper_input.country_indeed),
-            compensation=get_compensation(job["compensation"]),
-            date_posted=utc_date(job["dateOnIndeed"] / 1000),
-            job_url=f"{self.base_url}/viewjob?jk={job['key']}",
+            job_type=get_job_type(job.attributes, self.scraper_input.country_indeed),
+            compensation=get_compensation(job.compensation),
+            date_posted=utc_date(job.dateOnIndeed / 1000),
+            job_url=f"{self.base_url}/viewjob?jk={job.key}",
             job_url_direct=apply_url,
             emails=emails,
-            is_remote=is_job_remote(job["attributes"]),
-            company_addresses=(details.get("addresses") or [None])[0],
+            is_remote=is_job_remote(job.attributes),
+            company_addresses=employer.addresses[0] if employer.addresses else None,
             company_industry=(
-                details["industry"].replace("Iv1", "").replace("_", " ").title().strip()
-                if details.get("industry")
+                employer.industry.replace("Iv1", "").replace("_", " ").title().strip()
+                if employer.industry
                 else None
             ),
-            company_num_employees=details.get("employeesLocalizedLabel"),
-            company_revenue=details.get("revenueLocalizedLabel"),
-            company_description=details.get("briefDescription"),
-            company_logo=(dossier.get("images") or {}).get("squareLogoUrl"),
-            company_rating=rating.get("value") if rating.get("count") else None,
-            company_reviews_count=rating.get("count") or None,
+            company_num_employees=employer.employeesLocalizedLabel,
+            company_revenue=employer.revenueLocalizedLabel,
+            company_description=employer.briefDescription,
+            company_logo=employer.squareLogoUrl,
+            company_rating=employer.value if employer.count else None,
+            company_reviews_count=employer.count or None,
         )

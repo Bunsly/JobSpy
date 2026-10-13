@@ -46,10 +46,20 @@ classifiers = [
 ]
 
 [dependency-groups]
-dev = ["ruff==0.16.10"]
+dev = [
+    "ruff==0.16.10",
+    "mypy==2.4.0",
+    "pandas-stubs==2.3.3.260113",
+]
 
 [tool.ruff]
 line-length = 88
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "I", "B"]
+select = ["E4", "E7", "E9", "F", "I", "B", "ANN401"]
+
+[tool.mypy]
+strict = true
+python_version = "3.10"
+files = ["jobspy"]
+untyped_calls_exclude = ["curl_cffi.requests.models.Response.json"]

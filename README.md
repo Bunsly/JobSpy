@@ -54,13 +54,13 @@ jobs.to_csv("jobs.csv", quoting=csv.QUOTE_NONNUMERIC, escapechar="\\", index=Fal
 ### Output
 
 ```
-SITE           TITLE                             COMPANY           CITY          STATE  JOB_TYPE  INTERVAL  MIN_AMOUNT  MAX_AMOUNT  JOB_URL                                            DESCRIPTION
-indeed         Software Engineer                 AMERICAN SYSTEMS  Arlington     VA     None      yearly    200000      150000      https://www.indeed.com/viewjob?jk=5e409e577046...  THIS POSITION COMES WITH A 10K SIGNING BONUS!...
-indeed         Senior Software Engineer          TherapyNotes.com  Philadelphia  PA     fulltime  yearly    135000      110000      https://www.indeed.com/viewjob?jk=da39574a40cb...  About Us TherapyNotes is the national leader i...
-linkedin       Software Engineer - Early Career  Lockheed Martin   Sunnyvale     CA     fulltime  yearly    None        None        https://www.linkedin.com/jobs/view/3693012711      Description:By bringing together people that u...
-linkedin       Full-Stack Software Engineer      Rain              New York      NY     fulltime  yearly    None        None        https://www.linkedin.com/jobs/view/3696158877      Rain’s mission is to create the fastest and ea...
-zip_recruiter Software Engineer - New Grad       ZipRecruiter      Santa Monica  CA     fulltime  yearly    130000      150000      https://www.ziprecruiter.com/jobs/ziprecruiter...  We offer a hybrid work environment. Most US-ba...
-zip_recruiter Software Developer                 TEKsystems        Phoenix       AZ     fulltime  hourly    65          75          https://www.ziprecruiter.com/jobs/teksystems-0...  Top Skills' Details• 6 years of Java developme...
+SITE           TITLE                             COMPANY           LOCATION                JOB_TYPE  INTERVAL  MIN_AMOUNT  MAX_AMOUNT  JOB_URL                                            DESCRIPTION
+indeed         Software Engineer                 AMERICAN SYSTEMS  Arlington, VA, USA      None      yearly    150000      200000      https://www.indeed.com/viewjob?jk=5e409e577046...  THIS POSITION COMES WITH A 10K SIGNING BONUS!...
+indeed         Senior Software Engineer          TherapyNotes.com  Philadelphia, PA, USA   fulltime  yearly    110000      135000      https://www.indeed.com/viewjob?jk=da39574a40cb...  About Us TherapyNotes is the national leader i...
+linkedin       Software Engineer - Early Career  Lockheed Martin   Sunnyvale, CA, USA      fulltime  yearly    None        None        https://www.linkedin.com/jobs/view/3693012711      Description:By bringing together people that u...
+linkedin       Full-Stack Software Engineer      Rain              New York, NY, USA       fulltime  yearly    None        None        https://www.linkedin.com/jobs/view/3696158877      Rain’s mission is to create the fastest and ea...
+zip_recruiter Software Engineer - New Grad       ZipRecruiter      Santa Monica, CA, USA   fulltime  yearly    130000      150000      https://www.ziprecruiter.com/jobs/ziprecruiter...  We offer a hybrid work environment. Most US-ba...
+zip_recruiter Software Developer                 TEKsystems        Phoenix, AZ, USA        fulltime  hourly    65          75          https://www.ziprecruiter.com/jobs/teksystems-0...  Top Skills' Details• 6 years of Java developme...
 
 ```
 
@@ -85,8 +85,8 @@ Optional
 ├── job_type (str): 
 |    fulltime, parttime, contract, temporary, internship, perdiem, other, volunteer
 │
-├── proxies (list): 
-|    in format ['user:pass@host:port', 'localhost']
+├── proxies (list|str): 
+|    in format ['user:pass@host:port', 'localhost'], or a single proxy as a string
 |    each job board scraper will round robin through the proxies
 |    socks proxies on LinkedIn, Indeed and BDJobs need pip install "requests[socks]"
 |
@@ -105,7 +105,7 @@ Optional
 |    markdown, html, plain (Format type of the job descriptions. Default is markdown.)
 │
 ├── offset (int): 
-|    starts the search from an offset (e.g. 25 will start the search from the 25th result)
+|    skips that many results (e.g. 25 skips the first 25 and starts from the 26th)
 │
 ├── hours_old (int): 
 |    filters jobs by the number of hours since the job was posted 
@@ -127,7 +127,7 @@ Optional
 |    searches for linkedin jobs with specific company ids
 |
 ├── country_indeed (str): 
-|    filters the country on Indeed & Glassdoor (see below for correct spelling)
+|    filters the country on Indeed & Glassdoor (default is usa; see below for the names)
 |
 ├── enforce_annual_salary (bool): 
 |    converts wages to annual salary
@@ -148,7 +148,7 @@ ZipRecruiter searches for jobs in **US/Canada** & uses only the `location` param
 
 ### **Indeed / Glassdoor**
 
-Indeed & Glassdoor supports most countries, but the `country_indeed` parameter is required. Additionally, use the `location`
+Indeed & Glassdoor support most countries, chosen with the `country_indeed` parameter (default `usa`). Additionally, use the `location`
 parameter to narrow down the location, e.g. city & state if necessary. 
 
 You can specify the following countries when searching on Indeed (use the exact name, * indicates support for Glassdoor):

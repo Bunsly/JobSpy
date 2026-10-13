@@ -4,49 +4,48 @@ import json
 import math
 import re
 from datetime import datetime, timedelta
-from typing import Tuple
+from typing import Any
 
 from jobspy.google.constant import async_param, headers_initial, headers_jobs
 from jobspy.google.util import find_job_info, find_job_info_initial_page
 from jobspy.model import (
     JobPost,
-    JobResponse,
     JobType,
     Location,
     Scraper,
     ScraperInput,
 )
-from jobspy.util import create_session, extract_emails_from_text
+from jobspy.util import RequestsRotating, create_session, extract_emails_from_text
 
 
 class Google(Scraper):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.country = None
         self.jobs_per_page = 10
-        self.seen_urls = set()
+        self.seen_urls: set[str | None] = set()
         self.url = "https://www.google.com/search"
         self.jobs_url = "https://www.google.com/async/callback:550"
 
-    def scrape(self, scraper_input: ScraperInput) -> JobResponse:
+    def scrape(self, scraper_input: ScraperInput) -> list[JobPost]:
         """
         Scrapes Google for jobs with scraper_input criteria.
         :param scraper_input: Information about job search criteria.
-        :return: JobResponse containing a list of jobs.
+        :return: a list of jobs.
         """
         self.scraper_input = scraper_input
         self.scraper_input.results_wanted = min(900, scraper_input.results_wanted)
 
         self.session = create_session(
-            proxies=scraper_input.proxies, ca_cert=scraper_input.ca_cert, is_tls=False
+            RequestsRotating(scraper_input.proxies), scraper_input
         )
         try:
             forward_cursor, job_list = self._get_initial_cursor_and_jobs()
         except Exception as e:
             self.log.error(str(e))
-            return JobResponse(jobs=[])
+            return []
         if forward_cursor is None:
-            return JobResponse(jobs=job_list)
+            return job_list
 
         page = 1
 
@@ -67,18 +66,15 @@ class Google(Scraper):
                 break
             job_list += jobs
             page += 1
-        return JobResponse(
-            jobs=job_list[
-                scraper_input.offset : scraper_input.offset
-                + scraper_input.results_wanted
-            ]
-        )
+        return job_list[
+            scraper_input.offset : scraper_input.offset + scraper_input.results_wanted
+        ]
 
-    def _get_initial_cursor_and_jobs(self) -> Tuple[str, list[JobPost]]:
+    def _get_initial_cursor_and_jobs(self) -> tuple[str | None, list[JobPost]]:
         """Gets initial cursor and jobs to paginate through job listings"""
         query = f"{self.scraper_input.search_term} jobs"
 
-        def get_time_range(hours_old):
+        def get_time_range(hours_old: int) -> str:
             if hours_old <= 24:
                 return "since yesterday"
             elif hours_old <= 72:
@@ -134,7 +130,9 @@ class Google(Scraper):
             self.log.error("no job data returned")
         return data_async_fc, jobs
 
-    def _get_jobs_next_page(self, forward_cursor: str) -> Tuple[list[JobPost], str]:
+    def _get_jobs_next_page(
+        self, forward_cursor: str
+    ) -> tuple[list[JobPost], str | None]:
         params = {"fc": [forward_cursor], "fcv": ["3"], "async": [async_param]}
         response = self.session.get(self.jobs_url, headers=headers_jobs, params=params)
         if response.status_code != 200:
@@ -142,7 +140,7 @@ class Google(Scraper):
             return [], None
         return self._parse_jobs(response.text)
 
-    def _parse_jobs(self, job_data: str) -> Tuple[list[JobPost], str]:
+    def _parse_jobs(self, job_data: str) -> tuple[list[JobPost], str | None]:
         """
         Parses jobs on a page with next page cursor
         """
@@ -163,6 +161,8 @@ class Google(Scraper):
 
             job_info = find_job_info(job_d)
             try:
+                if job_info is None:
+                    raise ValueError("no job info")
                 job_post = self._parse_job(job_info)
             except Exception as e:
                 self.log.warning(f"skipping job: {e}")
@@ -171,11 +171,13 @@ class Google(Scraper):
                 jobs_on_page.append(job_post)
         return jobs_on_page, data_async_fc
 
-    def _parse_job(self, job_info: list):
+    def _parse_job(self, job_info: list[Any]) -> JobPost | None:
         job_url = job_info[3][0][0] if job_info[3] and job_info[3][0] else None
         if job_url in self.seen_urls:
-            return
+            return None
         self.seen_urls.add(job_url)
+        if job_url is None:
+            raise ValueError("no job url")
 
         title = job_info[0]
         company_name = job_info[1]

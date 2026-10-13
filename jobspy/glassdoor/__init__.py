@@ -4,6 +4,8 @@ import math
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
+from curl_cffi.requests import Response
+
 from jobspy.glassdoor.constant import (
     details_alias,
     details_per_request,
@@ -15,15 +17,23 @@ from jobspy.glassdoor.constant import (
     pay_intervals,
     search_query,
 )
+from jobspy.glassdoor.model import (
+    Header,
+    JobListings,
+    JobView,
+    Listing,
+    Place,
+)
 from jobspy.model import (
     Compensation,
     JobPost,
-    JobResponse,
     Location,
     Scraper,
     ScraperInput,
 )
 from jobspy.util import (
+    TLSRotating,
+    check_status,
     create_session,
     format_description,
     get_enum_from_job_type,
@@ -31,32 +41,30 @@ from jobspy.util import (
 
 
 class Glassdoor(Scraper):
-    def scrape(self, scraper_input: ScraperInput) -> JobResponse:
+    def scrape(self, scraper_input: ScraperInput) -> list[JobPost]:
         self.scraper_input = scraper_input
         country = scraper_input.country_indeed
         if country not in domains:
             self.log.warning(
                 f"country_indeed {country.value} isn't supported, skipping it"
             )
-            return JobResponse(jobs=[])
+            return []
         try:
             self.base_url = f"https://{domains[country]}"
             self.session = create_session(
-                proxies=scraper_input.proxies,
-                ca_cert=scraper_input.ca_cert,
-                user_agent=scraper_input.user_agent,
+                TLSRotating(scraper_input.proxies), scraper_input, headers
             )
-            self.session.headers.update(headers)
             variables = self._search_variables()
         except Exception as e:
             self.log.error(str(e))
-            return JobResponse(jobs=[])
+            return []
         if variables is None:
-            return JobResponse(jobs=[])
+            return []
 
         job_list: list[JobPost] = []
-        seen = set()
-        page, cursor, skip = 1, None, scraper_input.offset
+        seen: set[int | None] = set()
+        page, skip = 1, scraper_input.offset
+        cursor: str | None = None
 
         while len(job_list) < scraper_input.results_wanted:
             self.log.info(f"search page: {page}")
@@ -66,16 +74,15 @@ class Glassdoor(Scraper):
                     search_query,
                     {**variables, "pageNumber": page, "pageCursor": cursor},
                 )
-                if response.status_code != 200:
-                    self.log.error(f"response status code {response.status_code}")
-                    break
+                check_status(response)
                 answer = response.json()[0]
                 result = (answer.get("data") or {}).get("jobListings")
                 if not result:
                     raise ValueError(f"API error: {answer.get('errors')}")
-                listings = result.get("jobListings") or []
-                cursors = result.get("paginationCursors") or []
-                cursor = {c["pageNumber"]: c["cursor"] for c in cursors}.get(page + 1)
+                job_listings = JobListings.model_validate(result)
+                listings = job_listings.jobListings or []
+                cursors = job_listings.paginationCursors or []
+                cursor = {c.pageNumber: c.cursor for c in cursors}.get(page + 1)
             except Exception as e:
                 self.log.error(str(e))
                 break
@@ -84,8 +91,8 @@ class Glassdoor(Scraper):
             page_jobs: list[JobPost] = []
             for listing in listings:
                 try:
-                    job = listing["jobview"]
-                    job_id = job["job"]["listingId"]
+                    entry = Listing.model_validate(listing)
+                    job, job_id = entry.jobview, entry.listingId
                     if job_id in seen:
                         continue
                     seen.add(job_id)
@@ -102,9 +109,10 @@ class Glassdoor(Scraper):
                         break
 
             if scraper_input.fetch_description and page_jobs:
-                details = self._fetch_details([job.id for job in page_jobs])
+                details = self._fetch_details([job.id for job in page_jobs if job.id])
                 page_jobs = [
-                    job.model_copy(update=details.get(job.id, {})) for job in page_jobs
+                    job.model_copy(update=details[job.id] if job.id in details else {})
+                    for job in page_jobs
                 ]
             job_list += page_jobs
 
@@ -112,25 +120,25 @@ class Glassdoor(Scraper):
                 break
             page += 1
 
-        return JobResponse(jobs=job_list)
+        return job_list
 
-    def _graph(self, operation: str, query: str, variables: dict):
+    def _graph(
+        self, operation: str, query: str, variables: dict[str, object]
+    ) -> Response:
         return self.session.post(
             f"{self.base_url}/graph",
             json=[{"operationName": operation, "variables": variables, "query": query}],
         )
 
-    def _search_variables(self) -> dict | None:
+    def _search_variables(self) -> dict[str, object] | None:
         """The search's variables, or None when the location isn't found."""
         response = self.session.get(
             f"{self.base_url}/autocomplete/location"
             "?locationTypeFilters=CITY,STATE,COUNTRY&caller=jobs"
             f"&term={quote(self.scraper_input.location or '')}"
         )
-        if response.status_code != 200:
-            self.log.error(f"response status code {response.status_code}")
-            return None
-        variables = {
+        check_status(response)
+        variables: dict[str, object] = {
             "keyword": self.scraper_input.search_term,
             "numJobsToShow": jobs_per_page,
             "filterParams": self._filters(),
@@ -141,8 +149,9 @@ class Glassdoor(Scraper):
         if not places:
             self.log.error(f"location '{self.scraper_input.location}' not found")
             return None
-        location_id = int(places[0]["locationId"])
-        location_type = location_types[places[0]["locationType"]]
+        place = Place.model_validate(places[0])
+        location_id = place.locationId
+        location_type = location_types[place.locationType]
         return {
             **variables,
             "locationId": location_id,
@@ -150,15 +159,15 @@ class Glassdoor(Scraper):
             "parameterUrlInput": f"IL.0,12_I{location_type}{location_id}",
         }
 
-    def _filters(self) -> list[dict]:
-        filters = {}
+    def _filters(self) -> list[dict[str, str]]:
+        filters: dict[str, str | int] = {}
         if self.scraper_input.location and self.scraper_input.distance is not None:
             filters["radius"] = self.scraper_input.distance
         if hours_old := self.scraper_input.hours_old:
             filters["fromAge"] = math.ceil(hours_old / 24)
         job_type = self.scraper_input.job_type
-        if code := job_type_codes.get(job_type):
-            filters["jobType"] = code
+        if job_type in job_type_codes:
+            filters["jobType"] = job_type_codes[job_type]
         elif job_type:
             self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
         if self.scraper_input.is_remote:
@@ -169,67 +178,68 @@ class Glassdoor(Scraper):
             {"filterKey": key, "values": str(value)} for key, value in filters.items()
         ]
 
-    def _process_job(self, job: dict) -> JobPost | None:
-        header = job["header"]
-        age = header["ageInDays"]
+    def _process_job(self, raw: dict[str, object]) -> JobPost | None:
+        job = JobView.model_validate(raw)
+        header = job.header
+        age = header.ageInDays
         hours_old = self.scraper_input.hours_old
         if hours_old and age >= math.ceil(hours_old / 24):
             return None
 
-        job_id = int(job["job"]["listingId"])
-        company_id = header["employer"]["id"]
-        company = job["overview"]
-        website = company.get("website")
+        job_id = job.listingId
+        company_id = header.id
+        company = job.overview
+        website = company.website
         if website and not website.startswith("http"):
             website = f"https://{website}"
         job_types = [
             job_type
-            for key in header.get("jobTypeKeys") or []
+            for key in header.jobTypeKeys or []
             if (job_type := get_enum_from_job_type(key.rpartition(".")[2]))
         ]
         return JobPost(
             id=f"gd-{job_id}",
-            title=job["job"]["jobTitleText"],
-            company_name=header["employerNameFromSearch"],
+            title=job.jobTitleText,
+            company_name=header.employerNameFromSearch,
             company_url=(
                 f"{self.base_url}/Overview/W-EI_IE{company_id}.htm"
                 if company_id
                 else None
             ),
-            company_logo=company.get("squareLogoUrl"),
-            location=self._parse_location(header, job["map"]["country"]),
+            company_logo=company.squareLogoUrl,
+            location=self._parse_location(header, job.country),
             job_url=f"{self.base_url}/job-listing/j?jl={job_id}",
             date_posted=datetime.now(timezone.utc).date() - timedelta(days=age),
             job_type=job_types or None,
-            is_remote="WORK_FROM_HOME" in (header.get("remoteWorkTypes") or [])
-            or header.get("locationName") == "Remote",
+            is_remote="WORK_FROM_HOME" in (header.remoteWorkTypes or [])
+            or header.locationName == "Remote",
             compensation=self._parse_salary(header),
-            listing_type=header["adOrderSponsorshipLevel"].lower(),
-            company_rating=header.get("rating") or None,
-            company_industry=(company.get("primaryIndustry") or {}).get("industryName"),
+            listing_type=header.adOrderSponsorshipLevel.lower(),
+            company_rating=header.rating or None,
+            company_industry=company.industryName,
             company_url_direct=website or None,
-            company_addresses=company.get("headquarters"),
-            company_num_employees=company.get("size"),
-            company_revenue=company.get("revenue"),
-            company_description=(company.get("overview") or {}).get("description"),
+            company_addresses=company.headquarters,
+            company_num_employees=company.size,
+            company_revenue=company.revenue,
+            company_description=company.description,
         )
 
     @staticmethod
-    def _parse_salary(header: dict) -> Compensation | None:
-        pay = header["payPeriodAdjustedPay"]
+    def _parse_salary(header: Header) -> Compensation | None:
+        pay = header.payPeriodAdjustedPay
         if not pay:
             return None
         return Compensation(
-            interval=pay_intervals.get(header["payPeriod"]),
-            min_amount=round(pay["p10"], 2),
-            max_amount=round(pay["p90"], 2),
-            currency=header["payCurrency"],
+            interval=pay_intervals.get(header.payPeriod or ""),
+            min_amount=round(pay.p10, 2),
+            max_amount=round(pay.p90, 2),
+            currency=header.payCurrency,
         )
 
     @staticmethod
-    def _parse_location(header: dict, country: str | None) -> Location | None:
+    def _parse_location(header: Header, country: str | None) -> Location | None:
         """locationName is a city ("Chicago, IL", "Paris"), a state ("Oregon"), a country or "Remote"."""
-        name, kind = header["locationName"], header["locationType"]
+        name, kind = header.locationName, header.locationType
         if not name or name == "Remote":
             return None
         if kind == "N":
@@ -239,9 +249,9 @@ class Glassdoor(Scraper):
         city, *rest = name.split(", ")
         return Location(city=city, state=rest[-1] if rest else None, country=country)
 
-    def _fetch_details(self, job_ids: list[str]) -> dict:
+    def _fetch_details(self, job_ids: list[str]) -> dict[str, dict[str, object]]:
         """The description and emails by job id, one request for every 25 jobs."""
-        details = {}
+        details: dict[str, dict[str, object]] = {}
         try:
             for start in range(0, len(job_ids), details_per_request):
                 aliases = "".join(
@@ -251,11 +261,7 @@ class Glassdoor(Scraper):
                 response = self._graph(
                     "JobDetails", f"query JobDetails {{{aliases}}}", {}
                 )
-                if response.status_code != 200:
-                    self.log.warning(
-                        f"response status code {response.status_code} for job details"
-                    )
-                    break
+                check_status(response)
                 for alias, view in response.json()[0]["data"].items():
                     if view:
                         description, emails = format_description(

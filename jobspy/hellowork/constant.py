@@ -8,7 +8,7 @@ description_headings = ("Les missions du poste", "Détail du poste")
 
 date_windows = ((24, "h"), (72, "d"), (168, "w"), (720, "m"))
 
-job_type_params = {
+job_type_params: dict[JobType, dict[str, str | list[str]]] = {
     JobType.FULL_TIME: {"ctt": "ft"},
     JobType.PART_TIME: {"ctt": "pt"},
     JobType.INTERNSHIP: {"c": ["Stage", "Alternance"]},
