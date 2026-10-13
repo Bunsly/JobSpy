@@ -84,7 +84,7 @@ class Country(Enum):
     VIETNAM = "vietnam"
 
     @classmethod
-    def _missing_(cls, value):
+    def _missing_(cls, value: object) -> Country | None:
         name = str(value).strip().lower()
         name = country_aliases.get(name, name)
         return next((country for country in cls if country.value == name), None)
@@ -106,24 +106,18 @@ class Location(BaseModel):
     state: str | None = None
 
     def display_location(self) -> str:
-        location_parts = []
-        if self.city:
-            location_parts.append(self.city)
-        if self.state:
-            location_parts.append(self.state)
+        parts = [self.city, self.state]
         country = self.country
         if isinstance(country, str):
+            text = country
             try:
-                country = Country(country)
+                country = Country(text)
             except ValueError:
-                location_parts.append(country)
-                country = None
-        if country:
+                parts.append(text)
+        if isinstance(country, Country):
             name = country.value
-            location_parts.append(
-                name.upper() if name in ("usa", "uk") else name.title()
-            )
-        return ", ".join(location_parts)
+            parts.append(name.upper() if name in ("usa", "uk") else name.title())
+        return ", ".join(part for part in parts if part and part.strip())
 
 
 class CompensationInterval(Enum):
@@ -138,7 +132,7 @@ class Compensation(BaseModel):
     interval: CompensationInterval | None = None
     min_amount: float | None = None
     max_amount: float | None = None
-    currency: str | None = "USD"
+    currency: str | None = None
 
 
 class DescriptionFormat(Enum):
@@ -180,10 +174,6 @@ class JobPost(BaseModel):
     company_reviews_count: int | None = None
     vacancy_count: int | None = None
     work_from_home_type: str | None = None  # Naukri: "Hybrid", "Remote", ...
-
-
-class JobResponse(BaseModel):
-    jobs: list[JobPost] = []
 
 
 class Site(Enum):
@@ -228,21 +218,19 @@ class ScraperInput(BaseModel):
 
     @field_validator("site_name", "proxies", mode="before")
     @classmethod
-    def _one_or_several(cls, value):
+    def _one_or_several(cls, value: object) -> object:
         return [value] if isinstance(value, (str, Enum)) else value
 
     @model_validator(mode="after")
-    def _merge_linkedin_fetch_description(self):
+    def _merge_linkedin_fetch_description(self) -> ScraperInput:
         if self.linkedin_fetch_description:
             self.fetch_description = True
         return self
 
 
 class Scraper(ABC):
-    def __init__(self):
-        self.session = None
-        self.scraper_input = None
+    def __init__(self) -> None:
         self.log = logging.getLogger(type(self).__module__)
 
     @abstractmethod
-    def scrape(self, scraper_input: ScraperInput) -> JobResponse: ...
+    def scrape(self, scraper_input: ScraperInput) -> list[JobPost]: ...

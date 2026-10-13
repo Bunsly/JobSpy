@@ -2,7 +2,7 @@ from jobspy.model import JobType
 
 jobs_per_page = 50
 
-search_params = {
+search_params: dict[str, str | int] = {
     "rpp": jobs_per_page,
     "isPro": 0,
     "ToggleJobs": "true",

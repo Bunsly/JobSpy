@@ -15,19 +15,22 @@ from jobspy.bdjobs.constant import (
     locations,
     search_params,
 )
+from jobspy.bdjobs.model import Job, JobDetails, JobSearch
 from jobspy.model import (
     Compensation,
     CompensationInterval,
     JobPost,
-    JobResponse,
     JobType,
     Location,
     Scraper,
     ScraperInput,
 )
 from jobspy.util import (
+    RequestsRotating,
+    check_status,
     create_session,
     format_description,
+    too_old,
 )
 
 
@@ -35,16 +38,12 @@ class BDJobs(Scraper):
     base_url = "https://bdjobs.com"
     search_url = "https://api.bdjobs.com/Jobs/api/JobSearch/GetJobSearch"
     details_url = "https://gateway.bdjobs.com/jobapply/api/JobSubsystem/Job-Details"
-    delay = 2
-    band_delay = 3
+    delay = (2, 5)
 
-    def scrape(self, scraper_input: ScraperInput) -> JobResponse:
+    def scrape(self, scraper_input: ScraperInput) -> list[JobPost]:
         self.scraper_input = scraper_input
         self.session = create_session(
-            proxies=scraper_input.proxies,
-            ca_cert=scraper_input.ca_cert,
-            is_tls=False,
-            user_agent=scraper_input.user_agent,
+            RequestsRotating(scraper_input.proxies), scraper_input
         )
         params = self._search_params()
         job_list: list[JobPost] = []
@@ -53,21 +52,19 @@ class BDJobs(Scraper):
 
         while len(job_list) < scraper_input.results_wanted:
             if page > 1:
-                time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
+                time.sleep(random.uniform(*self.delay))
             self.log.info(f"search page: {page}")
             try:
                 response = self.session.get(
                     self.search_url,
                     params=params | {"pg": page},
                 )
-                if response.status_code != 200:
-                    self.log.error(f"response status code {response.status_code}")
-                    break
-                result = response.json()
-                jobs = result["data"]
+                check_status(response)
+                result = JobSearch.model_validate(response.json())
+                jobs = result.data
                 if page == 1:
-                    jobs = (result.get("premiumData") or []) + jobs
-                last_page = int(result["common"]["totalpages"])
+                    jobs = (result.premiumData or []) + jobs
+                last_page = result.totalpages
                 new_jobs = []
                 for job in jobs:
                     if job.get("Jobid") not in seen:
@@ -94,9 +91,9 @@ class BDJobs(Scraper):
             if not new_jobs or page > last_page:
                 break
 
-        return JobResponse(jobs=job_list)
+        return job_list
 
-    def _search_params(self) -> dict:
+    def _search_params(self) -> dict[str, str | int]:
         params = search_params | {"keyword": self.scraper_input.search_term or ""}
         place = (self.scraper_input.location or "").split(",")[0].strip().lower()
         if place in locations:
@@ -119,35 +116,34 @@ class BDJobs(Scraper):
             self.log.warning("easy_apply isn't supported, ignoring it")
         return params
 
-    def _process_job(self, job: dict) -> JobPost | None:
-        posted = datetime.fromisoformat(job["publishDate"].replace("Z", "+00:00"))
-        hours_old = self.scraper_input.hours_old
-        if hours_old and posted.timestamp() < time.time() - hours_old * 3600:
+    def _process_job(self, raw: dict[str, object]) -> JobPost | None:
+        job = Job.model_validate(raw)
+        posted = datetime.fromisoformat(job.publishDate.replace("Z", "+00:00"))
+        if too_old(posted.timestamp(), self.scraper_input.hours_old):
             return None
-        is_remote = job["WorkPlace"] == "Home"
+        is_remote = job.WorkPlace == "Home"
         if self.scraper_input.is_remote and not is_remote:
             return None
 
-        job_id = job["Jobid"]
+        job_id = job.Jobid
         fetch = self.scraper_input.fetch_description
         details = self._fetch_details(job_id) if fetch else {}
 
-        city = (job["location"] or "").replace("Anywhere in Bangladesh", "").strip(", ")
+        city = (job.location or "").replace("Anywhere in Bangladesh", "").strip(", ")
         return JobPost(
             id=f"bd-{job_id}",
-            title=job["jobTitle"],
-            company_name=job["companyName"],
+            title=job.jobTitle,
+            company_name=job.companyName,
             location=Location(city=city or None, country="Bangladesh"),
             job_url=f"{self.base_url}/h/details/{job_id}",
             date_posted=posted.date(),
-            job_type=self._parse_job_type(job["JobType"]),
+            job_type=self._parse_job_type(job.JobType),
             is_remote=is_remote,
-            compensation=self._parse_salary(job["Salary"]),
-            company_logo=job["logoUrl"] or None,
-            vacancy_count=job["Vacancies"],
-            experience_range=job["experience"] if job["experience"] != "NA" else None,
-            **details,
-        )
+            compensation=self._parse_salary(job.Salary),
+            company_logo=job.logoUrl or None,
+            vacancy_count=job.Vacancies,
+            experience_range=job.experience if job.experience != "NA" else None,
+        ).model_copy(update=details)
 
     @staticmethod
     def _parse_job_type(text: str) -> list[JobType] | None:
@@ -167,54 +163,50 @@ class BDJobs(Scraper):
             currency="BDT",
         )
 
-    def _fetch_details(self, job_id: str) -> dict:
+    def _fetch_details(self, job_id: str) -> dict[str, object]:
         try:
             response = self.session.get(
                 self.details_url,
-                params={"jobId": job_id, "ln": 1, "IsCorporate": "false"},
+                params={"jobId": job_id, "ln": "1", "IsCorporate": "false"},
             )
-            if response.status_code != 200:
-                self.log.warning(
-                    f"response status code {response.status_code} for job {job_id}"
-                )
+            check_status(response)
+            result = JobDetails.model_validate(response.json())
+            if not result.data:
+                self.log.warning(f"job {job_id}: {result.message}")
                 return {}
-            result = response.json()
-            if not result["data"]:
-                self.log.warning(f"job {job_id}: {result['message']}")
-                return {}
-            details = result["data"][0]
+            details = result.data[0]
             description, emails = format_description(
                 "".join(
-                    f"<h4>{heading}</h4>{details[field]}"
+                    f"<h4>{heading}</h4>{getattr(details, field)}"
                     for heading, field in description_sections
-                    if details[field]
+                    if getattr(details, field)
                 ),
                 self.scraper_input.description_format,
             )
-            skills = details["SkillsRequired"]
-            company_id = details["CompanyID"]
+            skills = details.SkillsRequired
+            company_id = details.CompanyID
             company_url = None
-            if company_id != "0" and not details["HaveAliasName"]:
+            if company_id != "0" and not details.HaveAliasName:
                 company_url = f"{self.base_url}/h/company-insight/{company_id}"
-            website = details["CompanyWeb"].strip()
+            website = details.CompanyWeb.strip()
             if " " in website:
                 website = ""
             elif website and not website.startswith("http"):
                 website = f"https://{website}"
-            apply_link = re.search(r"href='([^']+)", details["ApplyURL"])
+            apply_link = re.search(r"href='([^']+)", details.ApplyURL)
             apply_url = apply_link.group(1) if apply_link else None
             host = urlparse(apply_url or "").hostname or ""
             if host == "bdjobs.com" or host.endswith(".bdjobs.com"):
                 apply_url = None
             return {
-                "description": description or None,
+                "description": description,
                 "emails": emails,
                 "skills": skills.split(", ") if skills else None,
                 "job_url_direct": apply_url,
                 "company_url": company_url,
                 "company_url_direct": website or None,
-                "company_addresses": details["CompanyAddress"] or None,
-                "company_description": details["CompanyBusiness"] or None,
+                "company_addresses": details.CompanyAddress or None,
+                "company_description": details.CompanyBusiness or None,
             }
         except Exception as e:
             self.log.warning(f"job {job_id}: {e}")

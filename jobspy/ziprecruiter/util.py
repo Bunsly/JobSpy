@@ -6,13 +6,13 @@ import re
 from urllib.parse import parse_qs, urlsplit
 
 
-def page_values(html: str, *keys: str) -> list:
+def page_values(html: str, *keys: str) -> dict[str, object]:
     """Values of `keys` in the data the page embeds for its JavaScript."""
     chunks = re.findall(r'self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)', html)
     data = "".join(json.loads(chunk) for chunk in chunks)
     texts = _text_rows(data)
 
-    def fill(obj: dict) -> dict:
+    def fill(obj: dict[str, object]) -> dict[str, object]:
         # "$2a" is text row 2a; a leading "$" is doubled
         for name, value in obj.items():
             if isinstance(value, str) and value.startswith("$"):
@@ -21,12 +21,12 @@ def page_values(html: str, *keys: str) -> list:
         return obj
 
     decoder = json.JSONDecoder(object_hook=fill)
-    values = []
+    values = {}
     for key in keys:
         start = data.find(f'"{key}":')
         if start == -1:
             raise ValueError(f"no {key} in the page")
-        values.append(decoder.raw_decode(data, start + len(key) + 3)[0])
+        values[key] = decoder.raw_decode(data, start + len(key) + 3)[0]
     return values
 
 
@@ -48,7 +48,10 @@ def direct_url(redirect_url: str) -> str | None:
     try:
         token = parse_qs(urlsplit(redirect_url).query)["match_token"][0]
         fields = base64.urlsafe_b64decode(token + "=" * (-len(token) % 4))
-        start = re.search(rb"https?://", fields).start()
+        match = re.search(rb"https?://", fields)
+        if not match:
+            return None
+        start = match.start()
         length = fields[start - 1]
         if fields[start - 2] >= 0x80:  # a length over 127 takes two bytes
             length = fields[start - 2] - 0x80 + length * 0x80

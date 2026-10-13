@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import warnings
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pandas as pd
 from pydantic import ValidationError
@@ -15,21 +17,22 @@ from jobspy.indeed import Indeed
 from jobspy.linkedin import LinkedIn
 from jobspy.model import (
     Country,
-    JobResponse,
-    Location,
+    DescriptionFormat,
+    JobPost,
+    JobType,
+    Scraper,
     ScraperInput,
     Site,
 )
 from jobspy.naukri import Naukri
 from jobspy.util import (
     configure_logging,
-    convert_to_annual,
     desired_order,
     extract_salary,
 )
 from jobspy.ziprecruiter import ZipRecruiter
 
-SCRAPER_MAPPING = {
+SCRAPER_MAPPING: dict[Site, type[Scraper]] = {
     Site.LINKEDIN: LinkedIn,
     Site.INDEED: Indeed,
     Site.ZIP_RECRUITER: ZipRecruiter,
@@ -43,21 +46,21 @@ SCRAPER_MAPPING = {
 
 
 def scrape_jobs(
-    site_name: str | list[str] | Site | list[Site] | None = None,
+    site_name: str | Site | Iterable[str | Site] | None = None,
     search_term: str | None = None,
     google_search_term: str | None = None,
     location: str | None = None,
     distance: int | None = 50,
     is_remote: bool | None = False,
-    job_type: str | None = None,
+    job_type: str | JobType | None = None,
     easy_apply: bool | None = None,
     results_wanted: int | None = 15,
-    country_indeed: str | None = "usa",
-    proxies: list[str] | str | None = None,
-    ca_cert: str | None = None,
-    description_format: str | None = "markdown",
+    country_indeed: str | Country | None = "usa",
+    proxies: str | Iterable[str] | None = None,
+    ca_cert: str | Path | None = None,
+    description_format: str | DescriptionFormat | None = "markdown",
     linkedin_fetch_description: bool | None = False,
-    linkedin_company_ids: list[int] | None = None,
+    linkedin_company_ids: Iterable[int] | None = None,
     offset: int | None = 0,
     hours_old: int | None = None,
     enforce_annual_salary: bool | None = False,
@@ -96,22 +99,20 @@ def scrape_jobs(
         )
     configure_logging(None if verbose is None else scraper_input.verbose)
 
-    def scrape_site(site: Site) -> tuple[str, JobResponse]:
+    def scrape_site(site: Site) -> tuple[str, list[JobPost]]:
         scraper = SCRAPER_MAPPING[site]()
-        scraped_data: JobResponse = scraper.scrape(scraper_input)
+        scraped_data = scraper.scrape(scraper_input)
         scraper.log.info("finished scraping")
         return site.value, scraped_data
 
     with ThreadPoolExecutor() as executor:
-        futures = [
-            executor.submit(scrape_site, site)
-            for site in dict.fromkeys(scraper_input.site_name)
-        ]
-        site_to_jobs_dict = dict(future.result() for future in as_completed(futures))
+        site_to_jobs_dict = dict(
+            executor.map(scrape_site, dict.fromkeys(scraper_input.site_name))
+        )
 
     rows = []
-    for site, job_response in site_to_jobs_dict.items():
-        for job in job_response.jobs:
+    for site, jobs in site_to_jobs_dict.items():
+        for job in jobs:
             job_data = job.model_dump()
             job_data["site"] = site
             job_data["company"] = job_data["company_name"]
@@ -122,35 +123,35 @@ def scrape_jobs(
             )
             for name in ("emails", "skills"):
                 job_data[name] = ", ".join(job_data[name]) if job_data[name] else None
-            if job_data["location"]:
-                job_data["location"] = Location(
-                    **job_data["location"]
-                ).display_location()
+            job_data["location"] = (
+                job.location.display_location() if job.location else None
+            )
 
             job_data |= dict.fromkeys(
                 ("interval", "min_amount", "max_amount", "currency", "salary_source")
             )
-            if compensation := job_data["compensation"]:
-                interval = compensation.pop("interval")
-                job_data |= compensation
-                job_data["interval"] = interval.value if interval else None
+            if job.compensation:
+                job_data |= job.compensation.model_dump(mode="json")
                 job_data["salary_source"] = "direct_data"
-                if scraper_input.enforce_annual_salary and job_data["interval"] not in (
-                    None,
-                    "yearly",
-                ):
-                    convert_to_annual(job_data)
             elif scraper_input.country_indeed == Country.USA:
                 (
                     job_data["interval"],
                     job_data["min_amount"],
                     job_data["max_amount"],
                     job_data["currency"],
-                ) = extract_salary(
-                    job_data["description"],
-                    enforce_annual_salary=scraper_input.enforce_annual_salary,
-                )
+                ) = extract_salary(job_data["description"])
                 job_data["salary_source"] = "description"
+            if scraper_input.enforce_annual_salary and job_data["interval"] not in (
+                None,
+                "yearly",
+            ):
+                factor = {"hourly": 2080, "daily": 260, "weekly": 52, "monthly": 12}[
+                    job_data["interval"]
+                ]
+                for name in ("min_amount", "max_amount"):
+                    if job_data[name] is not None:
+                        job_data[name] = round(job_data[name] * factor, 2)
+                job_data["interval"] = "yearly"
             if not (job_data["min_amount"] or job_data["max_amount"]):
                 job_data["salary_source"] = None
             rows.append(job_data)

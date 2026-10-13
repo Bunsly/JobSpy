@@ -21,11 +21,12 @@ from jobspy.linkedin.util import criteria, is_job_remote, parse_location
 from jobspy.model import (
     Compensation,
     JobPost,
-    JobResponse,
     Scraper,
     ScraperInput,
 )
 from jobspy.util import (
+    RequestsRotating,
+    check_status,
     create_session,
     format_description,
     get_enum_from_job_type,
@@ -34,20 +35,15 @@ from jobspy.util import (
 
 class LinkedIn(Scraper):
     base_url = "https://www.linkedin.com"
-    delay = 3
-    band_delay = 4
+    delay = (3, 7)
 
-    def scrape(self, scraper_input: ScraperInput) -> JobResponse:
+    def scrape(self, scraper_input: ScraperInput) -> list[JobPost]:
         self.scraper_input = scraper_input
         self.session = create_session(
-            proxies=scraper_input.proxies,
-            ca_cert=scraper_input.ca_cert,
-            is_tls=False,
-            clear_cookies=True,
+            RequestsRotating(scraper_input.proxies, clear_cookies=True),
+            scraper_input,
+            headers,
         )
-        self.session.headers.update(headers)
-        if scraper_input.user_agent:
-            self.session.headers["user-agent"] = scraper_input.user_agent
         for name in ("is_remote", "job_type"):
             if getattr(scraper_input, name):
                 self.log.warning(f"{name} isn't supported, ignoring it")
@@ -59,16 +55,14 @@ class LinkedIn(Scraper):
 
         while len(job_list) < scraper_input.results_wanted and start < max_results:
             if start > first_start:
-                time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
+                time.sleep(random.uniform(*self.delay))
             self.log.info(f"search page: {page}")
             try:
                 response = self.session.get(
                     f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search",
                     params={**params, "start": start},
                 )
-                if response.status_code != 200:
-                    self.log.error(f"response status code {response.status_code}")
-                    break
+                check_status(response)
             except Exception as e:
                 self.log.error(str(e))
                 break
@@ -86,7 +80,7 @@ class LinkedIn(Scraper):
 
             new_cards = []
             for job_card in job_cards:
-                job_id = job_card.get("data-entity-urn", "").split(":")[-1]
+                job_id = str(job_card.get("data-entity-urn", "")).split(":")[-1]
                 if job_id and job_id not in seen:
                     seen.add(job_id)
                     new_cards.append((job_id, job_card))
@@ -106,11 +100,11 @@ class LinkedIn(Scraper):
             start += jobs_per_page
             page += 1
 
-        return JobResponse(jobs=job_list)
+        return job_list
 
-    def _search_params(self) -> dict:
+    def _search_params(self) -> dict[str, str | int]:
         scraper_input = self.scraper_input
-        params = {
+        params: dict[str, str | int | None] = {
             "keywords": scraper_input.search_term,
             "location": scraper_input.location,
             "distance": scraper_input.distance,
@@ -124,17 +118,24 @@ class LinkedIn(Scraper):
         return {name: value for name, value in params.items() if value is not None}
 
     def _process_job(self, job_card: Tag, job_id: str) -> JobPost:
-        title = job_card.find("h3", class_="base-search-card__title").get_text(
-            strip=True
-        )
+        title_tag = job_card.find("h3", class_="base-search-card__title")
+        if title_tag is None:
+            raise ValueError("no title")
+        title = title_tag.get_text(strip=True)
 
         company_tag = job_card.find("h4", class_="base-search-card__subtitle")
+        if company_tag is None:
+            raise ValueError("no company")
         company_link = company_tag.find("a", href=True)
-        location = parse_location(
-            job_card.find("span", class_="job-search-card__location").text.strip()
-        )
+        location_tag = job_card.find("span", class_="job-search-card__location")
+        if location_tag is None:
+            raise ValueError("no location")
+        location = parse_location(location_tag.text.strip())
+        time_tag = job_card.find("time")
         try:
-            date_posted = date.fromisoformat(job_card.find("time")["datetime"])
+            date_posted = (
+                date.fromisoformat(str(time_tag["datetime"])) if time_tag else None
+            )
         except (TypeError, KeyError, ValueError):
             date_posted = None
         job_details = (
@@ -145,13 +146,14 @@ class LinkedIn(Scraper):
             id=f"li-{job_id}",
             title=title,
             company_name=company_tag.get_text(strip=True),
-            company_url=company_link["href"].split("?")[0] if company_link else None,
+            company_url=str(company_link["href"]).split("?")[0]
+            if company_link
+            else None,
             location=location,
             is_remote=is_job_remote(title, location),
             date_posted=date_posted,
             job_url=f"{self.base_url}/jobs/view/{job_id}",
-            **job_details,
-        )
+        ).model_copy(update=job_details)
 
     @staticmethod
     def _parse_salary(text: str) -> Compensation | None:
@@ -170,19 +172,15 @@ class LinkedIn(Scraper):
             currency=currencies.get(currency, currency),
         )
 
-    def _fetch_details(self, job_id: str) -> dict:
+    def _fetch_details(self, job_id: str) -> dict[str, object]:
         """
         The job page's description, pay, logo and criteria; empty when the page can't be read
         """
         try:
             response = self.session.get(f"{self.base_url}/jobs/view/{job_id}")
+            check_status(response)
         except Exception as e:
             self.log.warning(f"job {job_id}: {e}")
-            return {}
-        if response.status_code != 200:
-            self.log.warning(
-                f"response status code {response.status_code} for job {job_id}"
-            )
             return {}
         path = urlparse(response.url).path
         if not path.startswith("/jobs/view/"):
