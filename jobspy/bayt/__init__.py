@@ -48,7 +48,7 @@ class Bayt(Scraper):
         self.hybrid_ids: set[str] | None = None
         job_type = scraper_input.job_type
         if job_type and job_type not in job_type_codes:
-            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
+            self.warn(f"job_type {job_type.value} isn't supported, ignoring it")
         self.country, self.city = self._location(scraper_input.location)
         hours_old = scraper_input.hours_old
         oldest = time.time() - hours_old * 3600 if hours_old else 0
@@ -137,11 +137,11 @@ class Bayt(Scraper):
             url = self._search_url(page, hybrid)
             response = self.session.get(url, allow_redirects=True)
         except Exception as e:
-            self.log.error(str(e))
+            self.fail(str(e))
             return None
         if response.status_code == 404 and (self.city or self.country != all_countries):
             wider = "the country" if self.city else "all countries"
-            self.log.warning(
+            self.warn(
                 f"location '{self.scraper_input.location}' not found, searching {wider}"
             )
             if self.city:
@@ -150,7 +150,7 @@ class Bayt(Scraper):
                 self.country = all_countries
             return self._fetch_cards(page, hybrid)
         if response.status_code != 200:
-            self.log.error(f"response status code {response.status_code}")
+            self.fail(f"response status code {response.status_code}")
             return None
         if page > 1 and f"page={page}" not in response.url:
             return []

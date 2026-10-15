@@ -55,7 +55,7 @@ class LinkedIn(Scraper):
         )
         for name in ("is_remote", "job_type"):
             if getattr(scraper_input, name):
-                self.log.warning(f"{name} isn't supported, ignoring it")
+                self.warn(f"{name} isn't supported, ignoring it")
         params = self._search_params()
         job_list: list[JobPost] = []
         seen = set()
@@ -73,14 +73,14 @@ class LinkedIn(Scraper):
                 )
                 check_status(response)
             except Exception as e:
-                self.log.error(str(e))
+                self.fail(str(e))
                 break
 
             soup = BeautifulSoup(response.text, "html.parser")
             job_cards = soup.find_all(class_="base-search-card")
             if not job_cards:
                 if response.text.strip() != empty_page:
-                    self.log.error("unexpected page with no jobs (blocked?)")
+                    self.fail("unexpected page with no jobs (blocked?)")
                 elif start:
                     self.log.warning(
                         f"empty page at start={start} (the end of the results, or throttled)"

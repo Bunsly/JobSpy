@@ -283,6 +283,16 @@ class ScraperInput(BaseModel):
 class Scraper(ABC):
     def __init__(self) -> None:
         self.log = logging.getLogger(type(self).__module__)
+        self.error: str | None = None
+        self.warnings: list[str] = []
+
+    def fail(self, message: str) -> None:
+        self.log.error(message)
+        self.error = message
+
+    def warn(self, message: str) -> None:
+        self.log.warning(message)
+        self.warnings.append(message)
 
     @abstractmethod
     def scrape(self, scraper_input: ScraperInput) -> list[JobPost]: ...

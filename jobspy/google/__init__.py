@@ -42,7 +42,7 @@ class Google(Scraper):
         try:
             forward_cursor, job_list = self._get_initial_cursor_and_jobs()
         except Exception as e:
-            self.log.error(str(e))
+            self.fail(str(e))
             return []
         if forward_cursor is None:
             return job_list
@@ -59,7 +59,7 @@ class Google(Scraper):
             try:
                 jobs, forward_cursor = self._get_jobs_next_page(forward_cursor)
             except Exception as e:
-                self.log.error(str(e))
+                self.fail(str(e))
                 break
             if not jobs:
                 self.log.info(f"found no jobs on page: {page}")
@@ -110,7 +110,7 @@ class Google(Scraper):
         params = {"q": query, "udm": "8"}
         response = self.session.get(self.url, headers=headers_initial, params=params)
         if response.status_code != 200:
-            self.log.error(f"response status code {response.status_code}")
+            self.fail(f"response status code {response.status_code}")
             return None, []
 
         pattern_fc = r'<div jsname="Yust4d"[^>]+data-async-fc="([^"]+)"'
@@ -127,7 +127,7 @@ class Google(Scraper):
             if job_post:
                 jobs.append(job_post)
         if not jobs and not data_async_fc:
-            self.log.error("no job data returned")
+            self.fail("no job data returned")
         return data_async_fc, jobs
 
     def _get_jobs_next_page(
@@ -136,7 +136,7 @@ class Google(Scraper):
         params = {"fc": [forward_cursor], "fcv": ["3"], "async": [async_param]}
         response = self.session.get(self.jobs_url, headers=headers_jobs, params=params)
         if response.status_code != 200:
-            self.log.error(f"response status code {response.status_code}")
+            self.fail(f"response status code {response.status_code}")
             return [], None
         return self._parse_jobs(response.text)
 

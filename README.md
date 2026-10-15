@@ -32,23 +32,21 @@ _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/)
 ### Usage
 
 ```python
-import csv
 from jobspy import scrape_jobs
 
 jobs = scrape_jobs(
-    site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor"], # "bayt", "naukri", "bdjobs", "hellowork"
+    site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor"],  # also "bayt", "naukri", "bdjobs", "hellowork"
     search_term="software engineer",
     location="San Francisco, CA",
     results_wanted=20,
     hours_old=72,
-    country_indeed='USA',
-    
-    # fetch_description=True # for boards whose search results don't include the description (slower)
-    # proxies=["208.195.175.46:65095", "208.195.175.45:65095", "localhost"],
+    country_indeed="USA",
+    # fetch_description=True,  # read each job's page on boards whose search results have no description (slower)
+    # proxies=["user:pass@host:port", "localhost"],
 )
 print(f"Found {len(jobs)} jobs")
 print(jobs.head())
-jobs.to_csv("jobs.csv", quoting=csv.QUOTE_NONNUMERIC, escapechar="\\", index=False) # to_excel
+jobs.to_csv("jobs.csv", index=False)
 ```
 
 ### Output
@@ -59,8 +57,8 @@ indeed         Software Engineer                 AMERICAN SYSTEMS  Arlington, VA
 indeed         Senior Software Engineer          TherapyNotes.com  Philadelphia, PA, USA   fulltime  yearly    110000      135000      https://www.indeed.com/viewjob?jk=da39574a40cb...  About Us TherapyNotes is the national leader i...
 linkedin       Software Engineer - Early Career  Lockheed Martin   Sunnyvale, CA, USA      fulltime  yearly    None        None        https://www.linkedin.com/jobs/view/3693012711      Description:By bringing together people that u...
 linkedin       Full-Stack Software Engineer      Rain              New York, NY, USA       fulltime  yearly    None        None        https://www.linkedin.com/jobs/view/3696158877      Rain’s mission is to create the fastest and ea...
-zip_recruiter Software Engineer - New Grad       ZipRecruiter      Santa Monica, CA, USA   fulltime  yearly    130000      150000      https://www.ziprecruiter.com/jobs/ziprecruiter...  We offer a hybrid work environment. Most US-ba...
-zip_recruiter Software Developer                 TEKsystems        Phoenix, AZ, USA        fulltime  hourly    65          75          https://www.ziprecruiter.com/jobs/teksystems-0...  Top Skills' Details• 6 years of Java developme...
+zip_recruiter  Software Engineer - New Grad      ZipRecruiter      Santa Monica, CA, USA   fulltime  yearly    130000      150000      https://www.ziprecruiter.com/jobs/ziprecruiter...  We offer a hybrid work environment. Most US-ba...
+zip_recruiter  Software Developer                TEKsystems        Phoenix, AZ, USA        fulltime  hourly    65          75          https://www.ziprecruiter.com/jobs/teksystems-0...  Top Skills' Details• 6 years of Java developme...
 
 ```
 
@@ -197,6 +195,16 @@ HelloWork searches France. `location` takes a French city, postcode or region, e
 * Glassdoor rate limits above about 2 requests a second.
 
 ## Frequently Asked Questions
+
+**Q: How do I tell a blocked board from one with no jobs?**  
+**A:** Failures and ignored options are logged as they happen, and the result's `attrs` carry the same messages so your code can read them:
+
+```py
+jobs.attrs["errors"]    # {"linkedin": "response status code 429"}
+jobs.attrs["warnings"]  # {"bdjobs": ["job_type internship isn't supported, ignoring it"]}
+```
+
+---
 
 **Q: Why is Indeed giving unrelated roles?**  
 **A:** Indeed searches the description too.

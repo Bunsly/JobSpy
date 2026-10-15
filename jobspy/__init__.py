@@ -110,14 +110,14 @@ def scrape_jobs(
         )
     configure_logging(None if verbose is None else scraper_input.verbose)
 
-    def scrape_site(site: Site) -> tuple[str, list[JobPost]]:
+    def scrape_site(site: Site) -> tuple[str, Scraper, list[JobPost]]:
         scraper = SCRAPER_MAPPING[site]()
         scraped_data = scraper.scrape(scraper_input)
         scraper.log.info("finished scraping")
-        return site.value, scraped_data
+        return site.value, scraper, scraped_data
 
     with ThreadPoolExecutor() as executor:
-        site_to_jobs_dict = dict(
+        results = list(
             executor.map(scrape_site, dict.fromkeys(scraper_input.site_name))
         )
 
@@ -125,15 +125,21 @@ def scrape_jobs(
         (job.annualised() if scraper_input.enforce_annual_salary else job).model_copy(
             update={"site": site}
         )
-        for site, jobs in site_to_jobs_dict.items()
+        for site, _, jobs in results
         for job in jobs
     ]
 
     jobs_df = pd.DataFrame(
         [job.model_dump() for job in rows], columns=list(JobPost.model_fields)
     )
-    if not rows:
-        return jobs_df.astype(column_types)
-    return jobs_df.sort_values(
-        by=["site", "date_posted"], ascending=[True, False]
-    ).reset_index(drop=True)
+    if rows:
+        jobs_df = jobs_df.sort_values(
+            by=["site", "date_posted"], ascending=[True, False]
+        ).reset_index(drop=True)
+    else:
+        jobs_df = jobs_df.astype(column_types)
+    jobs_df.attrs = {
+        "errors": {site: s.error for site, s, _ in results if s.error},
+        "warnings": {site: s.warnings for site, s, _ in results if s.warnings},
+    }
+    return jobs_df
