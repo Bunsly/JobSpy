@@ -31,7 +31,7 @@ from jobspy.util import (
     TLSRotating,
     check_status,
     create_session,
-    format_description,
+    description_fields,
     plain_converter,
     too_old,
     utc_date,
@@ -143,8 +143,8 @@ class Naukri(Scraper):
         return JobPost(
             id=f"nk-{job_id}",
             title=job.title,
-            company_name=job.companyName,
-            company_url=f"{self.base_url}/{job.staticUrl}",
+            company=job.companyName,
+            company_url=f"{self.base_url}/{job.staticUrl}" if job.staticUrl else None,
             location=Location(
                 city=None if city in ("Remote", "India") else city,
                 country=Country.INDIA,
@@ -153,7 +153,7 @@ class Naukri(Scraper):
             date_posted=utc_date(posted),
             is_remote=work_mode == "Remote",
             work_from_home_type=work_mode or "Work from office",
-            compensation=self._parse_salary(job.salaryDetail, labels["salary"]),
+            **self._parse_salary(job.salaryDetail, labels["salary"]).model_dump(),
             company_logo=job.logoPathV3,
             skills=job.tagsAndSkills.split(",") if job.tagsAndSkills else None,
             experience_range=job.experienceText,
@@ -180,7 +180,7 @@ class Naukri(Scraper):
         }
 
     @staticmethod
-    def _parse_salary(salary: Salary, label: str) -> Compensation | None:
+    def _parse_salary(salary: Salary, label: str) -> Compensation:
         if not salary.hideSalary:
             return Compensation(
                 interval=CompensationInterval.YEARLY,
@@ -196,7 +196,7 @@ class Naukri(Scraper):
                 max_amount=amount,
                 currency="INR",
             )
-        return None
+        return Compensation()
 
     def _fetch_details(self, job_id: str) -> tuple[float, dict[str, object]] | None:
         try:
@@ -209,12 +209,11 @@ class Naukri(Scraper):
             check_status(response)
             job = JobDetails.model_validate(response.json()["jobDetails"])
             posted = datetime.strptime(job.createdDate, "%Y-%m-%d %H:%M:%S")
-            description, emails = format_description(
+            fields = description_fields(
                 job.description, self.scraper_input.description_format
             )
             details = self._shared_fields(job) | {
-                "description": description,
-                "emails": emails,
+                **fields,
                 "company_industry": job.industry,
                 "job_function": job.functionalArea,
                 "company_description": plain_converter(job.details),

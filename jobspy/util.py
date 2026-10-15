@@ -13,7 +13,11 @@ from curl_cffi import CurlOpt
 from curl_cffi import requests as curl_requests
 from markdownify import markdownify as md
 
-from jobspy.model import DescriptionFormat, JobType, ScraperInput
+from jobspy.model import (
+    DescriptionFormat,
+    JobType,
+    ScraperInput,
+)
 
 log_handler = logging.StreamHandler()
 log_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
@@ -121,18 +125,23 @@ def extract_emails_from_text(text: str | None) -> list[str] | None:
     return list(dict.fromkeys(email_regex.findall(text)))
 
 
-def format_description(
+def description_fields(
     html: str | None, description_format: DescriptionFormat
-) -> tuple[str | None, list[str] | None]:
+) -> dict[str, object]:
     """The description in the format asked for, and the emails in it."""
     if html is None:
-        return None, None
-    emails = extract_emails_from_text(html)
+        return {"description": None, "emails": None}
+    description: str | None
     if description_format == DescriptionFormat.MARKDOWN:
-        return md(_as_markup(html)).strip() or None, emails
-    if description_format == DescriptionFormat.PLAIN:
-        return plain_converter(html) or None, emails
-    return html or None, emails
+        description = md(_as_markup(html)).strip()
+    elif description_format == DescriptionFormat.PLAIN:
+        description = plain_converter(html)
+    else:
+        description = html
+    return {
+        "description": description or None,
+        "emails": extract_emails_from_text(html),
+    }
 
 
 def utc_date(epoch: float | None) -> date | None:
@@ -149,71 +158,3 @@ def get_enum_from_job_type(job_type_str: str) -> JobType | None:
         return JobType(job_type_str)
     except ValueError:
         return None
-
-
-salary_range = re.compile(
-    r"\$(\d+(?:,\d+)?(?:\.\d+)?)([kK]?)\s*[-—–]\s*(?:\$)?(\d+(?:,\d+)?(?:\.\d+)?)([kK]?)"
-)
-
-
-def extract_salary(
-    salary_str: str | None,
-) -> tuple[str | None, int | None, int | None, str | None]:
-    """The first "$min - $max" of a text as (interval, min, max, currency)."""
-    lower_limit, upper_limit = 1000, 700000
-    hourly_threshold, monthly_threshold = 350, 30000
-    match = salary_range.search(salary_str or "")
-    if not match:
-        return None, None, None, None
-    low, high = (int(float(match[i].replace(",", ""))) for i in (1, 3))
-    if match[2] or match[4]:
-        low, high = low * 1000, high * 1000
-    # the interval is guessed from the size of the lower amount
-    if low < hourly_threshold:
-        interval, below, factor = "hourly", hourly_threshold, 2080
-    elif low < monthly_threshold:
-        interval, below, factor = "monthly", monthly_threshold, 12
-    else:
-        interval, below, factor = "yearly", upper_limit + 1, 1
-    annual_low, annual_high = low * factor, high * factor
-    if high >= below or not (lower_limit <= annual_low < annual_high <= upper_limit):
-        return None, None, None, None
-    return interval, low, high, "USD"
-
-
-desired_order = [
-    "id",
-    "site",
-    "job_url",
-    "job_url_direct",
-    "title",
-    "company",
-    "location",
-    "date_posted",
-    "job_type",
-    "salary_source",
-    "interval",
-    "min_amount",
-    "max_amount",
-    "currency",
-    "is_remote",
-    "job_level",
-    "job_function",
-    "listing_type",
-    "emails",
-    "description",
-    "company_industry",
-    "company_url",
-    "company_logo",
-    "company_url_direct",
-    "company_addresses",
-    "company_num_employees",
-    "company_revenue",
-    "company_description",
-    "skills",
-    "experience_range",
-    "company_rating",
-    "company_reviews_count",
-    "vacancy_count",
-    "work_from_home_type",
-]

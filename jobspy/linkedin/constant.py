@@ -1,3 +1,5 @@
+import re
+
 from jobspy.model import CompensationInterval
 
 jobs_per_page = 10
@@ -19,3 +21,9 @@ pay_intervals = {
 }
 
 remote_keywords = ["remote", "work from home", "wfh"]
+
+lower_limit, upper_limit = 1000, 700000
+hourly_threshold, monthly_threshold = 350, 30000
+salary_range = re.compile(
+    r"\$(\d+(?:,\d+)?(?:\.\d+)?)([kK]?)\s*[-—–]\s*(?:\$)?(\d+(?:,\d+)?(?:\.\d+)?)([kK]?)"
+)

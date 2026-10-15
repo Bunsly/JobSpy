@@ -29,7 +29,7 @@ from jobspy.util import (
     TLSRotating,
     check_status,
     create_session,
-    format_description,
+    description_fields,
     utc_date,
 )
 
@@ -180,7 +180,7 @@ class Bayt(Scraper):
     def _timestamp(job: Tag) -> int | None:
         posted = job.select_one("[data-automation-jobactivedate]")
         stamp = posted.get("data-automation-jobactivedate", "") if posted else ""
-        return int(stamp) if isinstance(stamp, str) and stamp.isdigit() else None
+        return int(stamp) if isinstance(stamp, str) and stamp.isdecimal() else None
 
     def _process_job(self, job: Tag) -> JobPost | None:
         link = job.select_one("h2 a[href]")
@@ -225,7 +225,7 @@ class Bayt(Scraper):
         job_post = JobPost(
             id=f"bayt-{job_id}",
             title=link.get_text(strip=True),
-            company_name=(company.get_text(strip=True) or None) if company else None,
+            company=(company.get_text(strip=True) or None) if company else None,
             company_url=(
                 urljoin(self.base_url, str(company_link["href"]))
                 if company_link
@@ -251,9 +251,9 @@ class Bayt(Scraper):
                 ),
                 None,
             ),
-            compensation=(
-                self._parse_salary(salary.get_text(" ", strip=True)) if salary else None
-            ),
+            **self._parse_salary(
+                salary.get_text(" ", strip=True) if salary else ""
+            ).model_dump(),
         )
         if self.scraper_input.fetch_description:
             details = self._fetch_details(job_id, job_url)
@@ -262,14 +262,14 @@ class Bayt(Scraper):
         return job_post
 
     @staticmethod
-    def _parse_salary(text: str) -> Compensation | None:
+    def _parse_salary(text: str) -> Compensation:
         """ "AED 29,380 - AED 33,053" / "$3,000 - $4,000"; monthly, as job pages say"""
         match = re.fullmatch(
             r"([A-Z]{3}|\$) ?([\d,]+(?:\.\d+)?) - (?:[A-Z]{3}|\$)? ?([\d,]+(?:\.\d+)?)",
             text,
         )
         if not match:
-            return None
+            return Compensation()
         currency, low, high = match.groups()
         return Compensation(
             interval=CompensationInterval.MONTHLY,
@@ -304,15 +304,14 @@ class Bayt(Scraper):
             tag = soup.select_one(f'[data-automation-id="id_{name}"]')
             return [part.strip() for part in tag.get_text().split("·")] if tag else []
 
-        description, emails = format_description(
+        fields = description_fields(
             posting.get("description"), self.scraper_input.description_format
         )
         job_type = job_type_labels.get(next(iter(row("type_level_experience")), ""))
         company = row("company_employees_industry")
         openings = re.match(r"\d+", "".join(row("number_of_vacancies")))
         return {
-            "description": description,
-            "emails": emails,
+            **fields,
             "job_type": [job_type] if job_type else None,
             "is_remote": row("remote_working") == ["Remote"],
             "vacancy_count": int(openings[0]) if openings else None,

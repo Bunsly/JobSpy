@@ -13,23 +13,32 @@ from jobspy.linkedin.constant import (
     currencies,
     empty_page,
     headers,
+    hourly_threshold,
     jobs_per_page,
+    lower_limit,
     max_results,
+    monthly_threshold,
     pay_intervals,
+    salary_range,
+    upper_limit,
 )
 from jobspy.linkedin.util import criteria, is_job_remote, parse_location
 from jobspy.model import (
     Compensation,
+    CompensationInterval,
+    Country,
     JobPost,
     Scraper,
     ScraperInput,
+    annual_factor,
 )
 from jobspy.util import (
     RequestsRotating,
     check_status,
     create_session,
-    format_description,
+    description_fields,
     get_enum_from_job_type,
+    plain_converter,
 )
 
 
@@ -145,7 +154,7 @@ class LinkedIn(Scraper):
         return JobPost(
             id=f"li-{job_id}",
             title=title,
-            company_name=company_tag.get_text(strip=True),
+            company=company_tag.get_text(strip=True),
             company_url=str(company_link["href"]).split("?")[0]
             if company_link
             else None,
@@ -156,20 +165,44 @@ class LinkedIn(Scraper):
         ).model_copy(update=job_details)
 
     @staticmethod
-    def _parse_salary(text: str) -> Compensation | None:
+    def _parse_salary(text: str) -> Compensation:
         """ "$117,000.00/yr - $234,000.00/yr" """
         match = re.fullmatch(
             r"([^\d\s]+) ?([\d,]+\.\d\d)(/\w+) - [^\d\s]+ ?([\d,]+\.\d\d)/\w+",
             " ".join(text.split()),
         )
         if not match:
-            return None
+            return Compensation()
         currency, low, interval, high = match.groups()
         return Compensation(
             interval=pay_intervals.get(interval),
             min_amount=float(low.replace(",", "")),
             max_amount=float(high.replace(",", "")),
             currency=currencies.get(currency, currency),
+        )
+
+    @staticmethod
+    def _guess_salary(description: str | None) -> Compensation:
+        """The first "$min - $max" of the text; the interval from the size of the amounts"""
+        match = salary_range.search(description or "")
+        if not match:
+            return Compensation()
+        low, high = (int(float(match[i].replace(",", ""))) for i in (1, 3))
+        if match[2] or match[4]:
+            low, high = low * 1000, high * 1000
+        if low < hourly_threshold:
+            interval, below = CompensationInterval.HOURLY, hourly_threshold
+        elif low < monthly_threshold:
+            interval, below = CompensationInterval.MONTHLY, monthly_threshold
+        else:
+            interval, below = CompensationInterval.YEARLY, upper_limit + 1
+        factor = annual_factor[interval.value]
+        if high >= below or not (
+            lower_limit <= low * factor < high * factor <= upper_limit
+        ):
+            return Compensation()
+        return Compensation(
+            interval=interval, min_amount=low, max_amount=high, currency="USD"
         )
 
     def _fetch_details(self, job_id: str) -> dict[str, object]:
@@ -191,13 +224,10 @@ class LinkedIn(Scraper):
         div_content = soup.find("div", class_="show-more-less-html__markup")
         if div_content:
             div_content.attrs.clear()
-        description, emails = format_description(
-            div_content.prettify(formatter="html") if div_content else None,
-            self.scraper_input.description_format,
-        )
+        html = div_content.prettify(formatter="html") if div_content else None
+        fields = description_fields(html, self.scraper_input.description_format)
         logo_image = soup.find("img", class_="artdeco-entity-image")
         salary_tag = soup.find("div", class_="compensation__salary")
-        compensation = self._parse_salary(salary_tag.get_text()) if salary_tag else None
         employment_type = criteria(soup, "Employment type")
         job_type = (
             get_enum_from_job_type(employment_type.lower().replace("-", ""))
@@ -205,10 +235,14 @@ class LinkedIn(Scraper):
             else None
         )
         job_level = criteria(soup, "Seniority level")
+        pay = self._parse_salary(salary_tag.get_text() if salary_tag else "")
+        source = None
+        if pay == Compensation() and self.scraper_input.country_indeed == Country.USA:
+            pay, source = self._guess_salary(plain_converter(html)), "description"
         return {
-            "description": description,
-            "emails": emails,
-            "compensation": compensation,
+            **fields,
+            **pay.model_dump(),
+            "salary_source": source,
             "job_type": [job_type] if job_type else None,
             "job_level": job_level.lower() if job_level else None,
             "job_function": criteria(soup, "Job function"),

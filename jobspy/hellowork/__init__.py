@@ -33,7 +33,7 @@ from jobspy.util import (
     TLSRotating,
     check_status,
     create_session,
-    format_description,
+    description_fields,
     utc_date,
 )
 
@@ -166,7 +166,7 @@ class HelloWork(Scraper):
                 for tag in contract.parent.find_all("div")
                 if (compensation := self._parse_salary(tag.get_text(strip=True)))
             ),
-            None,
+            Compensation(),
         )
         logo = card.select_one('img[src*="/img/entreprises/"]')
         location = card.select_one("div[data-cy=localisationCard]")
@@ -176,15 +176,15 @@ class HelloWork(Scraper):
         job_post = JobPost(
             id=f"hw-{job_id}",
             title=title,
-            company_name="".join(company) or None,
+            company="".join(company) or None,
             location=self._parse_location(location.get_text(strip=True)),
             job_url=f"{self.base_url}{link['href']}",
             date_posted=(
                 utc_date(time.time() - hours * 3600) if hours is not None else None
             ),
-            job_type=job_types,
+            job_type=job_types or None,
             is_remote="Télétravail complet" in label,
-            compensation=salary,
+            **salary.model_dump(),
             company_logo=str(logo["src"]) if logo else None,
         )
         if self.scraper_input.fetch_description:
@@ -252,10 +252,7 @@ class HelloWork(Scraper):
                     for button in section.find_all("button"):
                         button.decompose()
                 html = str(section) if section else None
-            description, emails = format_description(
-                html, self.scraper_input.description_format
-            )
-            details: dict[str, object] = {"description": description, "emails": emails}
+            details = description_fields(html, self.scraper_input.description_format)
             if posting.datePosted:
                 posted = datetime.fromisoformat(posting.datePosted.rstrip("Z"))
                 posted = posted.replace(tzinfo=ZoneInfo(paris_time))

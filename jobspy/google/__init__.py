@@ -199,7 +199,7 @@ class Google(Scraper):
         job_post = JobPost(
             id=f"go-{job_info[28]}",
             title=title,
-            company_name=company_name,
+            company=company_name,
             location=Location(
                 city=city, state=state, country=country[0] if country else None
             ),
