@@ -204,8 +204,6 @@ jobs.attrs["errors"]    # {"linkedin": "response status code 429"}
 jobs.attrs["warnings"]  # {"bdjobs": ["job_type internship isn't supported, ignoring it"]}
 ```
 
-Both are empty when every board ran the search as asked.
-
 ---
 
 **Q: Why is Indeed giving unrelated roles?**  
