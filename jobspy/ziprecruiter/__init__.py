@@ -64,7 +64,7 @@ class ZipRecruiter(Scraper):
                 ]
                 seen.update(search.jobKeysMap)
             except Exception as e:
-                self.log.error(str(e))
+                self.fail(str(e))
                 break
 
             for job in new_jobs[skip if page == first_page else 0 :]:
@@ -91,7 +91,7 @@ class ZipRecruiter(Scraper):
             if "internship" not in (search_term or "").lower():
                 search_term = f"{search_term or ''} internship".strip()
         elif job_type and job_type not in job_type_codes:
-            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
+            self.warn(f"job_type {job_type.value} isn't supported, ignoring it")
         params: dict[str, str | int | None] = {
             "search": search_term,
             "location": self.scraper_input.location,

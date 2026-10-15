@@ -83,7 +83,7 @@ class Indeed(Scraper):
                 seen.update(jobs)
                 cursor = job_search.nextCursor
             except Exception as e:
-                self.log.error(str(e))
+                self.fail(str(e))
                 break
 
             for job in new_jobs[skip:]:
@@ -137,7 +137,7 @@ class Indeed(Scraper):
         job_type = self.scraper_input.job_type
         keys = list(job_type_codes[job_type]) if job_type in job_type_codes else []
         if job_type and not keys:
-            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
+            self.warn(f"job_type {job_type.value} isn't supported, ignoring it")
         if (
             job_type == JobType.FULL_TIME
             and self.scraper_input.country_indeed == full_time_is_permanent_in

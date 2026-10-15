@@ -45,9 +45,7 @@ class Glassdoor(Scraper):
         self.scraper_input = scraper_input
         country = scraper_input.country_indeed
         if country not in domains:
-            self.log.warning(
-                f"country_indeed {country.value} isn't supported, skipping it"
-            )
+            self.warn(f"country_indeed {country.value} isn't supported, skipping it")
             return []
         try:
             self.base_url = f"https://{domains[country]}"
@@ -56,7 +54,7 @@ class Glassdoor(Scraper):
             )
             variables = self._search_variables()
         except Exception as e:
-            self.log.error(str(e))
+            self.fail(str(e))
             return []
         if variables is None:
             return []
@@ -84,7 +82,7 @@ class Glassdoor(Scraper):
                 cursors = job_listings.paginationCursors or []
                 cursor = {c.pageNumber: c.cursor for c in cursors}.get(page + 1)
             except Exception as e:
-                self.log.error(str(e))
+                self.fail(str(e))
                 break
 
             seen_before = len(seen)
@@ -147,7 +145,7 @@ class Glassdoor(Scraper):
             return variables
         places = response.json()
         if not places:
-            self.log.error(f"location '{self.scraper_input.location}' not found")
+            self.fail(f"location '{self.scraper_input.location}' not found")
             return None
         place = Place.model_validate(places[0])
         location_id = place.locationId
@@ -169,7 +167,7 @@ class Glassdoor(Scraper):
         if job_type in job_type_codes:
             filters["jobType"] = job_type_codes[job_type]
         elif job_type:
-            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
+            self.warn(f"job_type {job_type.value} isn't supported, ignoring it")
         if self.scraper_input.is_remote:
             filters["remoteWorkType"] = 1
         if self.scraper_input.easy_apply:

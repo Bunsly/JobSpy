@@ -77,7 +77,7 @@ class HelloWork(Scraper):
                 pager = soup.select_one("input[type=number][max]")
                 last_page = int(str(pager["max"])) if pager else page
             except Exception as e:
-                self.log.error(str(e))
+                self.fail(str(e))
                 break
 
             new_cards = [
@@ -119,11 +119,11 @@ class HelloWork(Scraper):
         if job_type in job_type_params:
             params |= job_type_params[job_type]
         elif job_type:
-            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
+            self.warn(f"job_type {job_type.value} isn't supported, ignoring it")
         if scraper_input.is_remote:
             params["t"] = "Complet"
         if scraper_input.easy_apply:
-            self.log.warning("easy_apply isn't supported, ignoring it")
+            self.warn("easy_apply isn't supported, ignoring it")
         return {
             name: value for name, value in params.items() if value not in (None, "")
         }

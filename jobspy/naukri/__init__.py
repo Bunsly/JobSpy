@@ -66,7 +66,7 @@ class Naukri(Scraper):
                 if response.status_code == 400 and page > 1:
                     break  # past the last page
                 if response.status_code == 406:
-                    self.log.error(
+                    self.fail(
                         "response status code 406 (recaptcha required): "
                         "the address is rate limited, or the request token was "
                         "rejected (the public key in jobspy/naukri/constant.py "
@@ -80,7 +80,7 @@ class Naukri(Scraper):
                 new_jobs = [job for job in jobs if job.get("jobId") not in seen]
                 seen.update(job.get("jobId") for job in jobs)
             except Exception as e:
-                self.log.error(str(e))
+                self.fail(str(e))
                 break
 
             fresh = False
@@ -111,7 +111,7 @@ class Naukri(Scraper):
         if job_type == JobType.INTERNSHIP:
             params |= internship_params
         elif job_type:
-            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
+            self.warn(f"job_type {job_type.value} isn't supported, ignoring it")
         if self.scraper_input.location:
             params["location"] = self.scraper_input.location
         if hours_old := self.scraper_input.hours_old:

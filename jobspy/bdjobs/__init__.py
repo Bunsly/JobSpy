@@ -71,7 +71,7 @@ class BDJobs(Scraper):
                         seen.add(job.get("Jobid"))
                         new_jobs.append(job)
             except Exception as e:
-                self.log.error(str(e))
+                self.fail(str(e))
                 break
 
             for job in new_jobs[skip:]:
@@ -99,7 +99,7 @@ class BDJobs(Scraper):
         if place in locations:
             params["location"] = locations[place]
         elif place and place != "bangladesh":
-            self.log.warning(
+            self.warn(
                 f"location '{self.scraper_input.location}' not found, "
                 "searching all of Bangladesh"
             )
@@ -109,11 +109,11 @@ class BDJobs(Scraper):
         if job_type in job_type_codes:
             params["jobNature"] = job_type_codes[job_type]
         elif job_type:
-            self.log.warning(f"job_type {job_type.value} isn't supported, ignoring it")
+            self.warn(f"job_type {job_type.value} isn't supported, ignoring it")
         if self.scraper_input.is_remote:
             params["workplace"] = 1
         if self.scraper_input.easy_apply:
-            self.log.warning("easy_apply isn't supported, ignoring it")
+            self.warn("easy_apply isn't supported, ignoring it")
         return params
 
     def _process_job(self, raw: dict[str, object]) -> JobPost | None:
