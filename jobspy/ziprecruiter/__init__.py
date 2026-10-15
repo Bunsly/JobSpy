@@ -18,7 +18,7 @@ from jobspy.util import (
     TLSRotating,
     check_status,
     create_session,
-    format_description,
+    description_fields,
     get_enum_from_job_type,
     too_old,
 )
@@ -123,7 +123,7 @@ class ZipRecruiter(Scraper):
         job_post = JobPost(
             id=f"zr-{job.listingKey}",
             title=job.title,
-            company_name=job.name,
+            company=job.name,
             company_url=self.base_url + job.companyUrl if job.companyUrl else None,
             company_logo=job.logoUrl,
             location=Location(city=job.city, state=job.stateCode, country=country),
@@ -133,7 +133,7 @@ class ZipRecruiter(Scraper):
             job_type=job_type,
             # REMOTE or REMOTE_OPTIONAL
             is_remote=any("REMOTE" in t.name for t in job.locationTypes),
-            compensation=self._parse_salary(job.pay),
+            **self._parse_salary(job.pay).model_dump(),
         )
         if self.scraper_input.fetch_description:
             details = self._fetch_details(job.listingKey, job_post.job_url)
@@ -150,9 +150,9 @@ class ZipRecruiter(Scraper):
         ] or None
 
     @staticmethod
-    def _parse_salary(pay: Pay) -> Compensation | None:
+    def _parse_salary(pay: Pay) -> Compensation:
         if not pay.visible:
-            return None
+            return Compensation()
         if pay.currency is None:
             raise ValueError("no pay currency")
         return Compensation(
@@ -169,7 +169,7 @@ class ZipRecruiter(Scraper):
             job = JobDetails.model_validate(
                 page_values(response.text, "jobDetails")["jobDetails"]
             )
-            description, emails = format_description(
+            fields = description_fields(
                 job.htmlFullDescription, self.scraper_input.description_format
             )
         except Exception as e:
@@ -180,8 +180,7 @@ class ZipRecruiter(Scraper):
         website = job.canonicalWebsite
         rating = job.rating
         return {
-            "description": description,
-            "emails": emails,
+            **fields,
             "company_industry": industries[0] if industries else None,
             "company_url_direct": f"https://{website}" if website else None,
             "company_num_employees": job.companySizeDisplay,

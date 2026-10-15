@@ -29,7 +29,7 @@ from jobspy.util import (
     RequestsRotating,
     check_status,
     create_session,
-    format_description,
+    description_fields,
     too_old,
 )
 
@@ -133,13 +133,13 @@ class BDJobs(Scraper):
         return JobPost(
             id=f"bd-{job_id}",
             title=job.jobTitle,
-            company_name=job.companyName,
+            company=job.companyName,
             location=Location(city=city or None, country="Bangladesh"),
             job_url=f"{self.base_url}/h/details/{job_id}",
             date_posted=posted.date(),
             job_type=self._parse_job_type(job.JobType),
             is_remote=is_remote,
-            compensation=self._parse_salary(job.Salary),
+            **self._parse_salary(job.Salary).model_dump(),
             company_logo=job.logoUrl or None,
             vacancy_count=job.Vacancies,
             experience_range=job.experience if job.experience != "NA" else None,
@@ -151,10 +151,10 @@ class BDJobs(Scraper):
         return [job_type_labels[t] for t in labels if t in job_type_labels] or None
 
     @staticmethod
-    def _parse_salary(text: str) -> Compensation | None:
+    def _parse_salary(text: str) -> Compensation:
         match = re.fullmatch(r"Tk\. (\d+)(?: - (\d+))? \(Monthly\)", text)
         if not match:
-            return None
+            return Compensation()
         low, high = match.groups()
         return Compensation(
             interval=CompensationInterval.MONTHLY,
@@ -175,7 +175,7 @@ class BDJobs(Scraper):
                 self.log.warning(f"job {job_id}: {result.message}")
                 return {}
             details = result.data[0]
-            description, emails = format_description(
+            fields = description_fields(
                 "".join(
                     f"<h4>{heading}</h4>{getattr(details, field)}"
                     for heading, field in description_sections
@@ -199,8 +199,7 @@ class BDJobs(Scraper):
             if host == "bdjobs.com" or host.endswith(".bdjobs.com"):
                 apply_url = None
             return {
-                "description": description,
-                "emails": emails,
+                **fields,
                 "skills": skills.split(", ") if skills else None,
                 "job_url_direct": apply_url,
                 "company_url": company_url,

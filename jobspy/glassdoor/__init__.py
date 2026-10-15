@@ -35,7 +35,7 @@ from jobspy.util import (
     TLSRotating,
     check_status,
     create_session,
-    format_description,
+    description_fields,
     get_enum_from_job_type,
 )
 
@@ -200,7 +200,7 @@ class Glassdoor(Scraper):
         return JobPost(
             id=f"gd-{job_id}",
             title=job.jobTitleText,
-            company_name=header.employerNameFromSearch,
+            company=header.employerNameFromSearch,
             company_url=(
                 f"{self.base_url}/Overview/W-EI_IE{company_id}.htm"
                 if company_id
@@ -213,7 +213,7 @@ class Glassdoor(Scraper):
             job_type=job_types or None,
             is_remote="WORK_FROM_HOME" in (header.remoteWorkTypes or [])
             or header.locationName == "Remote",
-            compensation=self._parse_salary(header),
+            **self._parse_salary(header).model_dump(),
             listing_type=header.adOrderSponsorshipLevel.lower(),
             company_rating=header.rating or None,
             company_industry=company.industryName,
@@ -225,10 +225,10 @@ class Glassdoor(Scraper):
         )
 
     @staticmethod
-    def _parse_salary(header: Header) -> Compensation | None:
+    def _parse_salary(header: Header) -> Compensation:
         pay = header.payPeriodAdjustedPay
         if not pay:
-            return None
+            return Compensation()
         return Compensation(
             interval=pay_intervals.get(header.payPeriod or ""),
             min_amount=round(pay.p10, 2),
@@ -264,14 +264,10 @@ class Glassdoor(Scraper):
                 check_status(response)
                 for alias, view in response.json()[0]["data"].items():
                     if view:
-                        description, emails = format_description(
+                        details[f"gd-{alias[1:]}"] = description_fields(
                             view["job"]["description"],
                             self.scraper_input.description_format,
                         )
-                        details[f"gd-{alias[1:]}"] = {
-                            "description": description,
-                            "emails": emails,
-                        }
         except Exception as e:
             self.log.warning(f"job details: {e}")
         return details

@@ -55,7 +55,6 @@ job_search_query = """
                     }}
                     attributes {{
                         key
-                        label
                     }}
                     employer {{
                         relativeCompanyPageUrl

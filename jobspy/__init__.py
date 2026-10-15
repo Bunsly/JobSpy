@@ -3,7 +3,9 @@ from __future__ import annotations
 import warnings
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
+from datetime import date
 from pathlib import Path
+from typing import get_args
 
 import pandas as pd
 from pydantic import ValidationError
@@ -27,8 +29,6 @@ from jobspy.model import (
 from jobspy.naukri import Naukri
 from jobspy.util import (
     configure_logging,
-    desired_order,
-    extract_salary,
 )
 from jobspy.ziprecruiter import ZipRecruiter
 
@@ -42,6 +42,17 @@ SCRAPER_MAPPING: dict[Site, type[Scraper]] = {
     Site.NAUKRI: Naukri,
     Site.BDJOBS: BDJobs,
     Site.HELLOWORK: HelloWork,
+}
+
+column_types = {
+    name: {
+        str: "str",
+        float: "float64",
+        int: "int64",
+        bool: "bool",
+        date: "object",
+    }.get((get_args(field.annotation) or (field.annotation,))[0], "str")
+    for name, field in JobPost.model_fields.items()
 }
 
 
@@ -110,55 +121,19 @@ def scrape_jobs(
             executor.map(scrape_site, dict.fromkeys(scraper_input.site_name))
         )
 
-    rows = []
-    for site, jobs in site_to_jobs_dict.items():
-        for job in jobs:
-            job_data = job.model_dump()
-            job_data["site"] = site
-            job_data["company"] = job_data["company_name"]
-            job_data["job_type"] = (
-                ", ".join(job_type.value for job_type in job_data["job_type"])
-                if job_data["job_type"]
-                else None
-            )
-            for name in ("emails", "skills"):
-                job_data[name] = ", ".join(job_data[name]) if job_data[name] else None
-            job_data["location"] = (
-                job.location.display_location() if job.location else None
-            )
+    rows = [
+        (job.annualised() if scraper_input.enforce_annual_salary else job).model_copy(
+            update={"site": site}
+        )
+        for site, jobs in site_to_jobs_dict.items()
+        for job in jobs
+    ]
 
-            job_data |= dict.fromkeys(
-                ("interval", "min_amount", "max_amount", "currency", "salary_source")
-            )
-            if job.compensation:
-                job_data |= job.compensation.model_dump(mode="json")
-                job_data["salary_source"] = "direct_data"
-            elif scraper_input.country_indeed == Country.USA:
-                (
-                    job_data["interval"],
-                    job_data["min_amount"],
-                    job_data["max_amount"],
-                    job_data["currency"],
-                ) = extract_salary(job_data["description"])
-                job_data["salary_source"] = "description"
-            if scraper_input.enforce_annual_salary and job_data["interval"] not in (
-                None,
-                "yearly",
-            ):
-                factor = {"hourly": 2080, "daily": 260, "weekly": 52, "monthly": 12}[
-                    job_data["interval"]
-                ]
-                for name in ("min_amount", "max_amount"):
-                    if job_data[name] is not None:
-                        job_data[name] = round(job_data[name] * factor, 2)
-                job_data["interval"] = "yearly"
-            if not (job_data["min_amount"] or job_data["max_amount"]):
-                job_data["salary_source"] = None
-            rows.append(job_data)
-
+    jobs_df = pd.DataFrame(
+        [job.model_dump() for job in rows], columns=list(JobPost.model_fields)
+    )
     if not rows:
-        return pd.DataFrame()
-    jobs_df = pd.DataFrame(rows, columns=desired_order)
+        return jobs_df.astype(column_types)
     return jobs_df.sort_values(
         by=["site", "date_posted"], ascending=[True, False]
     ).reset_index(drop=True)

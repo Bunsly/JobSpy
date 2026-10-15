@@ -26,7 +26,7 @@ def get_job_type(attributes: list[Attribute], country: Country) -> list[JobType]
     return job_types or None
 
 
-def get_compensation(compensation: IndeedCompensation) -> Compensation | None:
+def get_compensation(compensation: IndeedCompensation) -> Compensation:
     """
     The employer's pay, else Indeed's own estimate
     """
@@ -37,7 +37,7 @@ def get_compensation(compensation: IndeedCompensation) -> Compensation | None:
         currency = compensation.estimated.currencyCode
     interval = pay_intervals.get(pay.unitOfWork) if pay and pay.unitOfWork else None
     if not pay or not interval:
-        return None
+        return Compensation()
     amounts = pay.range
     min_amount = amounts.min if amounts.min is not None else amounts.value
     max_amount = amounts.max if amounts.max is not None else amounts.value

@@ -5,7 +5,15 @@ from abc import ABC, abstractmethod
 from datetime import date
 from enum import Enum
 
-from pydantic import BaseModel, Field, FilePath, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    FilePath,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 
 class JobType(Enum):
@@ -128,6 +136,9 @@ class CompensationInterval(Enum):
     HOURLY = "hourly"
 
 
+annual_factor = {"hourly": 2080, "daily": 260, "weekly": 52, "monthly": 12, "yearly": 1}
+
+
 class Compensation(BaseModel):
     interval: CompensationInterval | None = None
     min_amount: float | None = None
@@ -142,38 +153,79 @@ class DescriptionFormat(Enum):
 
 
 class JobPost(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     id: str | None = None
-    title: str
-    company_name: str | None
+    site: str | None = None
     job_url: str
     job_url_direct: str | None = None
-    location: Location | None
-
-    description: str | None = None
-    company_url: str | None = None
-    company_url_direct: str | None = None
-
-    job_type: list[JobType] | None = None
-    compensation: Compensation | None = None
+    title: str
+    company: str | None = None
+    location: Location | None = None
     date_posted: date | None = None
-    emails: list[str] | None = None
+    job_type: list[JobType] | None = None
+    salary_source: str | None = None
+    interval: CompensationInterval | None = None
+    min_amount: float | None = None
+    max_amount: float | None = None
+    currency: str | None = None
     is_remote: bool | None = None
-    listing_type: str | None = None
-
     job_level: str | None = None
+    job_function: str | None = None
+    listing_type: str | None = None
+    emails: list[str] | None = None
+    description: str | None = None
     company_industry: str | None = None
+    company_url: str | None = None
+    company_logo: str | None = None
+    company_url_direct: str | None = None
     company_addresses: str | None = None
     company_num_employees: str | None = None
     company_revenue: str | None = None
     company_description: str | None = None
-    company_logo: str | None = None
-    job_function: str | None = None
     skills: list[str] | None = None
     experience_range: str | None = None
     company_rating: float | None = None
     company_reviews_count: int | None = None
     vacancy_count: int | None = None
-    work_from_home_type: str | None = None  # Naukri: "Hybrid", "Remote", ...
+    work_from_home_type: str | None = None
+
+    @model_serializer
+    def _row(self) -> dict[str, object]:
+        def text(value: object) -> object:
+            if isinstance(value, Location):
+                return value.display_location()
+            if isinstance(value, list):
+                return (
+                    ", ".join(v.value if isinstance(v, Enum) else v for v in value)
+                    or None
+                )
+            if isinstance(value, Enum):
+                return str(value.value)
+            return value
+
+        row = {name: text(getattr(self, name)) for name in type(self).model_fields}
+        has_pay = self.min_amount or self.max_amount
+        row["salary_source"] = (
+            (self.salary_source or "direct_data") if has_pay else None
+        )
+        return row
+
+    def annualised(self) -> JobPost:
+        if self.interval in (None, CompensationInterval.YEARLY):
+            return self
+        factor = annual_factor[self.interval.value]
+        return self.model_copy(
+            update={
+                "interval": CompensationInterval.YEARLY,
+                "min_amount": None
+                if self.min_amount is None
+                else round(self.min_amount * factor, 2),
+                "max_amount": None
+                if self.max_amount is None
+                else round(self.max_amount * factor, 2),
+            }
+        )
 
 
 class Site(Enum):
@@ -208,7 +260,7 @@ class ScraperInput(BaseModel):
     linkedin_company_ids: list[int] | None = None
     description_format: DescriptionFormat = DescriptionFormat.MARKDOWN
 
-    results_wanted: int = Field(15, ge=0)
+    results_wanted: int = Field(15, ge=1)
     hours_old: int | None = Field(None, ge=0)
     enforce_annual_salary: bool = False
     proxies: list[str] = []

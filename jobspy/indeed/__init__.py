@@ -31,7 +31,7 @@ from jobspy.util import (
     RequestsRotating,
     check_status,
     create_session,
-    format_description,
+    description_fields,
     utc_date,
 )
 
@@ -162,9 +162,7 @@ class Indeed(Scraper):
 
     def _process_job(self, raw: dict[str, object]) -> JobPost:
         job = Job.model_validate(raw)
-        description, emails = format_description(
-            job.html, self.scraper_input.description_format
-        )
+        fields = description_fields(job.html, self.scraper_input.description_format)
 
         employer = job.employer or Employer()
         company_page = employer.relativeCompanyPageUrl
@@ -176,8 +174,7 @@ class Indeed(Scraper):
         return JobPost(
             id=f"in-{job.key}",
             title=job.title,
-            description=description,
-            company_name=employer.name or job.sourceEmployerName,
+            company=employer.name or job.sourceEmployerName,
             company_url=f"{self.base_url}{company_page}" if company_page else None,
             company_url_direct=employer.corporateWebsite,
             location=Location(
@@ -186,11 +183,10 @@ class Indeed(Scraper):
                 country=country_code and countries.get(country_code, country_code),
             ),
             job_type=get_job_type(job.attributes, self.scraper_input.country_indeed),
-            compensation=get_compensation(job.compensation),
+            **get_compensation(job.compensation).model_dump(),
             date_posted=utc_date(job.dateOnIndeed / 1000),
             job_url=f"{self.base_url}/viewjob?jk={job.key}",
             job_url_direct=apply_url,
-            emails=emails,
             is_remote=is_job_remote(job.attributes),
             company_addresses=employer.addresses[0] if employer.addresses else None,
             company_industry=(
@@ -204,4 +200,4 @@ class Indeed(Scraper):
             company_logo=employer.squareLogoUrl,
             company_rating=employer.value if employer.count else None,
             company_reviews_count=employer.count or None,
-        )
+        ).model_copy(update=fields)
