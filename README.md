@@ -49,6 +49,18 @@ print(jobs.head())
 jobs.to_csv("jobs.csv", index=False)
 ```
 
+### Command line
+
+The package installs a `jobspy` command that searches Indeed, LinkedIn, ZipRecruiter and Glassdoor by default. Its options are the `scrape_jobs()` parameters below with dashes; `jobspy -h` lists them, the output fields and exit codes.
+
+```
+jobspy "software engineer" --site indeed,linkedin --location Chicago -n 20
+jobspy nurse --site indeed,linkedin --hours-old 24 -o jobs.jsonl
+jobspy "data analyst" --remote --fields title,company,job_url
+```
+
+Each job is one line of JSON on stdout; errors and warnings go to stderr. Proxies can also come from the `HTTPS_PROXY` environment variable, which keeps credentials off the command line.
+
 ### Output
 
 ```

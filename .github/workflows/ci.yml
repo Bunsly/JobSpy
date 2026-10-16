@@ -26,6 +26,7 @@ jobs:
       - run: python -m build --wheel
       - run: "python -m pip install --only-binary :all: dist/*.whl"
       - run: cd /tmp && python -c "from jobspy import scrape_jobs"
+      - run: cd /tmp && jobspy --help && python -m jobspy --version
 
   lint:
     runs-on: ubuntu-latest
