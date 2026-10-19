@@ -27,8 +27,12 @@ dependencies = [
 ]
 dynamic = ["classifiers"]
 
+[project.optional-dependencies]
+mcp = ["mcp>=2.3.0"]
+
 [project.scripts]
 jobspy = "jobspy.cli:main"
+mcp-jobspy = "jobspy.mcp:main"
 
 [project.urls]
 Homepage = "https://github.com/speedyapply/JobSpy"

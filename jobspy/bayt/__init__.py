@@ -136,21 +136,22 @@ class Bayt(Scraper):
         try:
             url = self._search_url(page, hybrid)
             response = self.session.get(url, allow_redirects=True)
+            if response.status_code == 404 and (
+                self.city or self.country != all_countries
+            ):
+                wider = "the country" if self.city else "all countries"
+                self.warn(
+                    f"location '{self.scraper_input.location}' not found, "
+                    f"searching {wider}"
+                )
+                if self.city:
+                    self.city = None
+                else:
+                    self.country = all_countries
+                return self._fetch_cards(page, hybrid)
+            check_status(response)
         except Exception as e:
             self.fail(str(e))
-            return None
-        if response.status_code == 404 and (self.city or self.country != all_countries):
-            wider = "the country" if self.city else "all countries"
-            self.warn(
-                f"location '{self.scraper_input.location}' not found, searching {wider}"
-            )
-            if self.city:
-                self.city = None
-            else:
-                self.country = all_countries
-            return self._fetch_cards(page, hybrid)
-        if response.status_code != 200:
-            self.fail(f"response status code {response.status_code}")
             return None
         if page > 1 and f"page={page}" not in response.url:
             return []

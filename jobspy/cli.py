@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import io
-import json
 import logging
 import os
 import signal
@@ -11,28 +10,24 @@ import textwrap
 from collections.abc import Sequence
 from functools import partial
 from importlib.metadata import version
-
-import pandas as pd
+from pathlib import Path
 
 from jobspy import scrape_jobs
-from jobspy.model import JobPost, JobType, ScraperInput
-
-FIELDS = list(JobPost.model_fields)
-PREVIEW = (
-    "site title company location date_posted job_type is_remote min_amount max_amount"
-    " currency interval job_url"
-).split()
-SITES = [site.value for site in ScraperInput.model_validate({}).site_name]
-DEFAULT_SITES = ["indeed", "linkedin", "zip_recruiter", "glassdoor"]
-REGIONS = {
-    "bayt": "Middle East",
-    "naukri": "India",
-    "bdjobs": "Bangladesh",
-    "hellowork": "France",
-}
+from jobspy.model import JobType
+from jobspy.records import (
+    DEFAULT_SITES,
+    FIELDS,
+    PREVIEW,
+    REGIONAL,
+    commas,
+    lines,
+    save,
+    save_path,
+)
 
 DESCRIPTION = """\
 Search job boards and print one JSON object per job (JSON Lines) on stdout.
+Fields a board did not give are left out.
 Default: 5 jobs from each of 4 boards; --site picks boards, -n sets the count.
 Errors and warnings go to stderr.
 
@@ -58,11 +53,7 @@ def listing(title: str, names: Sequence[str]) -> str:
 
 EPILOG = "\n".join(
     [
-        "boards:\n  "
-        + ", ".join(DEFAULT_SITES)
-        + " (default)\n  "
-        + ", ".join(f"{s} ({REGIONS[s]})" for s in SITES if s in REGIONS)
-        + "\n",
+        f"board names:\n  {', '.join(DEFAULT_SITES)} (default)\n  {REGIONAL}\n",
         listing("job types", [t.value for t in JobType]),
         listing("default fields", PREVIEW),
         listing(
@@ -73,8 +64,22 @@ EPILOG = "\n".join(
 )
 
 
-def commas(text: str) -> list[str]:
-    return [part.strip() for part in text.split(",")]
+def proxies(text: str) -> list[str]:
+    if not os.path.isfile(text):
+        return commas(text)
+    try:
+        rows = Path(text).read_text(encoding="utf-8").splitlines()
+    except OSError as error:
+        reason = error.strerror or error
+        raise argparse.ArgumentTypeError(f"cannot read {text}: {reason}") from None
+    return [entry for row in rows if (entry := row.strip()) and entry[0] != "#"]
+
+
+def output_path(text: str) -> str:
+    try:
+        return save_path(text)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(str(error)) from None
 
 
 def fields(text: str) -> list[str]:
@@ -120,7 +125,7 @@ def parser() -> argparse.ArgumentParser:
         type=commas,
         default=DEFAULT_SITES,
         metavar="LIST",
-        help="comma list (default: see boards below)",
+        help="comma list (default: see board names below)",
     )
     add(
         "--fetch-description",
@@ -135,7 +140,12 @@ def parser() -> argparse.ArgumentParser:
         metavar="IDS",
         help="LinkedIn company ids",
     )
-    add("--proxies", type=commas, metavar="LIST", help="comma list; or set HTTPS_PROXY")
+    add(
+        "--proxies",
+        type=proxies,
+        metavar="LIST",
+        help="a URL, a comma list, or a file with one per line",
+    )
     add("--ca-cert", metavar="PATH", help="CA bundle for the proxy")
     add("--user-agent", metavar="TEXT", help="User-Agent header")
     add = p.add_argument_group("output").add_argument
@@ -143,6 +153,7 @@ def parser() -> argparse.ArgumentParser:
     add(
         "-o",
         "--output",
+        type=output_path,
         metavar="FILE",
         help="also save full records (.csv, .json or .jsonl)",
     )
@@ -151,21 +162,6 @@ def parser() -> argparse.ArgumentParser:
     add("-q", "--quiet", action="store_const", dest="verbose", const=0, help="errors")
     add("-v", "--verbose", action="store_const", dest="verbose", const=2, help="info")
     return p
-
-
-def records(jobs: pd.DataFrame, names: list[str]) -> list[dict[str, object]]:
-    return [
-        {name: rec[name] for name in names if not pd.isna(rec[name])}
-        for rec in jobs[names].to_dict("records")
-    ]
-
-
-def dumps(value: object) -> str:
-    return json.dumps(value, default=str, ensure_ascii=False, separators=(",", ":"))
-
-
-def lines(jobs: pd.DataFrame, names: list[str]) -> list[str]:
-    return [dumps(rec) + "\n" for rec in records(jobs, names)]
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -184,16 +180,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         jobs = scrape_jobs(**args)
     except ValueError as error:
         p.error(str(error))
-    if output:
+    failed = jobs.empty and set(args["site_name"]) <= jobs.attrs["errors"].keys()
+    if output and not failed:
         try:
-            if output.lower().endswith(".csv"):
-                jobs.to_csv(output, index=False)
-            else:
-                with open(output, "w", encoding="utf-8") as saved:
-                    if output.lower().endswith(".json"):
-                        saved.write(dumps(records(jobs, FIELDS)))
-                    else:
-                        saved.writelines(lines(jobs, FIELDS))
+            save(jobs, output)
         except OSError as error:
             p.error(f"cannot write {output}: {error.strerror or error}")
         print(f"saved {len(jobs)} jobs to {output}", file=sys.stderr)
@@ -203,5 +193,4 @@ def main(argv: Sequence[str] | None = None) -> int:
     except BrokenPipeError:
         os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
         return 1
-    failed = set(args["site_name"]) <= jobs.attrs["errors"].keys()
-    return int(jobs.empty and failed)
+    return int(failed)
