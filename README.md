@@ -93,7 +93,7 @@ For proxies, give them to the agent, or set `HTTPS_PROXY` in the server's `env`.
 }
 ```
 
-### Parameters for `scrape_jobs()`
+## Parameters for `scrape_jobs()`
 
 ```plaintext
 Optional
