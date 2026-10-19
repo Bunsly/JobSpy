@@ -27,6 +27,9 @@ dependencies = [
 ]
 dynamic = ["classifiers"]
 
+[project.scripts]
+jobspy = "jobspy.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/speedyapply/JobSpy"
 Issues = "https://github.com/speedyapply/JobSpy/issues"
