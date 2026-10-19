@@ -38,7 +38,7 @@ jobs:
         with:
           python-version: "3.14"
       - run: pipx install poetry==2.5.1
-      - run: poetry sync --no-root
+      - run: poetry sync --no-root --all-extras
       - run: poetry run ruff check jobspy
       - run: poetry run ruff format --diff jobspy
       - if: failure()

@@ -104,7 +104,8 @@ def create_session(
 
 def check_status(response: requests.Response | curl_requests.Response) -> None:
     if response.status_code != 200:
-        raise ValueError(f"response status code {response.status_code}")
+        hint = " (blocked: use a proxy)" if response.status_code in (403, 429) else ""
+        raise ValueError(f"response status code {response.status_code}{hint}")
 
 
 def _as_markup(text: str) -> str:

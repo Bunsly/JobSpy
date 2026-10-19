@@ -49,18 +49,6 @@ print(jobs.head())
 jobs.to_csv("jobs.csv", index=False)
 ```
 
-### Command line
-
-The package installs a `jobspy` command that searches Indeed, LinkedIn, ZipRecruiter and Glassdoor by default. Its options are the `scrape_jobs()` parameters below with dashes; `jobspy -h` lists them, the output fields and exit codes.
-
-```
-jobspy "software engineer" --site indeed,linkedin --location Chicago -n 20
-jobspy nurse --site indeed,linkedin --hours-old 24 -o jobs.jsonl
-jobspy "data analyst" --remote --fields title,company,job_url
-```
-
-Each job is one line of JSON on stdout; errors and warnings go to stderr. Proxies can also come from the `HTTPS_PROXY` environment variable, which keeps credentials off the command line.
-
 ### Output
 
 ```
@@ -72,6 +60,37 @@ linkedin       Full-Stack Software Engineer      Rain              New York, NY,
 zip_recruiter  Software Engineer - New Grad      ZipRecruiter      Santa Monica, CA, USA   fulltime  yearly    130000      150000      https://www.ziprecruiter.com/jobs/ziprecruiter...  We offer a hybrid work environment. Most US-ba...
 zip_recruiter  Software Developer                TEKsystems        Phoenix, AZ, USA        fulltime  hourly    65          75          https://www.ziprecruiter.com/jobs/teksystems-0...  Top Skills' Details• 6 years of Java developme...
 
+```
+
+### Command line
+
+The package installs a `jobspy` command whose options mirror the `scrape_jobs()` parameters below; `jobspy -h` lists them, the output fields and exit codes.
+
+```
+jobspy "software engineer" --site indeed,linkedin --location Chicago -n 20
+jobspy nurse --site indeed,linkedin --hours-old 24 -o jobs.jsonl
+jobspy "data analyst" --remote --fields title,company,job_url
+```
+
+Each job is one line of JSON on stdout; errors and warnings go to stderr. `--proxies` takes a proxy, a comma list or a file with one per line.
+
+### MCP server
+
+`mcp-jobspy` is an MCP server with two tools: `search_jobs` returns a preview of each job, `get_job_details` the full records of chosen ones. It installs with `pip install "python-jobspy[mcp]"` or runs through `uvx` as below.
+
+For proxies, give them to the agent, or set `HTTPS_PROXY` in the server's `env`.
+
+**Standard config** works for most clients:
+
+```json
+{
+  "mcpServers": {
+    "jobspy": {
+      "command": "uvx",
+      "args": ["--from", "python-jobspy[mcp]", "mcp-jobspy"]
+    }
+  }
+}
 ```
 
 ### Parameters for `scrape_jobs()`
