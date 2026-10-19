@@ -1,0 +1,34 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.speedyapply/jobspy",
+  "title": "JobSpy",
+  "description": "Search LinkedIn, Indeed, ZipRecruiter, Glassdoor and regional job boards",
+  "version": "1.4.0",
+  "websiteUrl": "https://github.com/speedyapply/JobSpy#mcp-server",
+  "repository": {
+    "url": "https://github.com/speedyapply/JobSpy",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "python-jobspy",
+      "version": "1.4.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "--from",
+          "value": "python-jobspy[mcp]==1.4.0"
+        },
+        {
+          "type": "positional",
+          "value": "mcp-jobspy"
+        }
+      ]
+    }
+  ]
+}
