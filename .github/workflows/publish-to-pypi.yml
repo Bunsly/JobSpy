@@ -12,6 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - run: |
+          version=${GITHUB_REF_NAME#v}
+          test "$(jq -r .version server.json)" = "$version"
+          test "$(jq -r '.packages[0].version' server.json)" = "$version"
+          test "$(jq -r '.packages[0].runtimeArguments[0].value' server.json)" = "python-jobspy[mcp]==$version"
       - uses: actions/setup-python@v7
         with:
           python-version: "3.x"
@@ -20,3 +25,17 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+
+  mcp-registry:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - timeout-minutes: 10
+        run: until curl -sf "https://pypi.org/pypi/python-jobspy/${GITHUB_REF_NAME#v}/json" > /dev/null; do sleep 10; done
+      - run: curl -sL https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz | tar xz mcp-publisher
+      - run: ./mcp-publisher login github-oidc
+      - run: ./mcp-publisher publish
