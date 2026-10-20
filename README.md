@@ -76,9 +76,7 @@ Each job is one line of JSON on stdout; errors and warnings go to stderr. `--pro
 
 ## MCP server
 
-`mcp-jobspy` is an MCP server with two tools: `search_jobs` returns a preview of each job, `get_job_details` the full records of chosen ones. It installs with `pip install "python-jobspy[mcp]"` or runs through `uvx` as below.
-
-For proxies, give them to the agent, or set `HTTPS_PROXY` in the server's `env`.
+`mcp-jobspy` is an MCP server that runs with `uvx mcp-jobspy@latest` or installs with `pip install "python-jobspy[mcp]"`. See [mcp/README.md](https://github.com/speedyapply/JobSpy/blob/main/mcp/README.md) for setup, tools and proxies.
 
 **Standard config** works for most clients:
 
@@ -87,7 +85,7 @@ For proxies, give them to the agent, or set `HTTPS_PROXY` in the server's `env`.
   "mcpServers": {
     "jobspy": {
       "command": "uvx",
-      "args": ["--from", "python-jobspy[mcp]", "mcp-jobspy"]
+      "args": ["mcp-jobspy@latest"]
     }
   }
 }
@@ -307,5 +305,3 @@ JobPost
 ```
 
 A column is empty when the job board doesn't provide it.
-
-<!-- mcp-name: io.github.speedyapply/jobspy -->
