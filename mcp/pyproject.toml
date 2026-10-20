@@ -1,0 +1,39 @@
+[project]
+name = "mcp-jobspy"
+version = "1.4.0"
+description = "JobSpy MCP Server: job scraper for LinkedIn, Indeed, Glassdoor, ZipRecruiter, Bayt, Naukri, BDJobs & HelloWork"
+readme = "README.md"
+maintainers = [
+    { name = "Kirk Watson", email = "kirk@klwindustries.com" },
+]
+license = "MIT"
+keywords = ["jobs-scraper", "linkedin", "indeed", "glassdoor", "ziprecruiter", "bayt", "naukri", "bdjobs", "hellowork", "cli", "mcp", "mcp-server"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+    "Topic :: Office/Business",
+]
+requires-python = ">=3.10"
+dependencies = ["python-jobspy[mcp]==1.4.0"]
+
+[project.urls]
+Homepage = "https://github.com/speedyapply/JobSpy"
+Issues = "https://github.com/speedyapply/JobSpy/issues"
+"Release notes" = "https://github.com/speedyapply/JobSpy/releases"
+Documentation = "https://github.com/speedyapply/JobSpy/tree/main/mcp"
+
+[project.scripts]
+mcp-jobspy = "jobspy.mcp:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+bypass-selection = true

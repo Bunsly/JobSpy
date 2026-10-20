@@ -4,7 +4,7 @@
   "title": "JobSpy",
   "description": "Search LinkedIn, Indeed, ZipRecruiter, Glassdoor and regional job boards",
   "version": "1.4.0",
-  "websiteUrl": "https://github.com/speedyapply/JobSpy#mcp-server",
+  "websiteUrl": "https://github.com/speedyapply/JobSpy/tree/main/mcp",
   "repository": {
     "url": "https://github.com/speedyapply/JobSpy",
     "source": "github"
@@ -12,23 +12,12 @@
   "packages": [
     {
       "registryType": "pypi",
-      "identifier": "python-jobspy",
+      "identifier": "mcp-jobspy",
       "version": "1.4.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
-      },
-      "runtimeArguments": [
-        {
-          "type": "named",
-          "name": "--from",
-          "value": "python-jobspy[mcp]==1.4.0"
-        },
-        {
-          "type": "positional",
-          "value": "mcp-jobspy"
-        }
-      ]
+      }
     }
   ]
 }
