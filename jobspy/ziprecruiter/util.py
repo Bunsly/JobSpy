@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urlsplit
 
 
 def page_values(html: str, *keys: str) -> dict[str, object]:
-    """Values of `keys` in the data the page embeds for its JavaScript."""
+    """Values of `keys` in the data the page embeds for its JavaScript; a key the page lacks is left out, none at all raises."""
     chunks = re.findall(r'self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)', html)
     data = "".join(json.loads(chunk) for chunk in chunks)
     texts = _text_rows(data)
@@ -24,9 +24,10 @@ def page_values(html: str, *keys: str) -> dict[str, object]:
     values = {}
     for key in keys:
         start = data.find(f'"{key}":')
-        if start == -1:
-            raise ValueError(f"no {key} in the page")
-        values[key] = decoder.raw_decode(data, start + len(key) + 3)[0]
+        if start != -1:
+            values[key] = decoder.raw_decode(data, start + len(key) + 3)[0]
+    if not values:
+        raise ValueError(f"no {' or '.join(keys)} in the page")
     return values
 
 

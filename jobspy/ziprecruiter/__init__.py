@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 import random
 import time
-from datetime import datetime
 
 from jobspy.model import (
     Compensation,
@@ -27,7 +26,7 @@ from jobspy.ziprecruiter.constant import (
     jobs_per_page,
     pay_intervals,
 )
-from jobspy.ziprecruiter.model import Job, JobDetails, JobSearch, Pay, TypeName
+from jobspy.ziprecruiter.model import EmploymentType, Job, JobDetails, JobSearch, Pay
 from jobspy.ziprecruiter.util import direct_url, page_values
 
 
@@ -42,7 +41,7 @@ class ZipRecruiter(Scraper):
             self.session.impersonate = "safari"
         params = self._search_params()
         job_list: list[JobPost] = []
-        seen: set[str] = set()
+        seen: set[object] = set()
         first_page = page = scraper_input.offset // jobs_per_page + 1
         skip = scraper_input.offset % jobs_per_page
 
@@ -56,13 +55,12 @@ class ZipRecruiter(Scraper):
                 response = self.session.get(self.base_url + path, params=params)
                 check_status(response)
                 search = JobSearch.model_validate(
-                    page_values(response.text, "jobKeysMap", "jobCount")
+                    page_values(response.text, "jobKeysMap", "jobCards", "jobCount")
                 )
                 last_page = math.ceil(search.jobCount / jobs_per_page)
-                new_jobs = [
-                    job for key, job in search.jobKeysMap.items() if key not in seen
-                ]
-                seen.update(search.jobKeysMap)
+                jobs = {job.get("listingKey"): job for job in search.jobs}
+                new_jobs = [job for key, job in jobs.items() if key not in seen]
+                seen.update(jobs)
             except Exception as e:
                 self.fail(str(e))
                 break
@@ -109,7 +107,7 @@ class ZipRecruiter(Scraper):
 
     def _process_job(self, raw: object) -> JobPost | None:
         job = Job.model_validate(raw)
-        posted = datetime.fromisoformat(job.postedAtUtc.replace("Z", "+00:00"))
+        posted = job.postedAtUtc
         if too_old(posted.timestamp(), self.scraper_input.hours_old):
             return None
         job_type = self._parse_job_type(job.employmentTypes)
@@ -141,7 +139,7 @@ class ZipRecruiter(Scraper):
         return job_post
 
     @staticmethod
-    def _parse_job_type(types: list[TypeName]) -> list[JobType] | None:
+    def _parse_job_type(types: list[EmploymentType]) -> list[JobType] | None:
         names = (t.name.split("NAME_")[1].replace("_", "").lower() for t in types)
         return [
             t
