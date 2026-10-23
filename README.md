@@ -67,16 +67,16 @@ zip_recruiter  Software Developer                TEKsystems        Phoenix, AZ, 
 The package installs a `jobspy` command whose options mirror the `scrape_jobs()` parameters below; `jobspy -h` lists them, the output fields and exit codes.
 
 ```
+uv tool install python-jobspy
+
 jobspy "software engineer" --site indeed,linkedin --location Chicago -n 20
 jobspy nurse --site indeed,linkedin --hours-old 24 -o jobs.jsonl
 jobspy "data analyst" --remote --fields title,company,job_url
 ```
 
-Each job is one line of JSON on stdout; errors and warnings go to stderr. `--proxies` takes a proxy, a comma list or a file with one per line.
-
 ## MCP server
 
-`mcp-jobspy` is an MCP server that runs with `uvx mcp-jobspy@latest` or installs with `pip install "python-jobspy[mcp]"`. See [mcp/README.md](https://github.com/speedyapply/JobSpy/blob/main/mcp/README.md) for setup, tools and proxies.
+[`mcp-jobspy`](https://pypi.org/project/mcp-jobspy/) is an MCP server that runs with `uvx mcp-jobspy@latest`. See [mcp/README.md](https://github.com/speedyapply/JobSpy/blob/main/mcp/README.md) for setup, tools and proxies.
 
 **Standard config** works for most clients:
 
