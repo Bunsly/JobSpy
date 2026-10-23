@@ -154,7 +154,7 @@ class HelloWork(Scraper):
         if link is None:
             raise ValueError("no title link")
         label = str(link["aria-label"])
-        title, *company = (p.get_text(strip=True) for p in link.select("h3 p"))
+        title, *company = (p.get_text(strip=True) for p in link.select("h3 p, h3 span"))
         contract = card.select_one("div[data-cy=contractCard]")
         if contract is None or contract.parent is None:
             raise ValueError("no contract")

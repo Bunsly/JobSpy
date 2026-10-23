@@ -21,7 +21,7 @@
   <a href="https://github.com/speedyapply/JobSpy"><img src="https://github.com/cullenwatson/JobSpy/assets/78247585/ec7ef355-05f6-4fd3-8161-a817e31c5c57" alt="JobSpy demo"></a>
 </p>
 
-### Installation
+## Installation
 
 ```
 pip install -U python-jobspy
@@ -29,7 +29,7 @@ pip install -U python-jobspy
 
 _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_
 
-### Usage
+## Usage
 
 ```python
 from jobspy import scrape_jobs
@@ -49,7 +49,7 @@ print(jobs.head())
 jobs.to_csv("jobs.csv", index=False)
 ```
 
-### Output
+## Output
 
 ```
 SITE           TITLE                             COMPANY           LOCATION                JOB_TYPE  INTERVAL  MIN_AMOUNT  MAX_AMOUNT  JOB_URL                                            DESCRIPTION
@@ -62,7 +62,36 @@ zip_recruiter  Software Developer                TEKsystems        Phoenix, AZ, 
 
 ```
 
-### Parameters for `scrape_jobs()`
+## Command line
+
+The package installs a `jobspy` command whose options mirror the `scrape_jobs()` parameters below; `jobspy -h` lists them, the output fields and exit codes.
+
+```
+jobspy "software engineer" --site indeed,linkedin --location Chicago -n 20
+jobspy nurse --site indeed,linkedin --hours-old 24 -o jobs.jsonl
+jobspy "data analyst" --remote --fields title,company,job_url
+```
+
+Each job is one line of JSON on stdout; errors and warnings go to stderr. `--proxies` takes a proxy, a comma list or a file with one per line.
+
+## MCP server
+
+`mcp-jobspy` is an MCP server that runs with `uvx mcp-jobspy@latest` or installs with `pip install "python-jobspy[mcp]"`. See [mcp/README.md](https://github.com/speedyapply/JobSpy/blob/main/mcp/README.md) for setup, tools and proxies.
+
+**Standard config** works for most clients:
+
+```json
+{
+  "mcpServers": {
+    "jobspy": {
+      "command": "uvx",
+      "args": ["mcp-jobspy@latest"]
+    }
+  }
+}
+```
+
+## Parameters for `scrape_jobs()`
 
 ```plaintext
 Optional
@@ -112,7 +141,7 @@ Optional
 ├── verbose (int) {0, 1, 2}: 
 |    Controls the verbosity of the runtime printouts 
 |    (0 prints only errors, 1 is errors+warnings, 2 is all logs. Default is 1.)
-
+│
 ├── fetch_description (bool): 
 |    for boards whose search results don't include the job description: fetches each job's
 |    page for the description and other details (e.g. job type). Without it these are empty
@@ -136,15 +165,15 @@ Optional
 
 ## Supported Countries for Job Searching
 
-### **LinkedIn**
+### LinkedIn
 
 LinkedIn searches globally & uses only the `location` parameter. 
 
-### **ZipRecruiter**
+### ZipRecruiter
 
 ZipRecruiter searches for jobs in **US/Canada** & uses only the `location` parameter.
 
-### **Indeed / Glassdoor**
+### Indeed / Glassdoor
 
 Indeed & Glassdoor support most countries, chosen with the `country_indeed` parameter (default `usa`). Additionally, use the `location`
 parameter to narrow down the location, e.g. city & state if necessary. 
@@ -170,19 +199,19 @@ You can specify the following countries when searching on Indeed (use the exact 
 | United Arab Emirates | UK*          | USA*       | Uruguay        |
 | Venezuela            | Vietnam*     |            |                |
 
-### **Bayt**
+### Bayt
 
 Bayt searches all countries unless `location` names one it covers, e.g. `"Dubai, UAE"` or `"Saudi Arabia"`.
 
-### **BDJobs**
+### BDJobs
 
 BDJobs searches Bangladesh. `location` takes a division or district, e.g. `"Dhaka"` or `"Chattogram Division"`.
 
-### **Naukri**
+### Naukri
 
 Naukri searches India. `location` takes a city, e.g. `"Pune"`.
 
-### **HelloWork**
+### HelloWork
 
 HelloWork searches France. `location` takes a French city, postcode or region, e.g. `"Lyon"`. Most jobs are posted in French, so French search terms find more.
 
@@ -200,7 +229,7 @@ HelloWork searches France. `location` takes a French city, postcode or region, e
 **A:** Failures and ignored options are logged as they happen, and the result's `attrs` carry the same messages so your code can read them:
 
 ```py
-jobs.attrs["errors"]    # {"linkedin": "response status code 429"}
+jobs.attrs["errors"]    # {"linkedin": "response status code 429 (blocked: use a proxy)"}
 jobs.attrs["warnings"]  # {"bdjobs": ["job_type internship isn't supported, ignoring it"]}
 ```
 
@@ -228,14 +257,14 @@ This searches the description/title and must include software, summer, 2025, one
 ---
 
 **Q: Received a response code 429?**  
-**A:** This indicates that you have been blocked by the job board site for sending too many requests. All of the job board sites are aggressive with blocking. We recommend:
+**A:** The board blocked you for sending too many requests. All of the job board sites are aggressive with blocking. We recommend:
 
 - Wait some time between scrapes (site-dependent).
 - Try using the proxies param to change your IP address.
 
 ---
 
-### JobPost Schema
+## JobPost Schema
 
 ```plaintext
 JobPost

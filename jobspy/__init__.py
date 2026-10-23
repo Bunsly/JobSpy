@@ -32,6 +32,8 @@ from jobspy.util import (
 )
 from jobspy.ziprecruiter import ZipRecruiter
 
+__all__ = ["scrape_jobs"]
+
 SCRAPER_MAPPING: dict[Site, type[Scraper]] = {
     Site.LINKEDIN: LinkedIn,
     Site.INDEED: Indeed,

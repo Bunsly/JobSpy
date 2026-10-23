@@ -8,15 +8,68 @@ permissions:
   contents: read
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.x"
-      - run: python -m pip install build
+      - run: |
+          version=${GITHUB_REF_NAME#v}
+          grep -qxF "version = \"$version\"" pyproject.toml
+          grep -qxF "version = \"$version\"" mcp/pyproject.toml
+          grep -qxF "dependencies = [\"python-jobspy[mcp]==$version\"]" mcp/pyproject.toml
+          test "$(jq -r .version mcp/server.json)" = "$version"
+          test "$(jq -r '.packages[0].version' mcp/server.json)" = "$version"
+      - run: python -m pip install build twine
       - run: python -m build
+      - run: python -m build mcp
+      - run: twine check --strict dist/* mcp/dist/*
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: |
+            dist/
+            mcp/dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+
+  mcp-jobspy:
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: mcp/dist/
+          skip-existing: true
+
+  mcp-registry:
+    needs: mcp-jobspy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - timeout-minutes: 10
+        run: until curl -sf "https://pypi.org/pypi/mcp-jobspy/${GITHUB_REF_NAME#v}/json" > /dev/null; do sleep 10; done
+      - run: curl -sL https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz | tar xz mcp-publisher
+      - run: ./mcp-publisher login github-oidc
+      - run: ./mcp-publisher publish mcp/server.json
